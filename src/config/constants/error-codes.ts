@@ -1,0 +1,4 @@
+export const ERROR_CODES = {
+  UNAUTHORIZED: "AUTH_001",
+  NOT_FOUND: "SYS_404",
+};

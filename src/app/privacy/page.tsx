@@ -1,0 +1,1 @@
+export default function PrivacyPage() { return (<div className="flex min-h-screen flex-col items-center justify-center p-24 bg-background text-foreground"><h1 className="text-4xl font-bold mb-4">Privacy</h1><p className="text-muted-foreground text-lg">Placeholder for the privacy page.</p></div>); }

@@ -1,0 +1,1 @@
+export default function OtpPage() { return (<div className="flex flex-1 flex-col items-center justify-center p-24 text-foreground"><h1 className="text-4xl font-bold mb-4">Otp Dashboard</h1><p className="text-muted-foreground text-lg">Placeholder for the app otp page.</p></div>); }
