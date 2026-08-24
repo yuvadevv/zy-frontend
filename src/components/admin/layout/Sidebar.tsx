@@ -41,7 +41,7 @@ const navGroups = [
       { href: '/admin/vendors', icon: Truck, label: 'Vendors' },
     ],
   },
-  {
+  { 
     label: 'CATALOG',
     items: [
       { href: '/admin/manuals', icon: BookOpen, label: 'Manuals' },
