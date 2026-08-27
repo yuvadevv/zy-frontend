@@ -19,66 +19,58 @@ export const AcademicDetailsStep = () => {
 
   const { register, handleSubmit, control, formState: { errors }, watch, setValue } = useForm<OnboardingStep2Data>({
     resolver: zodResolver(onboardingStep2Schema),
-    defaultValues: step2Data || { classroomNumber: '' },
+    defaultValues: step2Data || {},
     mode: 'onBlur',
   });
 
+  const { data: options, isLoading } = useQuery({
+    queryKey: ['academicOptions'],
+    queryFn: academicService.getAllOptions
+  });
+
   const selectedAcademicYearId = watch('academicYearId');
-
-  const { data: colleges = [] } = useQuery({
-    queryKey: ['colleges'],
-    queryFn: academicService.getColleges
-  });
-
-  const { data: branches = [], isLoading: isLoadingBranches } = useQuery({
-    queryKey: ['all_branches'],
-    queryFn: academicService.getAllBranches
-  });
-
-  const { data: academicYears = [], isLoading: isLoadingYears } = useQuery({
-    queryKey: ['academicYears'],
-    queryFn: academicService.getAcademicYears
-  });
-
-  const { data: sections = [], isLoading: isLoadingSections } = useQuery({
-    queryKey: ['sections', selectedAcademicYearId],
-    queryFn: async () => {
-      if (!selectedAcademicYearId) return [];
-      const sems = await academicService.getSemestersByYear(selectedAcademicYearId);
-      if (sems.length > 0) {
-        return academicService.getSectionsBySemester(sems[0].id);
-      }
-      return [];
-    },
-    enabled: !!selectedAcademicYearId
-  });
+  const selectedBlockId = watch('blockId');
+  const selectedCollegeId = watch('collegeId');
 
   useEffect(() => {
-    if (colleges.length > 0 && !watch('collegeId')) {
-      setValue('collegeId', colleges[0].id);
+    if (options?.colleges?.length && !watch('collegeId')) {
+      setValue('collegeId', options.colleges[0].id);
     }
-  }, [colleges, setValue, watch]);
+  }, [options, setValue, watch]);
 
   const onSubmit = (data: OnboardingStep2Data) => {
     data.rollNumber = data.rollNumber.trim().toUpperCase();
     
     // Map IDs to readable names
-    const collegeName = colleges.find(c => c.id === data.collegeId)?.name || 'Ramachandra College of Engineering';
-    const branchName = branches.find(b => b.id === data.branchId)?.name || '';
-    const academicYearName = academicYears.find(y => y.id === data.academicYearId)?.name || '';
-    const sectionName = sections.find(s => s.id === data.sectionId)?.name || '';
+    const collegeName = options?.colleges.find(c => c.id === data.collegeId)?.name || 'College';
+    const branchName = options?.branches.find(b => b.id === data.branchId)?.name || '';
+    const academicYearName = options?.academicYears.find(y => y.id === data.academicYearId)?.name || '';
+    const sectionName = options?.sections.find(s => s.id === data.sectionId)?.name || '';
+    const blockName = options?.blocks.find(b => b.id === data.blockId)?.name || '';
+    const classroomName = options?.classrooms.find(c => c.id === data.classroomId)?.name || '';
 
     setStep2Data(data);
     setStep2ReadableData({
       collegeName,
       branchName,
       academicYearName,
-      sectionName
+      sectionName,
+      blockName,
+      classroomName
     });
     setStep(4);
   };
 
   const inputClass = "w-full h-[56px] px-4 rounded-2xl bg-white border border-gray-200 text-black placeholder:text-gray-400 focus:border-orange-500 focus:ring-1 focus:ring-orange-500 outline-none transition-all";
+
+  if (isLoading || !options) {
+    return <div className="p-8 text-center text-gray-500">Loading academic options...</div>;
+  }
+
+  const availableSections = options.sections;
+
+  const availableBlocks = options.blocks.filter(b => b.college_id === selectedCollegeId);
+  const availableClassrooms = options.classrooms.filter(c => c.block_id === selectedBlockId);
 
   return (
     <motion.div
@@ -98,16 +90,14 @@ export const AcademicDetailsStep = () => {
           
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">College</label>
-            <div className="relative">
-              <Building2 className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-gray-400" />
-              <input 
-                type="text"
-                readOnly
-                value="Ramachandra College of Engineering"
-                className="w-full h-[56px] pl-12 pr-4 rounded-2xl bg-gray-50 border border-gray-200 text-gray-600 outline-none cursor-not-allowed"
-              />
-            </div>
-            {errors.collegeId && <p className="text-xs text-red-500 mt-1">{errors.collegeId.message}</p>}
+            <input 
+              type="text"
+              readOnly
+              value={options.colleges[0]?.name || 'Ramachandra College of Engineering'}
+              className={`${inputClass} bg-gray-100 cursor-not-allowed`}
+            />
+            {/* Hidden field to keep form state valid */}
+            <input type="hidden" {...register("collegeId")} value={options.colleges[0]?.id || 'COL-001'} />
           </div>
 
           <div className="space-y-1.5">
@@ -117,12 +107,12 @@ export const AcademicDetailsStep = () => {
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={branches.map(b => ({ label: b.name, value: b.id }))}
+                  options={options.branches.map(b => ({ label: b.name, value: b.id }))}
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Select Branch"
                   searchable={true}
-                  isLoading={isLoadingBranches}
+                  isLoading={isLoading}
                 />
               )}
             />
@@ -136,7 +126,7 @@ export const AcademicDetailsStep = () => {
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={academicYears.map(y => ({ label: y.name, value: y.id }))}
+                  options={options.academicYears.map(y => ({ label: y.name, value: y.id }))}
                   value={field.value}
                   onChange={(v) => {
                     field.onChange(v);
@@ -144,7 +134,7 @@ export const AcademicDetailsStep = () => {
                   }}
                   placeholder="Select Year"
                   searchable={false}
-                  isLoading={isLoadingYears}
+                  isLoading={isLoading}
                 />
               )}
             />
@@ -158,12 +148,11 @@ export const AcademicDetailsStep = () => {
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={sections.map(s => ({ label: s.name, value: s.id }))}
+                  options={availableSections.map(s => ({ label: s.name, value: s.id }))}
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Select Section"
                   searchable={false}
-                  isLoading={isLoadingSections}
                   disabled={!selectedAcademicYearId}
                 />
               )}
@@ -174,47 +163,55 @@ export const AcademicDetailsStep = () => {
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Block</label>
             <Controller
-              name="block"
+              name="blockId"
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={[
-                    { label: 'A Block', value: 'A Block' },
-                    { label: 'B Block', value: 'B Block' },
-                    { label: 'C Block', value: 'C Block' },
-                    { label: 'D Block', value: 'D Block' },
-                    { label: 'E Block', value: 'E Block' },
-                  ]}
-                  value={field.value || ''}
-                  onChange={field.onChange}
+                  options={availableBlocks.map(b => ({ label: b.name, value: b.id }))}
+                  value={field.value}
+                  onChange={(v) => {
+                    field.onChange(v);
+                    setValue('classroomId', '');
+                  }}
                   placeholder="Select Block"
-                  searchable={false}
+                  searchable={true}
+                  disabled={!selectedCollegeId}
                 />
               )}
             />
-            {errors.block && <p className="text-xs text-red-500 mt-1">{errors.block.message}</p>}
+            {errors.blockId && <p className="text-xs text-red-500 mt-1">{errors.blockId.message}</p>}
           </div>
 
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-black">Classroom Number</label>
-            <input 
-              {...register("classroomNumber")}
-              className={inputClass}
-              placeholder="e.g. A-204"
+            <label className="text-sm font-semibold text-black">Classroom</label>
+            <Controller
+              name="classroomId"
+              control={control}
+              render={({ field }) => (
+                <SearchableDropdown
+                  options={availableClassrooms.map(c => ({ label: c.name, value: c.id }))}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select Classroom"
+                  searchable={true}
+                  disabled={!selectedBlockId}
+                />
+              )}
             />
-            {errors.classroomNumber && <p className="text-xs text-red-500 mt-1">{errors.classroomNumber.message}</p>}
+            {errors.classroomId && <p className="text-xs text-red-500 mt-1">{errors.classroomId.message}</p>}
           </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Roll Number</label>
             <input 
+              maxLength={10}
               {...register("rollNumber", {
                 onChange: (e) => {
-                  e.target.value = e.target.value.toUpperCase().replace(/\s/g, '');
+                  e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
                 }
               })}
               className={inputClass}
-              placeholder="e.g. 21BCE0001"
+              placeholder="e.g. 25ME1A4244"
             />
             {errors.rollNumber && <p className="text-xs text-red-500 mt-1">{errors.rollNumber.message}</p>}
           </div>

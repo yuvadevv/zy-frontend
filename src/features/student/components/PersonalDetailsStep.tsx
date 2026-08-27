@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { motion } from 'framer-motion';
@@ -9,20 +9,48 @@ import {
   OnboardingStep1Data 
 } from '../../auth/validators/onboardingValidators';
 import { useOnboarding } from '../providers/OnboardingProvider';
+import { useAuthSession } from '@/features/auth/hooks/useAuthSession';
 
 export const PersonalDetailsStep = () => {
   const { step1Data, setStep1Data, setStep } = useOnboarding();
+  const { user } = useAuthSession();
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
 
-  const { register, handleSubmit, formState: { errors }, setFocus } = useForm<OnboardingStep1Data>({
+  const { register, handleSubmit, formState: { errors }, setFocus, setValue, getValues } = useForm<OnboardingStep1Data>({
     resolver: zodResolver(onboardingStep1Schema),
     defaultValues: step1Data || {},
     mode: 'onBlur',
   });
 
   useEffect(() => {
-    // Auto-focus first input on mount
-    setFocus('fullName');
-  }, [setFocus]);
+    if (user) {
+      const provider = user.app_metadata?.provider;
+      const isGoogle = provider === 'google';
+      setIsGoogleUser(isGoogle);
+
+      if (isGoogle && !step1Data?.fullName) {
+        const metadata = user.user_metadata || {};
+        const googleName = metadata.full_name || metadata.name || (metadata.first_name ? `${metadata.first_name} ${metadata.last_name || ''}`.trim() : '');
+        if (googleName) {
+          setValue('fullName', googleName, { shouldValidate: true });
+        }
+        
+        const googlePhone = metadata.phone || metadata.phone_number;
+        if (googlePhone && /^\d{10}$/.test(googlePhone) && !step1Data?.phoneNumber) {
+          setValue('phoneNumber', googlePhone, { shouldValidate: true });
+        }
+      }
+    }
+  }, [user, setValue, step1Data]);
+
+  useEffect(() => {
+    // Auto-focus first input on mount if not read-only
+    if (!isGoogleUser) {
+      setFocus('fullName');
+    } else {
+      setFocus('phoneNumber');
+    }
+  }, [setFocus, isGoogleUser]);
 
   const onSubmit = (data: OnboardingStep1Data) => {
     setStep1Data(data);
@@ -47,20 +75,34 @@ export const PersonalDetailsStep = () => {
 
         <form id="personal-form" onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-black">Student Name</label>
+            <label className="text-sm font-semibold text-black flex justify-between">
+              Student Name
+              {isGoogleUser && <span className="text-xs text-gray-500 font-normal">Name from your Google account</span>}
+            </label>
             <input 
               {...register("fullName")}
-              className={inputClass}
+              className={`${inputClass} ${isGoogleUser ? 'bg-gray-50 cursor-not-allowed' : ''}`}
               placeholder="e.g. John Doe"
+              readOnly={isGoogleUser}
             />
             {errors.fullName && <p className="text-xs text-red-500 mt-1">{errors.fullName.message}</p>}
           </div>
           
           <div className="space-y-1.5">
-            <label className="text-sm font-semibold text-black">Mobile Number</label>
+            <label className="text-sm font-semibold text-black flex justify-between">
+              Mobile Number
+              {!isGoogleUser && <span className="text-xs text-gray-500 font-normal">Enter your 10-digit mobile number.</span>}
+            </label>
             <input 
               type="tel"
-              {...register("phoneNumber")}
+              inputMode="numeric"
+              maxLength={10}
+              {...register("phoneNumber", {
+                maxLength: 10,
+                onChange: (e) => {
+                  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 10);
+                }
+              })}
               className={inputClass}
               placeholder="e.g. 9876543210"
             />

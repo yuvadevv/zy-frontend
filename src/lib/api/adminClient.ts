@@ -174,6 +174,30 @@ export const adminClient = {
     });
   },
 
+  async getAcademicEntity(entity: string) {
+    return this.fetch(`/api/admin/academic/${entity}`);
+  },
+
+  async createAcademicEntity(entity: string, data: any) {
+    return this.fetch(`/api/admin/academic/${entity}`, {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateAcademicEntity(entity: string, id: string, data: any) {
+    return this.fetch(`/api/admin/academic/${entity}/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async deleteAcademicEntity(entity: string, id: string) {
+    return this.fetch(`/api/admin/academic/${entity}/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
   async getSubjects(params: { branch_id?: string, semester?: string } = {}) {
     const query = new URLSearchParams();
     if (params.branch_id) query.append('branch_id', params.branch_id);

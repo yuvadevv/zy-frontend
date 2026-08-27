@@ -4,6 +4,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { CombinedStudentData } from '../types';
 import { profileService } from '../services/profileService';
 import { useProfileAnalytics } from '../hooks/useProfileAnalytics';
+import { useAuthSession } from '../../auth/hooks/useAuthSession';
 
 interface ProfileContextProps {
   data: CombinedStudentData | null;
@@ -15,15 +16,21 @@ interface ProfileContextProps {
 const ProfileContext = createContext<ProfileContextProps | undefined>(undefined);
 
 export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const { user } = useAuthSession();
   const [data, setData] = useState<CombinedStudentData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<Error | null>(null);
   const { trackProfileOpened } = useProfileAnalytics();
 
   const fetchProfile = async () => {
+    if (!user) {
+      setData(null);
+      setIsLoading(false);
+      return;
+    }
     try {
       setIsLoading(true);
-      const res = await profileService.fetchProfileData();
+      const res = await profileService.fetchProfileData(user.id);
       setData(res);
     } catch (err: unknown) {
       if (err instanceof Error) setError(err);
@@ -41,7 +48,7 @@ export const ProfileProvider: React.FC<{ children: React.ReactNode }> = ({ child
       }, 0);
     }
     return () => { mounted = false; };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <ProfileContext.Provider value={{ data, isLoading, error, refresh: fetchProfile }}>

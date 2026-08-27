@@ -2,20 +2,28 @@
 import { CombinedStudentData } from '../types';
 import { mockStudentData } from '../services/mockProfile';
 
-let profileCache = { ...mockStudentData };
+const profileCacheMap: Record<string, CombinedStudentData> = {};
+
+const getCacheForUser = (userId: string) => {
+  if (!profileCacheMap[userId]) {
+    profileCacheMap[userId] = JSON.parse(JSON.stringify(mockStudentData));
+  }
+  return profileCacheMap[userId];
+};
 
 export const profileApi = {
-  getProfile: async (): Promise<CombinedStudentData> => {
+  getProfile: async (userId: string): Promise<CombinedStudentData> => {
     await new Promise(resolve => setTimeout(resolve, 800)); // Simulate network
-    return { ...profileCache };
+    return { ...getCacheForUser(userId) };
   },
 
-  updateProfile: async (updates: Partial<CombinedStudentData['profile']>): Promise<CombinedStudentData> => {
+  updateProfile: async (userId: string, updates: Partial<CombinedStudentData['profile']>): Promise<CombinedStudentData> => {
     await new Promise(resolve => setTimeout(resolve, 1000));
-    profileCache = {
-      ...profileCache,
-      profile: { ...profileCache.profile, ...updates }
+    const userCache = getCacheForUser(userId);
+    profileCacheMap[userId] = {
+      ...userCache,
+      profile: { ...userCache.profile, ...updates }
     };
-    return { ...profileCache };
+    return { ...profileCacheMap[userId] };
   }
 };

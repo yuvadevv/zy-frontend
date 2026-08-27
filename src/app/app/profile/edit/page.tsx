@@ -17,12 +17,12 @@ import { PageTransition } from '@/design-system/components/layout/PageTransition
 const editProfileSchema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
   phoneNumber: z.string().regex(/^[0-9+() -]{10,20}$/, 'Invalid phone number format'),
-  branchId: z.string().uuid('Please select a branch'),
-  academicYearId: z.string().uuid('Please select your academic year'),
-  sectionId: z.string().uuid('Please select your section'),
-  block: z.string().min(1, 'Block is required'),
-  classroomNumber: z.string().min(1, 'Classroom is required'),
-  rollNumber: z.string().min(3, 'Roll number is required'),
+  branchId: z.string().min(1, 'Please select a branch'),
+  academicYearId: z.string().min(1, 'Please select your academic year'),
+  sectionId: z.string().min(1, 'Please select your section'),
+  blockId: z.string().min(1, 'Block is required'),
+  classroomId: z.string().min(1, 'Classroom is required'),
+  rollNumber: z.string().regex(/^[a-zA-Z0-9]{10}$/, 'Roll number must be exactly 10 characters'),
   deliveryNotes: z.string().optional(),
 });
 
@@ -43,8 +43,8 @@ export default function EditProfilePage() {
       branchId: '',
       academicYearId: '',
       sectionId: '',
-      block: '',
-      classroomNumber: '',
+      blockId: '',
+      classroomId: '',
       rollNumber: '',
       deliveryNotes: '',
     },
@@ -58,8 +58,8 @@ export default function EditProfilePage() {
         branchId: academicRecord.branch_id || '',
         academicYearId: academicRecord.academic_year_id || '',
         sectionId: academicRecord.section_id || '',
-        block: academicRecord.block || '',
-        classroomNumber: academicRecord.classroom_number || '',
+        blockId: academicRecord.block_id || '',
+        classroomId: academicRecord.classroom_id || '',
         rollNumber: academicRecord.roll_number || '',
         deliveryNotes: profile.delivery_notes || '',
       });
@@ -67,29 +67,19 @@ export default function EditProfilePage() {
   }, [profile, academicRecord, reset]);
 
   const selectedAcademicYearId = watch('academicYearId');
+  const selectedBlockId = watch('blockId');
 
-  const { data: branches = [], isLoading: isLoadingBranches } = useQuery({
-    queryKey: ['all_branches'],
-    queryFn: academicService.getAllBranches
+  const { data: options, isLoading: isLoadingOptions } = useQuery({
+    queryKey: ['academicOptions'],
+    queryFn: academicService.getAllOptions
   });
 
-  const { data: academicYears = [], isLoading: isLoadingYears } = useQuery({
-    queryKey: ['academicYears'],
-    queryFn: academicService.getAcademicYears
-  });
-
-  const { data: sections = [], isLoading: isLoadingSections } = useQuery({
-    queryKey: ['sections', selectedAcademicYearId],
-    queryFn: async () => {
-      if (!selectedAcademicYearId) return [];
-      const sems = await academicService.getSemestersByYear(selectedAcademicYearId);
-      if (sems.length > 0) {
-        return academicService.getSectionsBySemester(sems[0].id);
-      }
-      return [];
-    },
-    enabled: !!selectedAcademicYearId
-  });
+  const availableSections = options?.sections || [];
+  
+  const validCollege = options?.colleges?.find(c => c.id === academicRecord?.college_id);
+  const studentCollegeId = validCollege ? validCollege.id : (options?.colleges?.[0]?.id || 'COL-001');
+  const availableBlocks = options?.blocks.filter(b => b.college_id === studentCollegeId) || [];
+  const availableClassrooms = options?.classrooms.filter(c => c.block_id === selectedBlockId) || [];
 
   const onSubmit = async (data: EditProfileData) => {
     if (!profile || !academicRecord) return;
@@ -103,15 +93,15 @@ export default function EditProfilePage() {
         delivery_notes: data.deliveryNotes,
       });
 
-      const sems = await academicService.getSemestersByYear(data.academicYearId);
-      const semesterId = sems.length > 0 ? sems[0].id : academicRecord.semester_id;
+      const sem = options?.semesters.find(sem => sem.academic_year_id === data.academicYearId);
+      const semesterId = sem ? sem.id : academicRecord.semester_id;
 
       await studentService.updateAcademicRecord(profile.user_id, {
         branch_id: data.branchId,
         academic_year_id: data.academicYearId,
         section_id: data.sectionId,
-        block: data.block,
-        classroom_number: data.classroomNumber,
+        block_id: data.blockId,
+        classroom_id: data.classroomId,
         roll_number: data.rollNumber.trim().toUpperCase(),
         semester_id: semesterId,
       });
@@ -190,7 +180,15 @@ export default function EditProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Mobile Number</label>
-            <input disabled={isSaving} {...register('phoneNumber')} className={inputClass} placeholder="Phone Number" />
+            <input 
+              disabled={isSaving} 
+              maxLength={10}
+              {...register('phoneNumber', {
+                onChange: (e) => e.target.value = e.target.value.replace(/[^0-9]/g, '').slice(0, 10)
+              })} 
+              className={inputClass} 
+              placeholder="Phone Number" 
+            />
           </div>
 
           <div className="space-y-1.5">
@@ -210,12 +208,12 @@ export default function EditProfilePage() {
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={branches.map(b => ({ label: b.name, value: b.id }))}
+                  options={(options?.branches || []).map(b => ({ label: b.name, value: b.id }))}
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Select Branch"
                   searchable={true}
-                  isLoading={isLoadingBranches}
+                  isLoading={isLoadingOptions}
                   disabled={isSaving}
                 />
               )}
@@ -229,7 +227,7 @@ export default function EditProfilePage() {
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={academicYears.map(y => ({ label: y.name, value: y.id }))}
+                  options={(options?.academicYears || []).map(y => ({ label: y.name, value: y.id }))}
                   value={field.value}
                   onChange={(v) => {
                     field.onChange(v);
@@ -237,7 +235,7 @@ export default function EditProfilePage() {
                   }}
                   placeholder="Select Year"
                   searchable={false}
-                  isLoading={isLoadingYears}
+                  isLoading={isLoadingOptions}
                   disabled={isSaving}
                 />
               )}
@@ -251,12 +249,12 @@ export default function EditProfilePage() {
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={sections.map(s => ({ label: s.name, value: s.id }))}
+                  options={(availableSections || []).map(s => ({ label: s.name, value: s.id }))}
                   value={field.value}
                   onChange={field.onChange}
                   placeholder="Select Section"
                   searchable={false}
-                  isLoading={isLoadingSections}
+                  isLoading={isLoadingOptions}
                   disabled={!selectedAcademicYearId || isSaving}
                 />
               )}
@@ -266,21 +264,19 @@ export default function EditProfilePage() {
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Block</label>
             <Controller
-              name="block"
+              name="blockId"
               control={control}
               render={({ field }) => (
                 <SearchableDropdown
-                  options={[
-                    { label: 'A Block', value: 'A Block' },
-                    { label: 'B Block', value: 'B Block' },
-                    { label: 'C Block', value: 'C Block' },
-                    { label: 'D Block', value: 'D Block' },
-                    { label: 'E Block', value: 'E Block' },
-                  ]}
+                  options={availableBlocks.map(b => ({ label: b.name, value: b.id }))}
                   value={field.value}
-                  onChange={field.onChange}
+                  onChange={(v) => {
+                    field.onChange(v);
+                    setValue('classroomId', '');
+                  }}
                   placeholder="Select Block"
-                  searchable={false}
+                  searchable={true}
+                  isLoading={isLoadingOptions}
                   disabled={isSaving}
                 />
               )}
@@ -289,15 +285,31 @@ export default function EditProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Classroom Number</label>
-            <input disabled={isSaving} {...register('classroomNumber')} className={inputClass} placeholder="e.g. SH-213" />
+            <Controller
+              name="classroomId"
+              control={control}
+              render={({ field }) => (
+                <SearchableDropdown
+                  options={availableClassrooms.map(c => ({ label: c.name, value: c.id }))}
+                  value={field.value}
+                  onChange={field.onChange}
+                  placeholder="Select Classroom"
+                  searchable={true}
+                  isLoading={isLoadingOptions}
+                  disabled={!selectedBlockId || isSaving}
+                />
+              )}
+            />
           </div>
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Roll Number</label>
             <input 
               disabled={isSaving}
+              maxLength={10}
               {...register('rollNumber', {
-                onChange: (e) => e.target.value = e.target.value.toUpperCase().replace(/\s/g, '')
+                maxLength: 10,
+                onChange: (e) => e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10)
               })} 
               className={inputClass} 
               placeholder="e.g. 21BCE0001" 

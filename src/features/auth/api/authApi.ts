@@ -1,6 +1,7 @@
 // src/features/auth/api/authApi.ts
 import { createClient } from '../../../lib/supabase/client';
 import { SignupFormData, LoginFormData } from '../validators/authValidators';
+import { getSiteUrl } from '@/lib/utils/url';
 
 export const authApi = {
   signInWithGoogle: async (nextUrl?: string) => {
@@ -8,7 +9,7 @@ export const authApi = {
       document.cookie = `portal_next=${encodeURIComponent(nextUrl)}; path=/; max-age=300; SameSite=Lax`;
     }
     const supabase = createClient();
-    const redirectTo = `${window.location.origin}/api/auth/callback`;
+    const redirectTo = `${getSiteUrl()}/auth/confirm`;
       
     const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
@@ -26,7 +27,20 @@ export const authApi = {
       email: credentials.email,
       password: credentials.password,
       options: {
-        emailRedirectTo: `${window.location.origin}/api/auth/callback`
+        emailRedirectTo: `${getSiteUrl()}/auth/confirm?next=/app/onboarding`
+      }
+    });
+    if (error) throw error;
+    return data;
+  },
+  
+  resendVerificationEmail: async (email: string) => {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.resend({
+      type: 'signup',
+      email,
+      options: {
+        emailRedirectTo: `${getSiteUrl()}/auth/confirm?next=/app/onboarding`
       }
     });
     if (error) throw error;

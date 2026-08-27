@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server';
 import { getSupabaseConfig } from '../utils/envValidator';
 
 const PUBLIC_ROUTES = ['/login', '/signup', '/forgot-password', '/reset-password'];
-const AUTH_CALLBACK_ROUTE = '/api/auth/callback';
+const AUTH_CALLBACK_ROUTE = '/auth/confirm';
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });

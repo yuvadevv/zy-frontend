@@ -2,43 +2,67 @@
 
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
-import { Loader2, Plus, BookOpen, Layers, GraduationCap, AlertCircle, Edit2 } from 'lucide-react';
+import { Plus, AlertCircle, Edit2, CheckCircle, XCircle, Trash2 } from 'lucide-react';
 import DataTable, { Column } from '@/components/ui/DataTable';
 
+const ENTITIES = [
+  { id: 'colleges', label: 'Colleges', fields: ['name', 'status'] },
+  { id: 'branches', label: 'Branches', fields: ['college_id', 'code', 'name', 'status'] },
+  { id: 'academic_years', label: 'Academic Years', fields: ['label', 'value', 'status'] },
+  { id: 'semesters', label: 'Semesters', fields: ['academic_year_id', 'label', 'value', 'status'] },
+  { id: 'sections', label: 'Sections', fields: ['name', 'status'] },
+  { id: 'blocks', label: 'Blocks', fields: ['college_id', 'name', 'status'] },
+  { id: 'classrooms', label: 'Classrooms', fields: ['block_id', 'name', 'status'] },
+  { id: 'subjects', label: 'Subjects', fields: ['branch_id', 'semester_id', 'code', 'name', 'status'] },
+];
+
 export default function AcademicManagementPage() {
-  const [activeTab, setActiveTab] = useState<'branches' | 'subjects'>('branches');
-  
-  const [branches, setBranches] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  
+  const [activeTab, setActiveTab] = useState(ENTITIES[0].id);
+  const [data, setData] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Modals
-  const [showBranchModal, setShowBranchModal] = useState(false);
-  const [showSubjectModal, setShowSubjectModal] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formState, setFormState] = useState<any>({});
+  
+  // For relations
+  const [relatedData, setRelatedData] = useState<Record<string, any[]>>({});
 
-  // Forms — only fields that exist in D1: branches(id,code,name) subjects(id,branch_id,semester_id,code,name)
-  const [branchForm, setBranchForm] = useState({ id: '', code: '', name: '' });
-  const [subjectForm, setSubjectForm] = useState({ branch_id: '', semester: '', code: '', name: '' });
+  const activeEntityConfig = ENTITIES.find(e => e.id === activeTab)!;
 
   const loadData = async () => {
     try {
       setLoading(true);
       setError(null);
-      const [branchesData, subjectsData] = await Promise.all([
-        adminClient.getBranches(),
-        adminClient.getSubjects()
-      ]);
-      setBranches(branchesData.branches || branchesData || []);
-      setSubjects(subjectsData.subjects || subjectsData || []);
-    } catch (err: any) {
-      if (err.message?.includes('401') || err.message?.includes('403')) {
-        setError("Access Denied. You need the 'academic.manage' permission.");
-      } else {
-        setError(err.message || 'Failed to load academic data');
+      
+      // Load main entity data
+      const res = activeTab === 'subjects' 
+        ? await adminClient.getSubjects() 
+        : await adminClient.getAcademicEntity(activeTab);
+        
+      setData(res[activeTab] || []);
+      
+      // Load related data for dropdowns
+      if (activeEntityConfig.fields.includes('college_id')) {
+        const c = await adminClient.getAcademicEntity('colleges');
+        setRelatedData(prev => ({ ...prev, colleges: c.colleges || [] }));
       }
+      if (activeEntityConfig.fields.includes('branch_id')) {
+        const b = await adminClient.getAcademicEntity('branches');
+        setRelatedData(prev => ({ ...prev, branches: b.branches || [] }));
+      }
+      if (activeEntityConfig.fields.includes('semester_id')) {
+        const s = await adminClient.getAcademicEntity('semesters');
+        setRelatedData(prev => ({ ...prev, semesters: s.semesters || [] }));
+      }
+      if (activeEntityConfig.fields.includes('block_id')) {
+        const b = await adminClient.getAcademicEntity('blocks');
+        setRelatedData(prev => ({ ...prev, blocks: b.blocks || [] }));
+      }
+
+    } catch (err: any) {
+      setError(err.message || 'Failed to load data');
     } finally {
       setLoading(false);
     }
@@ -46,153 +70,119 @@ export default function AcademicManagementPage() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [activeTab]);
 
-  const handleBranchSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      if (branchForm.id) {
-        await adminClient.updateBranch(branchForm.id, branchForm);
+      if (formState.id) {
+        if (activeTab === 'subjects') {
+          // Subject update not fully generic in backend yet, handled via generic patch if added, else skip
+        } else {
+          await adminClient.updateAcademicEntity(activeTab, formState.id, formState);
+        }
       } else {
-        await adminClient.createBranch(branchForm);
+        if (activeTab === 'subjects') {
+          await adminClient.createSubject(formState);
+        } else {
+          await adminClient.createAcademicEntity(activeTab, formState);
+        }
       }
-      setShowBranchModal(false);
-      setBranchForm({ id: '', code: '', name: '' });
+      setShowModal(false);
+      setFormState({});
       loadData();
     } catch (err: any) {
-      alert(err.message || 'Failed to save branch');
+      alert(err.message || 'Failed to save');
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  const handleSubjectSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const handleToggleStatus = async (item: any) => {
+    const newStatus = item.status === 'active' ? 'inactive' : 'active';
     try {
-      await adminClient.createSubject(subjectForm);
-      setShowSubjectModal(false);
-      setSubjectForm({ branch_id: '', semester: '', code: '', name: '' });
-      loadData();
+      if (activeTab !== 'subjects') {
+        await adminClient.updateAcademicEntity(activeTab, item.id, { status: newStatus });
+        loadData();
+      }
     } catch (err: any) {
-      alert(err.message || 'Failed to create subject');
-    } finally {
-      setIsSubmitting(false);
+      alert('Failed to update status');
     }
   };
 
-  const branchColumns: Column<any>[] = [
-    {
-      header: 'Code',
-      accessorKey: 'code',
-      cell: (b) => <span className="font-semibold text-gray-900">{b.code}</span>
-    },
+  const handleDelete = async (item: any) => {
+    if (!confirm(`Are you sure you want to delete this ${activeEntityConfig.label.slice(0, -1).toLowerCase()}?`)) return;
+    try {
+      if (activeTab === 'subjects') {
+        // Not implemented in generic backend yet, handled via separate route if needed
+        alert('Subject deletion not implemented yet');
+      } else {
+        await adminClient.deleteAcademicEntity(activeTab, item.id);
+        loadData();
+      }
+    } catch (err: any) {
+      alert(err.message || 'Failed to delete');
+    }
+  };
+
+  const openAddModal = () => {
+    setFormState({ status: 'active' });
+    setShowModal(true);
+  };
+
+  const openEditModal = (item: any) => {
+    setFormState({ ...item });
+    setShowModal(true);
+  };
+
+  const columns: Column<any>[] = [
     {
       header: 'Name',
       accessorKey: 'name',
+      cell: (item) => <span className="font-semibold text-gray-900">{item.name || item.label || item.code}</span>
+    },
+    ...activeEntityConfig.fields.filter(f => !['name', 'label', 'status'].includes(f)).map(f => ({
+      header: f.replace('_id', '').toUpperCase(),
+      accessorKey: f
+    })),
+    {
+      header: 'Status',
+      cell: (item) => (
+        <button 
+          onClick={() => handleToggleStatus(item)}
+          className={`px-3 py-1 text-xs font-medium rounded-full ${item.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}
+        >
+          {item.status === 'active' ? 'Active' : 'Inactive'}
+        </button>
+      )
     },
     {
       header: 'Action',
-      cell: (b) => (
-        <div className="flex justify-end">
-          <button
-            onClick={() => { setBranchForm({ id: b.id, code: b.code, name: b.name }); setShowBranchModal(true); }}
-            className="text-gray-500 hover:text-black transition-colors"
-          >
+      cell: (item) => (
+        <div className="flex items-center space-x-3">
+          <button onClick={() => openEditModal(item)} className="text-gray-500 hover:text-black transition-colors" title="Edit">
             <Edit2 className="w-4 h-4" />
+          </button>
+          <button onClick={() => handleDelete(item)} className="text-red-400 hover:text-red-600 transition-colors" title="Delete">
+            <Trash2 className="w-4 h-4" />
           </button>
         </div>
       )
     }
   ];
-
-  const subjectColumns: Column<any>[] = [
-    {
-      header: 'Code',
-      accessorKey: 'code',
-      cell: (s) => <span className="font-semibold text-gray-900">{s.code}</span>
-    },
-    {
-      header: 'Name',
-      cell: (s) => (
-        <div className="flex items-center space-x-2">
-          <GraduationCap className="w-4 h-4 text-gray-400" />
-          <span>{s.name}</span>
-        </div>
-      )
-    },
-    {
-      header: 'Branch',
-      accessorKey: 'branch_name',
-      cell: (s) => <span className="text-gray-600">{s.branch_name}</span>
-    },
-    {
-      header: 'Semester',
-      cell: (s) => (
-        <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-700">Sem {s.semester_id}</span>
-      )
-    }
-  ];
-
-  const renderMobileBranchCard = (b: any) => (
-    <div className="flex justify-between items-center">
-      <div>
-        <div className="font-semibold text-gray-900">{b.code}</div>
-        <div className="text-sm text-gray-500">{b.name}</div>
-      </div>
-      <div className="flex flex-col items-end gap-2">
-        <button
-          onClick={() => { setBranchForm({ id: b.id, code: b.code, name: b.name }); setShowBranchModal(true); }}
-          className="text-[#FF6B00] text-sm hover:underline flex items-center gap-1"
-        >
-          <Edit2 className="w-3 h-3" />
-          Edit
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderMobileSubjectCard = (s: any) => (
-    <div className="flex flex-col gap-2">
-      <div className="flex justify-between items-start">
-        <div>
-          <div className="font-semibold text-gray-900">{s.code}</div>
-          <div className="text-sm text-gray-500 flex items-center gap-1">
-            <GraduationCap className="w-3 h-3" /> {s.name}
-          </div>
-        </div>
-        <span className="px-2 py-1 bg-gray-100 rounded text-xs font-medium text-gray-700">Sem {s.semester_id}</span>
-      </div>
-      <div className="flex justify-between items-center text-sm mt-1">
-        <span className="text-gray-600">{s.branch_name}</span>
-      </div>
-    </div>
-  );
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Academic Mapping</h1>
-          <p className="text-sm text-gray-500 mt-1">Configure branches, semesters, and subject syllabus structures.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Academic Setup</h1>
+          <p className="text-sm text-gray-500 mt-1">Manage colleges, branches, classrooms, and more.</p>
         </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <button 
-            onClick={() => { setBranchForm({ id: '', code: '', name: '' }); setShowBranchModal(true); }}
-            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Branch</span>
-          </button>
-          <button 
-            onClick={() => { setSubjectForm({ ...subjectForm, branch_id: branches[0]?.id || '' }); setShowSubjectModal(true); }}
-            className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Subject</span>
-          </button>
-        </div>
+        <button onClick={openAddModal} className="flex items-center space-x-2 px-4 py-2 bg-black text-white rounded-lg text-sm font-medium hover:bg-gray-800 transition-colors">
+          <Plus className="w-4 h-4" />
+          <span>Add {activeEntityConfig.label}</span>
+        </button>
       </div>
 
       {error && (
@@ -203,130 +193,94 @@ export default function AcademicManagementPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex border-b border-gray-200 overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('branches')}
-          className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'branches' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <Layers className="w-4 h-4 mr-2" />
-          Branches
-        </button>
-        <button
-          onClick={() => setActiveTab('subjects')}
-          className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
-            activeTab === 'subjects' ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
-          }`}
-        >
-          <BookOpen className="w-4 h-4 mr-2" />
-          Subjects
-        </button>
+      <div className="flex border-b border-gray-200 overflow-x-auto no-scrollbar">
+        {ENTITIES.map(entity => (
+          <button
+            key={entity.id}
+            onClick={() => setActiveTab(entity.id)}
+            className={`px-4 py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-colors ${
+              activeTab === entity.id ? 'border-black text-black' : 'border-transparent text-gray-500 hover:text-gray-700'
+            }`}
+          >
+            {entity.label}
+          </button>
+        ))}
       </div>
 
-      {/* Content */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-        {activeTab === 'branches' && (
-          <DataTable
-            data={branches}
-            columns={branchColumns}
-            keyExtractor={(b) => b.id}
-            isLoading={loading}
-            emptyMessage="No branches configured."
-            renderMobileCard={renderMobileBranchCard}
-          />
-        )}
-
-        {activeTab === 'subjects' && (
-          <DataTable
-            data={subjects}
-            columns={subjectColumns}
-            keyExtractor={(s) => s.id}
-            isLoading={loading}
-            emptyMessage="No subjects configured."
-            renderMobileCard={renderMobileSubjectCard}
-          />
-        )}
+        <DataTable
+          data={data}
+          columns={columns}
+          keyExtractor={(item) => item.id}
+          isLoading={loading}
+          emptyMessage={`No ${activeEntityConfig.label.toLowerCase()} found.`}
+          renderMobileCard={(item) => (
+            <div className="flex justify-between items-center">
+              <div>
+                <div className="font-semibold text-gray-900">{item.name || item.label || item.code}</div>
+                <div className="text-sm text-gray-500">{item.status}</div>
+              </div>
+              <div className="flex items-center space-x-3">
+                <button onClick={() => openEditModal(item)} className="text-[#FF6B00] text-sm hover:underline">Edit</button>
+                <button onClick={() => handleDelete(item)} className="text-red-500 text-sm hover:underline">Delete</button>
+              </div>
+            </div>
+          )}
+        />
       </div>
 
-      {/* Branch Modal */}
-      {showBranchModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-            <h2 className="text-xl font-bold mb-4">{branchForm.id ? 'Edit' : 'Add'} Branch</h2>
-            <form onSubmit={handleBranchSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Branch Code (e.g. CSE)</label>
-                <input 
-                  type="text" required disabled={!!branchForm.id}
-                  value={branchForm.code} onChange={e => setBranchForm({...branchForm, code: e.target.value})}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00] disabled:bg-gray-50"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                <input 
-                  type="text" required
-                  value={branchForm.name} onChange={e => setBranchForm({...branchForm, name: e.target.value})}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button type="button" onClick={() => setShowBranchModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 bg-[#FF6B00] text-white rounded-lg text-sm font-medium hover:bg-[#e66000] disabled:opacity-50 flex justify-center items-center transition-colors">
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Branch'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Subject Modal */}
-      {showSubjectModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl">
-            <h2 className="text-xl font-bold mb-4">Add Subject</h2>
-            <form onSubmit={handleSubjectSubmit} className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Branch</label>
-                <select 
-                  required value={subjectForm.branch_id} onChange={e => setSubjectForm({...subjectForm, branch_id: e.target.value})}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                >
-                  <option value="">Select Branch...</option>
-                  {branches.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Semester ID (e.g. s_1)</label>
-                <input 
-                  type="text" required
-                  placeholder="e.g. s_1, s_2"
-                  value={subjectForm.semester} onChange={e => setSubjectForm({...subjectForm, semester: e.target.value})}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject Code (e.g. CS101)</label>
-                <input 
-                  type="text" required
-                  value={subjectForm.code} onChange={e => setSubjectForm({...subjectForm, code: e.target.value})}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Subject Name</label>
-                <input 
-                  type="text" required
-                  value={subjectForm.name} onChange={e => setSubjectForm({...subjectForm, name: e.target.value})}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                />
-              </div>
-              <div className="flex space-x-3 pt-4">
-                <button type="button" onClick={() => setShowSubjectModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 bg-[#FF6B00] text-white rounded-lg text-sm font-medium hover:bg-[#e66000] disabled:opacity-50 flex justify-center items-center transition-colors">
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Create Subject'}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
+              <h3 className="text-lg font-semibold">{formState.id ? 'Edit' : 'Add'} {activeEntityConfig.label}</h3>
+              <button onClick={() => setShowModal(false)} className="text-gray-400 hover:text-gray-600">
+                <XCircle className="w-5 h-5" />
+              </button>
+            </div>
+            
+            <form onSubmit={handleSubmit} className="p-6 space-y-4">
+              {activeEntityConfig.fields.filter(f => f !== 'status').map(field => {
+                if (field.endsWith('_id')) {
+                  let relationKey = field.replace('_id', 's'); // hacky pluralization
+                  if (relationKey === 'branchs') relationKey = 'branches';
+                  const options = relatedData[relationKey] || [];
+                  return (
+                    <div key={field}>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{field.replace('_id', '')}</label>
+                      <select
+                        required
+                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+                        value={formState[field] || ''}
+                        onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
+                      >
+                        <option value="">Select...</option>
+                        {options.map(opt => (
+                          <option key={opt.id} value={opt.id}>{opt.name || opt.label || opt.code}</option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                }
+                
+                return (
+                  <div key={field}>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 capitalize">{field}</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-[#FF6B00] focus:border-[#FF6B00]"
+                      value={formState[field] || ''}
+                      onChange={(e) => setFormState({ ...formState, [field]: e.target.value })}
+                    />
+                  </div>
+                );
+              })}
+              
+              <div className="flex justify-end gap-3 pt-4">
+                <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-gray-600 hover:text-gray-900">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-[#FF6B00] text-white rounded-lg hover:bg-[#e66000] disabled:opacity-50">
+                  {isSubmitting ? 'Saving...' : 'Save'}
                 </button>
               </div>
             </form>

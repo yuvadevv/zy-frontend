@@ -29,8 +29,8 @@ export const orderHistoryApi = {
         documentNames: ['Order Document'],
       }));
 
-      // Combine with mock orders as a fallback to preserve prototype visuals
-      let results = [...mappedOrders, ...MOCK_HISTORY_ORDERS];
+      // Remove mock orders to ensure strict data isolation
+      let results = [...mappedOrders];
 
       // Apply Search
       if (search?.query) {
@@ -114,10 +114,7 @@ export const orderHistoryApi = {
         documentNames: items.map((i: any) => i.manual_title || i.document_filename || 'Unknown Document')
       };
     } catch (e) {
-      // Fallback to mock
-      const order = MOCK_HISTORY_ORDERS.find(o => o.id === id);
-      if (!order) throw new Error('Order not found');
-      return order;
+      throw new Error('Order not found');
     }
   }
 };

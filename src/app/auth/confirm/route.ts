@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { cookies } from 'next/headers'
-import { getSupabaseConfig } from '@/lib/utils/envValidator';
+import { getSupabaseConfig } from '@/lib/utils/envValidator'
 
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url)
@@ -12,12 +12,12 @@ export async function GET(request: Request) {
   
   const allowedNextPaths = [
     '/login', '/admin/login', '/admin', '/vendor/login', '/vendor', '/app/home', '/app/onboarding'
-  ];
-  const safeNext = nextParam && allowedNextPaths.includes(nextParam) ? nextParam : null;
+  ]
+  const safeNext = nextParam && allowedNextPaths.includes(nextParam) ? nextParam : null
   
-  let errorRedirect = `${origin}/login?error=Authentication%20failed`;
-  if (safeNext?.startsWith('/admin')) errorRedirect = `${origin}/admin/login?error=Authentication%20failed`;
-  if (safeNext?.startsWith('/vendor')) errorRedirect = `${origin}/vendor/login?error=Authentication%20failed`;
+  let errorRedirect = `${origin}/login?error=Authentication%20failed`
+  if (safeNext?.startsWith('/admin')) errorRedirect = `${origin}/admin/login?error=Authentication%20failed`
+  if (safeNext?.startsWith('/vendor')) errorRedirect = `${origin}/vendor/login?error=Authentication%20failed`
   
   if (code) {
     // Clear the portal_next cookie once consumed
@@ -62,6 +62,16 @@ export async function GET(request: Request) {
       } else {
         return NextResponse.redirect(`${origin}/app/onboarding`)
       }
+    } else {
+      let errMessage = 'Verification%20failed'
+      if (error?.message) {
+         if (error.message.includes('expired')) {
+             errMessage = 'Verification%20link%20has%20expired'
+         } else if (error.message.includes('invalid')) {
+             errMessage = 'Verification%20link%20is%20invalid%20or%20already%20used'
+         }
+      }
+      return NextResponse.redirect(`${origin}/login?error=${errMessage}`)
     }
   }
 

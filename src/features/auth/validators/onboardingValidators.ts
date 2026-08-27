@@ -2,19 +2,19 @@ import { z } from 'zod';
 
 export const onboardingStep1Schema = z.object({
   fullName: z.string().min(2, 'Name must be at least 2 characters'),
-  phoneNumber: z.string().regex(/^[0-9+() -]{10,20}$/, 'Invalid phone number format'),
+  phoneNumber: z.string().regex(/^\d{10}$/, 'Mobile number must be 10 digits.'),
   avatarPath: z.string().optional(),
 });
 
 export const onboardingStep2Schema = z.object({
-  collegeId: z.string().uuid('Please select a college'),
-  departmentId: z.string().uuid('Please select a department').optional(),
-  branchId: z.string().uuid('Please select a branch'),
-  academicYearId: z.string().uuid('Please select your academic year'),
-  sectionId: z.string().uuid('Please select your section'),
-  block: z.string().min(1, 'Block is required'),
-  classroomNumber: z.string().min(1, 'Classroom is required'),
-  rollNumber: z.string().min(3, 'Roll number is required'),
+  collegeId: z.string().min(1, 'Please select a college'),
+  departmentId: z.string().min(1, 'Please select a department').optional(),
+  branchId: z.string().min(1, 'Please select a branch'),
+  academicYearId: z.string().min(1, 'Please select your academic year'),
+  sectionId: z.string().min(1, 'Please select your section'),
+  blockId: z.string().min(1, 'Please select a block'),
+  classroomId: z.string().min(1, 'Please select a classroom'),
+  rollNumber: z.string().regex(/^[a-zA-Z0-9]{10}$/, 'Roll number must be exactly 10 characters.'),
 });
 
 export type OnboardingStep1Data = z.infer<typeof onboardingStep1Schema>;

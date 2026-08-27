@@ -37,7 +37,8 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname === '/login' ||
     request.nextUrl.pathname === '/signup' ||
     request.nextUrl.pathname === '/forgot-password' ||
-    request.nextUrl.pathname.startsWith('/api/auth');
+    request.nextUrl.pathname.startsWith('/api/auth') ||
+    request.nextUrl.pathname.startsWith('/auth/confirm');
 
   if (isPublicRoute && user) {
     return NextResponse.redirect(new URL('/app/home', request.url))

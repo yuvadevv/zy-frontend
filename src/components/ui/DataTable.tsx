@@ -91,8 +91,8 @@ export default function DataTable<T>({
       {/* Mobile Card View */}
       {renderMobileCard && data.length > 0 && (
         <div className="md:hidden divide-y divide-gray-100">
-          {data.map((item) => (
-            <div key={keyExtractor(item)} className="p-4">
+          {data.map((item, index) => (
+            <div key={keyExtractor(item) || index} className="p-4">
               {renderMobileCard(item)}
             </div>
           ))}
@@ -137,8 +137,8 @@ export default function DataTable<T>({
                 </td>
               </tr>
             ) : (
-              data.map((item) => (
-                <tr key={keyExtractor(item)} className="hover:bg-gray-50 transition-colors">
+              data.map((item, index) => (
+                <tr key={keyExtractor(item) || index} className="hover:bg-gray-50 transition-colors">
                   {columns.map((col, colIndex) => (
                     <td key={colIndex} className={`px-6 py-4 whitespace-nowrap text-sm text-gray-900 ${col.className || ''}`}>
                       {col.cell 

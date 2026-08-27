@@ -241,7 +241,7 @@ export default function AdminDashboard() {
         <DataTable
           data={orders}
           columns={orderColumns}
-          keyExtractor={(order) => order.orderId}
+          keyExtractor={(order) => order.id || order.orderId}
           isLoading={loading}
           emptyMessage="No recent orders found."
           renderMobileCard={renderMobileOrderCard}

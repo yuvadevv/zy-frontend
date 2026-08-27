@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,12 +11,24 @@ import { authService } from '@/features/auth/services/authService';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
 import { TextInput } from '@/design-system/components/inputs/TextInput/TextInput';
 import { PasswordInput } from '@/design-system/components/inputs/PasswordInput/PasswordInput';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Mail } from 'lucide-react';
 
 export default function SignupPage() {
   const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  const [verificationEmail, setVerificationEmail] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
+  const [resendSuccess, setResendSuccess] = useState(false);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (resendCooldown > 0) {
+      timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [resendCooldown]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema)
@@ -27,10 +39,15 @@ export default function SignupPage() {
     setIsLoading(true);
     setError(null);
     try {
-      await authService.signUpWithEmail(data);
-      router.push('/app/onboarding');
+      const response = await authService.signUpWithEmail(data);
+      if (response?.user && !response?.session) {
+        setVerificationEmail(data.email);
+      } else {
+        router.push('/app/onboarding');
+      }
     } catch (err: any) {
       setError(err.message || 'Failed to sign up');
+    } finally {
       setIsLoading(false);
     }
   };
@@ -43,6 +60,84 @@ export default function SignupPage() {
       setError(err.message || 'Google signup failed');
     }
   };
+
+  const handleResend = async () => {
+    if (resendCooldown > 0 || !verificationEmail) return;
+    setIsLoading(true);
+    setError(null);
+    setResendSuccess(false);
+    try {
+      await authService.resendVerificationEmail(verificationEmail);
+      setResendSuccess(true);
+      setResendCooldown(60);
+    } catch (err: any) {
+      setError(err.message || 'Failed to resend verification email');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (verificationEmail) {
+    return (
+      <AuthLayout>
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="w-full bg-white p-8 rounded-3xl text-center"
+        >
+          <div className="w-16 h-16 bg-orange-100 text-orange-500 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Mail className="w-8 h-8" />
+          </div>
+          <h1 className="text-3xl font-black text-gray-900 mb-4">
+            Check your email
+          </h1>
+          <p className="text-gray-600 mb-6">
+            We've sent a verification link to:<br/>
+            <strong className="text-gray-900">{verificationEmail}</strong>
+          </p>
+          <p className="text-sm text-gray-500 mb-8">
+            Please verify your email address to activate your BLINTZY account.
+          </p>
+          
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 text-red-600 rounded-xl text-sm border border-red-100">
+              {error}
+            </div>
+          )}
+
+          {resendSuccess && (
+            <div className="mb-6 p-4 bg-green-50 text-green-700 rounded-xl text-sm border border-green-100">
+              Verification email resent successfully.
+            </div>
+          )}
+
+          <div className="space-y-4">
+            <button 
+              onClick={() => window.open('https://mail.google.com', '_blank')}
+              className="w-full h-12 bg-orange-500 text-white rounded-xl font-bold shadow-sm transition-all hover:bg-orange-600 active:scale-[0.98]"
+            >
+              Open Email
+            </button>
+            
+            <div className="pt-6 border-t border-gray-100">
+              <p className="text-sm text-gray-500 mb-3">
+                Didn't receive the email? Check your spam/junk folder.
+              </p>
+              <button 
+                onClick={handleResend}
+                disabled={isLoading || resendCooldown > 0}
+                className="w-full h-12 border border-gray-200 bg-white text-gray-700 rounded-xl font-bold transition-all hover:bg-gray-50 disabled:opacity-50 flex items-center justify-center"
+              >
+                {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : 
+                 resendCooldown > 0 ? `Resend Verification Email (${resendCooldown}s)` : 
+                 "Resend Verification Email"}
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </AuthLayout>
+    );
+  }
 
   return (
     <AuthLayout>

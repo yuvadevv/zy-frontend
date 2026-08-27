@@ -22,8 +22,8 @@ export interface StudentAcademicRecord {
   academic_year_id: string;
   semester_id: string;
   section_id: string;
-  block?: string;
-  classroom_number?: string;
+  block_id?: string;
+  classroom_id?: string;
   created_at?: string;
   updated_at?: string;
   

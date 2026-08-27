@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { orderHistoryService } from '../services/orderHistoryService';
 import { HistoryFilter, HistorySearch, HistorySortOption, OrderHistoryItem } from '../types';
 import { useHistoryAnalytics } from '../hooks/useHistoryAnalytics';
+import { useAuthSession } from '../../auth/hooks/useAuthSession';
 
 interface OrderHistoryContextState {
   orders: OrderHistoryItem[];
@@ -23,6 +24,7 @@ interface OrderHistoryContextState {
 const OrderHistoryContext = createContext<OrderHistoryContextState | undefined>(undefined);
 
 export const OrderHistoryProvider = ({ children }: { children: React.ReactNode }) => {
+  const { user } = useAuthSession();
   const [orders, setOrders] = useState<OrderHistoryItem[]>([]);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(true);
@@ -38,6 +40,14 @@ export const OrderHistoryProvider = ({ children }: { children: React.ReactNode }
   const { trackSearch, trackFilter, trackSort } = useHistoryAnalytics();
 
   const loadData = useCallback(async (isLoadMore = false) => {
+    if (!user) {
+      setOrders([]);
+      setHasMore(false);
+      setIsLoading(false);
+      setIsLoadingMore(false);
+      return;
+    }
+    
     try {
       if (isLoadMore) {
         setIsLoadingMore(true);
@@ -70,7 +80,7 @@ export const OrderHistoryProvider = ({ children }: { children: React.ReactNode }
       }, 0);
     }
     return () => { mounted = false; };
-  }, [search, filter, sort]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [search, filter, sort, user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Wrap setters to include analytics
   const handleSetSearch = (newSearch: HistorySearch | undefined) => {

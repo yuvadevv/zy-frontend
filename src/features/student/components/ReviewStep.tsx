@@ -85,7 +85,15 @@ export const ReviewStep = () => {
             </button>
           </div>
           <div className="p-4">
-            <CardRow label="Student Name" value={step1Data?.fullName} />
+            <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-0">
+              <span className="text-sm text-gray-500">Student Name</span>
+              <div className="flex flex-col items-end max-w-[60%]">
+                <span className="text-sm font-medium text-black text-right truncate w-full" title={step1Data?.fullName}>{step1Data?.fullName || '-'}</span>
+                {user?.app_metadata?.provider === 'google' && (
+                  <span className="text-[10px] text-gray-400 mt-0.5">Verified with Google</span>
+                )}
+              </div>
+            </div>
             <CardRow label="Mobile Number" value={step1Data?.phoneNumber} />
           </div>
         </div>
@@ -107,8 +115,8 @@ export const ReviewStep = () => {
             <CardRow label="Branch" value={step2ReadableData?.branchName} />
             <CardRow label="Academic Year" value={step2ReadableData?.academicYearName} />
             <CardRow label="Section" value={step2ReadableData?.sectionName} />
-            <CardRow label="Block" value={step2Data?.block} />
-            <CardRow label="Classroom" value={step2Data?.classroomNumber} />
+            <CardRow label="Block" value={step2ReadableData?.blockName} />
+            <CardRow label="Classroom" value={step2ReadableData?.classroomName} />
             <CardRow label="Roll Number" value={step2Data?.rollNumber} />
           </div>
         </div>

@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, ReactNode } from
 import { Order, TimelineEvent, TrackingStatus } from '../types';
 import { orderService } from '../services/orderService';
 import { trackingService } from '../services/trackingService';
+import { useAuthSession } from '../../auth/hooks/useAuthSession';
 
 interface OrderContextType {
   order: Order | null;
@@ -18,12 +19,21 @@ interface OrderContextType {
 const OrderContext = createContext<OrderContextType | undefined>(undefined);
 
 export const OrderProvider = ({ children }: { children: ReactNode }) => {
+  const { user } = useAuthSession();
   const [order, setOrder] = useState<Order | null>(null);
   const [timeline, setTimeline] = useState<TimelineEvent[] | null>(null);
   const [tracking, setTracking] = useState<TrackingStatus | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!user) {
+      setOrder(null);
+      setTimeline(null);
+      setTracking(null);
+    }
+  }, [user?.id]);
 
   const fetchOrder = async (id: string) => {
     setIsLoading(true);

@@ -8,6 +8,8 @@ export interface Step2ReadableData {
   branchName: string;
   academicYearName: string;
   sectionName: string;
+  blockName: string;
+  classroomName: string;
 }
 
 interface OnboardingContextType {
