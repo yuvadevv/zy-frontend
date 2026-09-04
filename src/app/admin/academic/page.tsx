@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
 import { Plus, AlertCircle, Edit2, CheckCircle, XCircle, Trash2 } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import DataTable, { Column } from '@/components/ui/DataTable';
 
 const ENTITIES = [
@@ -92,8 +93,9 @@ export default function AcademicManagementPage() {
       setShowModal(false);
       setFormState({});
       loadData();
+      toast.success(`${activeEntityConfig.label.slice(0, -1)} saved successfully`);
     } catch (err: any) {
-      alert(err.message || 'Failed to save');
+      toast.error(err.message || 'Failed to save');
     } finally {
       setIsSubmitting(false);
     }
@@ -105,9 +107,10 @@ export default function AcademicManagementPage() {
       if (activeTab !== 'subjects') {
         await adminClient.updateAcademicEntity(activeTab, item.id, { status: newStatus });
         loadData();
+        toast.success(`Status updated to ${newStatus}`);
       }
     } catch (err: any) {
-      alert('Failed to update status');
+      toast.error('Failed to update status');
     }
   };
 
@@ -115,14 +118,16 @@ export default function AcademicManagementPage() {
     if (!confirm(`Are you sure you want to delete this ${activeEntityConfig.label.slice(0, -1).toLowerCase()}?`)) return;
     try {
       if (activeTab === 'subjects') {
-        // Not implemented in generic backend yet, handled via separate route if needed
-        alert('Subject deletion not implemented yet');
+        await adminClient.deleteSubject(item.id);
+        loadData();
+        toast.success('Subject deleted successfully');
       } else {
         await adminClient.deleteAcademicEntity(activeTab, item.id);
         loadData();
+        toast.success('Deleted successfully');
       }
     } catch (err: any) {
-      alert(err.message || 'Failed to delete');
+      toast.error(err.message || 'Failed to delete');
     }
   };
 

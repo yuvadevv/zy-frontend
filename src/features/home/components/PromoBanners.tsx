@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Clock, Ticket, FileText, BookOpen, MapPin, Image as ImageIcon } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { useRouter } from 'next/navigation';
 import { workerClient } from '@/lib/api/workerClient';
 
 const getThemeClass = (theme: string) => {
@@ -17,7 +18,7 @@ const getThemeClass = (theme: string) => {
 };
 
 const getIcon = (iconName: string) => {
-  const props = { className: "w-24 h-24 text-white opacity-20 absolute right-4 -bottom-1 transform rotate-12", strokeWidth: 1 };
+  const props = { className: "w-48 h-48 text-white opacity-[0.15] absolute -right-6 -bottom-6 transform -rotate-12", strokeWidth: 1 };
   switch (iconName) {
     case 'clock': return <Clock {...props} />;
     case 'ticket': return <Ticket {...props} />;
@@ -27,7 +28,13 @@ const getIcon = (iconName: string) => {
   }
 };
 
+const swipeConfidenceThreshold = 10000;
+const swipePower = (offset: number, velocity: number) => {
+  return Math.abs(offset) * velocity;
+};
+
 export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: boolean }) => {
+  const router = useRouter();
   const [current, setCurrent] = useState(0);
   const [banners, setBanners] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -86,8 +93,8 @@ export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: bo
     // Default Fallback BLINTZY Hero for users with no active orders
     return (
       <div className="w-full">
-        <div className="relative overflow-hidden h-[160px] w-full rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-100 bg-gradient-to-br from-[#FF6B00] to-[#E66000] flex items-center px-6 cursor-pointer" onClick={() => window.location.href = '/app/services'}>
-          <ImageIcon className="w-24 h-24 text-white opacity-20 absolute right-4 -bottom-1 transform rotate-12" strokeWidth={1} />
+        <div className="relative overflow-hidden h-[160px] w-full rounded-[24px] shadow-[0_8px_30px_rgb(0,0,0,0.06)] border border-gray-100 bg-gradient-to-br from-[#FF6B00] to-[#E66000] flex items-center px-6 cursor-pointer" onClick={() => router.push('/app/services')}>
+          <ImageIcon className="w-48 h-48 text-white opacity-[0.15] absolute -right-6 -bottom-6 transform -rotate-12" strokeWidth={1} />
 
           <div className="relative z-10 max-w-[75%] flex flex-col items-start gap-1">
             <h3 className="text-[22px] font-black leading-tight text-white mb-0.5">
@@ -101,7 +108,7 @@ export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: bo
               whileTap={{ scale: 0.97 }}
               onClick={(e) => {
                 e.stopPropagation();
-                window.location.href = '/app/services';
+                router.push('/app/services');
               }}
               className="mt-1 px-5 h-[36px] bg-white text-[#FF6B00] font-bold rounded-[12px] text-[13px] shadow-sm hover:scale-105 transition-transform"
             >
@@ -123,21 +130,32 @@ export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: bo
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
             transition={{ duration: 0.4 }}
-            className={`absolute inset-0 flex flex-col justify-center ${banners[current].isImage ? '' : 'px-6'} ${banners[current].bg || 'bg-transparent'}`}
+            className={`absolute inset-0 flex flex-col justify-center ${banners[current].isImage ? '' : 'px-6'} ${banners[current].bg || 'bg-transparent'} cursor-pointer`}
+            onClick={() => {
+              if (banners[current].route) {
+                router.push(banners[current].route);
+              }
+            }}
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.2}
+            onDragEnd={(e, { offset, velocity }) => {
+              const swipe = swipePower(offset.x, velocity.x);
+              if (swipe < -swipeConfidenceThreshold) {
+                setCurrent((prev) => (prev + 1) % banners.length);
+              } else if (swipe > swipeConfidenceThreshold) {
+                setCurrent((prev) => (prev - 1 + banners.length) % banners.length);
+              }
+            }}
           >
             {banners[current].isImage ? (
               <div
-                className="relative w-full h-full cursor-pointer"
-                onClick={() => {
-                  if (banners[current].route) {
-                    window.location.href = banners[current].route;
-                  }
-                }}
+                className="relative w-full h-full"
               >
                 <img
                   src={banners[current].imageUrl}
                   alt={banners[current].title || 'Banner'}
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover pointer-events-none"
                 />
               </div>
             ) : (
@@ -158,7 +176,7 @@ export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: bo
                       onClick={(e) => {
                         e.stopPropagation();
                         if (banners[current].route) {
-                          window.location.href = banners[current].route;
+                          router.push(banners[current].route);
                         }
                       }}
                       className="mt-1 -translate-y-1 px-5 h-[36px] bg-white text-gray-900 font-bold rounded-[12px] text-xs shadow-sm hover:scale-105 transition-transform"

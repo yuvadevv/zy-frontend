@@ -1,9 +1,10 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { AnimatePresence } from 'framer-motion';
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession';
 import { useOnboarding } from '@/features/student/providers/OnboardingProvider';
+import { useStudent } from '@/features/student/providers/StudentProvider';
 import { ProgressStepper } from '@/features/student/components/ProgressStepper';
 import { WelcomeCard } from '@/features/student/components/WelcomeCard';
 import { PersonalDetailsStep } from '@/features/student/components/PersonalDetailsStep';
@@ -14,6 +15,16 @@ import { SuccessStep } from '@/features/student/components/SuccessStep';
 export default function OnboardingWizard() {
   const { user } = useAuthSession();
   const { step, setStep } = useOnboarding();
+  const { profile, isLoading: isStudentLoading } = useStudent();
+
+  useEffect(() => {
+    if (!isStudentLoading && profile && profile.full_name) {
+      if (typeof document !== 'undefined') {
+        document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
+      }
+      window.location.href = '/app/home';
+    }
+  }, [profile, isStudentLoading]);
 
   const STEPS = ['Personal', 'Academic', 'Review'];
 

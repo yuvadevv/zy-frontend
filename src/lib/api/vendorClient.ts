@@ -1,6 +1,6 @@
-import { createClient } from '../supabase/client';
+import { SessionManager } from '@/utils/SessionManager';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500';
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
 
 export const vendorClient = {
   async fetch(endpoint: string, options: RequestInit = {}) {
@@ -10,11 +10,9 @@ export const vendorClient = {
       headers.set('Content-Type', 'application/json');
     }
 
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session?.access_token) {
-      headers.set('Authorization', `Bearer ${session.access_token}`);
+    const token = SessionManager.getToken();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
     }
 
     const response = await fetch(`${WORKER_URL}${endpoint}`, {

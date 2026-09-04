@@ -26,7 +26,10 @@ export const ManualCard = ({ manual, onClick }: ManualCardProps) => {
           {manual.name}
         </h3>
         {manual.availability === 'out_of_stock' && (
-          <Badge>Out of Stock</Badge>
+          <Badge className="text-red-600 bg-red-50 px-2 min-h-6 text-xs font-medium">Out of Stock</Badge>
+        )}
+        {manual.availability === 'in_stock' && manual.stock > 0 && (
+          <Badge className="text-green-700 bg-green-50 px-2 min-h-6 text-xs font-medium">{manual.stock} Available</Badge>
         )}
         {manual.availability === 'pre_order' && (
           <Badge>Pre-Order</Badge>

@@ -5,11 +5,11 @@ import { UploadCloud, FileText } from 'lucide-react';
 import { PdfScanner } from './PdfScanner';
 import { PrintConfig } from '@/features/manuals/types';
 import { PrintOptions } from '@/features/manuals/components/PrintOptions';
-import { calculateManualPrice, getEstimatedDelivery } from '@/features/manuals/utils/priceEngine';
 import { useCart } from '@/features/cart/providers/CartProvider';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/constants/routes';
 import { workerClient } from '@/lib/api/workerClient';
+import { useQuery } from '@tanstack/react-query';
 
 interface DocumentUploadFlowProps {
   title: string;
@@ -60,12 +60,34 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
     setDocumentId(null);
   };
   
+  const { data: pricingResponse } = useQuery({
+    queryKey: ['pricing', documentId, pageCount, config],
+    queryFn: () => workerClient.calculatePricing({
+      items: [{
+        id: 'preview',
+        serviceType: serviceType,
+        documentId: documentId,
+        pages: pageCount,
+        printOptions: config
+      }],
+      deliveryMethod: 'delivery'
+    }),
+    enabled: !!documentId && !!pageCount,
+    staleTime: 1000 * 60, // 1 minute
+  });
+
+  const breakdown = pricingResponse?.items?.[0] || {
+    subtotal: 0,
+    printingCost: 0,
+    bindingCost: 0,
+    colorCost: 0,
+    total: 0
+  };
+  
   const handleAddToCart = () => {
     if (!file || !pageCount || !documentId) return;
     
     setIsAdding(true);
-    
-    const breakdown = calculateManualPrice(basePrice, pageCount, config);
     
     addItem({
       id: `ci_${Date.now()}`,
@@ -76,10 +98,10 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
       quantity: 1,
       printOptions: config as any,
       priceBreakdown: {
-        base: breakdown.basePrice,
+        base: breakdown.subtotal,
         printing: breakdown.printingCost,
         binding: breakdown.bindingCost,
-        color: config.color ? 4 * config.copies : 0,
+        color: breakdown.colorCost,
         total: breakdown.total
       },
       status: 'in_cart',
@@ -203,12 +225,12 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
           <div className="max-w-4xl mx-auto">
             <div className="flex justify-between items-center mb-3">
               <span className="text-sm text-muted-foreground font-medium">Delivery: <span className="text-green-600 font-bold">FREE</span></span>
-              <span className="text-sm font-bold text-foreground">{getEstimatedDelivery()}</span>
+              <span className="text-sm font-bold text-foreground">{pricingResponse?.estimatedDelivery || 'Tomorrow, 9:15 AM'}</span>
             </div>
             <div className="flex gap-4">
               <div className="flex flex-col justify-center">
                 <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground leading-none">Total</span>
-                <span className="text-xl font-black text-foreground">₹{calculateManualPrice(basePrice, pageCount, config).total}</span>
+                <span className="text-xl font-black text-foreground">₹{breakdown.total || '...'}</span>
               </div>
               <button 
                 onClick={handleAddToCart}

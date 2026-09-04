@@ -17,6 +17,8 @@ import { StickyCheckoutBar } from '@/features/checkout/components/StickyCheckout
 import { SuccessAnimation } from '@/features/checkout/components/SuccessAnimation';
 import { OrderPolicyCard } from '@/features/checkout/components/OrderPolicyCard';
 import { BottomSheet } from '@/design-system/components/feedback/BottomSheet/BottomSheet';
+import { useQuery } from '@tanstack/react-query';
+import { workerClient } from '@/lib/api/workerClient';
 
 const CheckoutPageContent = () => {
   const router = useRouter();
@@ -36,6 +38,25 @@ const CheckoutPageContent = () => {
     }
   }, [cart, router, successOrderId]);
 
+  const { data: pricingResponse } = useQuery({
+    queryKey: ['checkout_pricing', cart?.items, state.deliveryDetails?.mode],
+    queryFn: () => workerClient.calculatePricing({
+      items: cart?.items.map(i => ({
+        id: i.id,
+        serviceType: i.serviceType,
+        manualId: i.referenceId,
+        documentId: i.referenceId, // Will use referenceId for custom uploads as well
+        printOptions: i.printOptions
+      })) || [],
+      deliveryMethod: state.deliveryDetails?.mode || 'delivery'
+    }),
+    enabled: !!cart && cart.items.length > 0
+  });
+
+  const displayCart = cart || confirmedCart;
+  const backendSummary = pricingResponse?.summary;
+  const finalTotal = backendSummary ? backendSummary.grandTotal : (displayCart?.summary.total || 0);
+
   const handlePlaceOrder = async () => {
     if (!cart) return;
     
@@ -44,7 +65,7 @@ const CheckoutPageContent = () => {
       cartItems: cart.items,
       checkoutState: state,
       idempotencyKey: Math.random().toString(36).substring(7)
-    }, cart.summary.total);
+    }, finalTotal);
 
     if (response.success && response.orderId) {
       setConfirmedCart(cart);
@@ -53,11 +74,21 @@ const CheckoutPageContent = () => {
     }
   };
 
-  const displayCart = cart || confirmedCart;
-
   if (!displayCart || displayCart.items.length === 0) {
     return <div className="p-8 text-center text-muted-foreground">Cart is empty...</div>;
   }
+
+  // Override summary with backend values if available
+  const cartWithBackendPricing = {
+    ...displayCart,
+    summary: backendSummary ? {
+      subtotal: backendSummary.subtotal,
+      discount: backendSummary.discount,
+      tax: backendSummary.platformFee,
+      deliveryFee: backendSummary.deliveryFee,
+      total: backendSummary.grandTotal
+    } : displayCart.summary
+  };
 
   return (
     <div className="flex flex-col w-full h-full relative">
@@ -92,7 +123,7 @@ const CheckoutPageContent = () => {
               onRemove={() => setCouponCode(null)}
             />
             
-            <OrderSummaryCard cart={displayCart} />
+            <OrderSummaryCard cart={cartWithBackendPricing} />
             
             <OrderPolicyCard />
 
@@ -103,7 +134,7 @@ const CheckoutPageContent = () => {
           </main>
 
           <StickyCheckoutBar 
-            total={displayCart.summary.total}
+            total={finalTotal}
             isValid={isValid}
             isPlacingOrder={isPlacingOrder}
             onPlaceOrder={handlePlaceOrder}

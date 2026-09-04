@@ -1,8 +1,6 @@
 "use client";
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { Cart, CartItem, CartStateStatus } from '../types';
-
-import { calculateManualPrice } from '@/features/manuals/utils/priceEngine';
 import { PrintConfig } from '@/features/manuals/types';
 import { TAX_RATE } from '../constants';
 
@@ -27,7 +25,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     setStatus('loading');
     setTimeout(() => {
       // Simulate API call or local storage load
-      const initialCart: Cart = { cartId: `cart_${Date.now()}`, items: [], summary: { subtotal: 0, discount: 0, tax: 0, total: 0 } };
+      const initialCart: Cart = { cartId: `cart_${Date.now()}`, items: [], summary: { subtotal: 0, discount: 0, tax: 0, deliveryFee: 0, total: 0 } };
       setCart(initialCart);
       setStatus('empty');
     }, 100);
@@ -54,7 +52,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     const grandTotal = discountedTotal + tax;
 
     setCart(prev => {
-      const newSummary = { subtotal, discount, tax, total: grandTotal };
+      const newSummary = { subtotal, discount, tax, deliveryFee: 0, total: grandTotal };
       return prev 
         ? { ...prev, items: updatedItems, summary: newSummary }
         : { cartId: `cart_${Date.now()}`, items: updatedItems, summary: newSummary };

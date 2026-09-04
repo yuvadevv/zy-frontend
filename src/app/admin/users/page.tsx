@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
 import { Loader2, ShieldBan, CheckCircle, Clock, AlertTriangle, UserCog } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import Link from 'next/link';
 import FilterBar, { FilterOption } from '@/components/ui/FilterBar';
 import DataTable, { Column } from '@/components/ui/DataTable';
@@ -72,8 +73,9 @@ export default function AdminUsersPage() {
       await adminClient.updateUserStatus(userId, newStatus);
       // Update local state
       setUsers(users.map(u => u.id === userId ? { ...u, account_status: newStatus } : u));
+      toast.success(`User status updated to ${newStatus}`);
     } catch (err: any) {
-      alert(err.message || 'Failed to update status');
+      toast.error(err.message || 'Failed to update status');
     } finally {
       setUpdating(null);
     }

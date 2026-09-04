@@ -7,9 +7,10 @@ interface PrintOptionsProps {
   config: PrintConfig;
   onChange: (config: PrintConfig) => void;
   allowedBindings?: PrintConfig['bindingType'][];
+  maxCopies?: number;
 }
 
-export const PrintOptions = ({ config, onChange, allowedBindings }: PrintOptionsProps) => {
+export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 100 }: PrintOptionsProps) => {
   const updateConfig = (updates: Partial<PrintConfig>) => {
     onChange({ ...config, ...updates });
   };
@@ -32,15 +33,17 @@ export const PrintOptions = ({ config, onChange, allowedBindings }: PrintOptions
             onChange={(e) => {
               const val = parseInt(e.target.value, 10);
               if (!isNaN(val) && val > 0) {
-                updateConfig({ copies: val });
+                updateConfig({ copies: Math.min(val, maxCopies) });
               }
             }}
             min="1"
+            max={maxCopies}
             className="text-2xl font-bold w-16 text-center bg-transparent border-none focus:outline-none focus:ring-0"
           />
           <button 
-            onClick={() => updateConfig({ copies: Math.min(100, config.copies + 1) })}
-            className="w-12 h-12 rounded-full border border-border bg-card flex items-center justify-center text-xl hover:bg-secondary/50 active:scale-95 transition-all"
+            onClick={() => updateConfig({ copies: Math.min(maxCopies, config.copies + 1) })}
+            disabled={config.copies >= maxCopies}
+            className={`w-12 h-12 rounded-full border border-border flex items-center justify-center text-xl transition-all ${config.copies >= maxCopies ? 'bg-secondary/30 text-muted-foreground opacity-50 cursor-not-allowed' : 'bg-card hover:bg-secondary/50 active:scale-95'}`}
           >
             +
           </button>

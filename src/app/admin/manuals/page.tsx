@@ -2,14 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
-import { Loader2, Plus, Upload, Trash2, Edit2, AlertCircle, FileText } from 'lucide-react';
+import { Loader2, Plus, Trash2, FileText, Edit2, AlertCircle } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import DataTable, { Column } from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
+import Link from 'next/link';
 
 export default function AdminManualsPage() {
   const [manuals, setManuals] = useState<any[]>([]);
-  const [subjects, setSubjects] = useState<any[]>([]);
-  
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,33 +17,13 @@ export default function AdminManualsPage() {
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
 
-  // Modals
-  const [showModal, setShowModal] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [editMode, setEditMode] = useState(false);
-
-  // Form State
-  const [formId, setFormId] = useState('');
-  const [title, setTitle] = useState('');
-  const [subjectId, setSubjectId] = useState('');
-  const [description, setDescription] = useState('');
-  const [pages, setPages] = useState<number>(0);
-  const [basePrice, setBasePrice] = useState<number>(0);
-  const [availability, setAvailability] = useState('available');
-  const [file, setFile] = useState<File | null>(null);
-  const [previewFile, setPreviewFile] = useState<File | null>(null);
-
   const loadData = async (currentPage = page) => {
     try {
       setLoading(true);
       setError(null);
-      const [manualsData, subjectsData] = await Promise.all([
-        adminClient.getManuals({ page: currentPage, limit: 25 }),
-        adminClient.getSubjects() // We need this for the dropdown
-      ]);
+      const manualsData = await adminClient.getManuals({ page: currentPage, limit: 25 });
       setManuals(manualsData.manuals);
       setTotalPages(manualsData.totalPages || 1);
-      setSubjects(subjectsData);
     } catch (err: any) {
       if (err.message?.includes('401') || err.message?.includes('403')) {
         setError("Access Denied. You need the 'manuals.manage' permission.");
@@ -59,84 +39,15 @@ export default function AdminManualsPage() {
     loadData();
   }, [page]);
 
-  const openAddModal = () => {
-    setEditMode(false);
-    setFormId('');
-    setTitle('');
-    setSubjectId('');
-    setDescription('');
-    setPages(0);
-    setBasePrice(0);
-    setAvailability('available');
-    setFile(null);
-    setPreviewFile(null);
-    setShowModal(true);
-  };
-
-  const openEditModal = (manual: any) => {
-    setEditMode(true);
-    setFormId(manual.id);
-    setTitle(manual.title);
-    setSubjectId(manual.subject_id);
-    setDescription(manual.description || '');
-    setPages(manual.pages);
-    setBasePrice(manual.base_price);
-    setAvailability(manual.availability_status);
-    setFile(null); // File update is not supported via simple PATCH in this phase
-    setPreviewFile(null);
-    setShowModal(true);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    try {
-      if (editMode) {
-        // Update existing manual (metadata only)
-        await adminClient.updateManual(formId, {
-          title, description, pages, base_price: basePrice, availability_status: availability
-        });
-      } else {
-        // Create new manual (with PDF file)
-        if (!file) throw new Error('PDF file is required');
-        
-        const formData = new FormData();
-        formData.append('title', title);
-        formData.append('subject_id', subjectId);
-        formData.append('description', description);
-        formData.append('pages', pages.toString());
-        formData.append('base_price', basePrice.toString());
-        formData.append('availability_status', availability);
-        formData.append('file', file);
-        if (previewFile) {
-          formData.append('previewFile', previewFile);
-        }
-        
-        await adminClient.createManual(formData);
-      }
-      
-      if (editMode && previewFile) {
-        // Handle uploading preview to an existing manual
-        await adminClient.uploadManualPreview(formId, previewFile);
-      }
-      
-      setShowModal(false);
-      loadData(page);
-    } catch (err: any) {
-      alert(err.message || 'Failed to save manual');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const handleDelete = async (id: string, manualTitle: string) => {
     if (!confirm(`Are you sure you want to delete "${manualTitle}"? This will also remove the PDF file from storage.`)) return;
     
     try {
       await adminClient.deleteManual(id);
       loadData(page);
+      toast.success('Manual deleted successfully');
     } catch (err: any) {
-      alert(err.message || 'Failed to delete manual');
+      toast.error(err.message || 'Failed to delete manual');
     }
   };
 
@@ -174,6 +85,14 @@ export default function AdminManualsPage() {
       cell: (m) => <span className="font-bold text-gray-900">₹{m.base_price.toFixed(2)}</span>
     },
     {
+      header: 'Stock',
+      cell: (m) => (
+        <span className={`font-semibold ${m.stock > 10 ? 'text-green-600' : m.stock > 0 ? 'text-orange-500' : 'text-red-500'}`}>
+          {m.stock}
+        </span>
+      )
+    },
+    {
       header: 'Status',
       cell: (m) => <StatusBadge status={m.availability_status} variant={m.availability_status === 'available' ? 'success' : 'neutral'} />
     },
@@ -181,12 +100,12 @@ export default function AdminManualsPage() {
       header: 'Actions',
       cell: (m) => (
         <div className="flex justify-end space-x-2">
-          <button
-            onClick={() => openEditModal(m)}
+          <Link
+            href={`/admin/manuals/${m.id}/edit`}
             className="p-1.5 text-gray-500 hover:text-black hover:bg-gray-100 rounded transition-colors"
           >
             <Edit2 className="w-4 h-4" />
-          </button>
+          </Link>
           <button
             onClick={() => handleDelete(m.id, m.title)}
             className="p-1.5 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
@@ -216,16 +135,21 @@ export default function AdminManualsPage() {
           <span className="font-bold text-gray-900">₹{m.base_price.toFixed(2)}</span>
           <span className="text-gray-500 text-xs ml-2">({m.pages} pages)</span>
         </div>
-        <StatusBadge status={m.availability_status} variant={m.availability_status === 'available' ? 'success' : 'neutral'} />
+        <div className="flex items-center gap-2">
+          <span className={`text-xs font-semibold ${m.stock > 10 ? 'text-green-600' : m.stock > 0 ? 'text-orange-500' : 'text-red-500'}`}>
+            Stock: {m.stock}
+          </span>
+          <StatusBadge status={m.availability_status} variant={m.availability_status === 'available' ? 'success' : 'neutral'} />
+        </div>
       </div>
       <div className="flex justify-end items-center mt-2 pt-2 border-t border-gray-100 gap-4">
-        <button
-          onClick={() => openEditModal(m)}
+        <Link
+          href={`/admin/manuals/${m.id}/edit`}
           className="text-gray-500 hover:text-black flex items-center gap-1 text-sm font-medium"
         >
           <Edit2 className="w-3 h-3" />
           Edit
-        </button>
+        </Link>
         <button
           onClick={() => handleDelete(m.id, m.title)}
           className="text-red-500 hover:text-red-700 flex items-center gap-1 text-sm font-medium"
@@ -244,13 +168,13 @@ export default function AdminManualsPage() {
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Manuals CMS</h1>
           <p className="text-sm text-gray-500 mt-1">Upload and manage academic lab manuals.</p>
         </div>
-        <button 
-          onClick={openAddModal}
+        <Link 
+          href="/admin/manuals/upload"
           className="flex items-center justify-center space-x-2 px-4 py-2 bg-[#FF6B00] text-white rounded-lg text-sm font-medium hover:bg-[#e66000] transition-colors"
         >
           <Plus className="w-4 h-4" />
           <span>Upload Manual</span>
-        </button>
+        </Link>
       </div>
 
       {error ? (
@@ -271,124 +195,6 @@ export default function AdminManualsPage() {
             renderMobileCard={renderMobileCard}
             emptyMessage="No manuals found. Upload a PDF manual to get started."
           />
-        </div>
-      )}
-
-      {/* Manual Form Modal */}
-      {showModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl my-8">
-            <h2 className="text-xl font-bold mb-4">{editMode ? 'Edit' : 'Upload'} Manual</h2>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              
-              {!editMode && (
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-6 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors">
-                  <Upload className="w-8 h-8 text-gray-400 mb-2" />
-                  <label className="text-sm font-medium text-[#FF6B00] hover:text-[#e66000] cursor-pointer">
-                    <span>Select a PDF file</span>
-                    <input 
-                      type="file" 
-                      accept=".pdf" 
-                      className="hidden" 
-                      required
-                      onChange={(e) => setFile(e.target.files?.[0] || null)}
-                    />
-                  </label>
-                  <p className="text-xs text-gray-500 mt-1">
-                    {file ? file.name : 'PDF up to 50MB'}
-                  </p>
-                </div>
-              )}
-
-              <div className="border-2 border-dashed border-gray-200 rounded-xl p-4 flex flex-col items-center justify-center text-center hover:bg-gray-50 transition-colors">
-                <Upload className="w-6 h-6 text-gray-400 mb-2" />
-                <label className="text-sm font-medium text-[#FF6B00] hover:text-[#e66000] cursor-pointer">
-                  <span>Upload Preview PDF (Optional)</span>
-                  <input 
-                    type="file" 
-                    accept=".pdf" 
-                    className="hidden" 
-                    onChange={(e) => setPreviewFile(e.target.files?.[0] || null)}
-                  />
-                </label>
-                <p className="text-xs text-gray-500 mt-1 max-w-xs">
-                  {previewFile ? previewFile.name : 'Upload a limited preview, preferably the first 2-3 pages. Shown to students before ordering.'}
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-                <input 
-                  type="text" required
-                  value={title} onChange={e => setTitle(e.target.value)}
-                  placeholder="e.g. Data Structures Lab Manual"
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                />
-              </div>
-
-              {!editMode && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Subject</label>
-                  <select 
-                    required 
-                    value={subjectId} onChange={e => setSubjectId(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                  >
-                    <option value="">Select Subject...</option>
-                    {subjects.map(s => (
-                      <option key={s.id} value={s.id}>[{s.code}] {s.name}</option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
-                <textarea 
-                  value={description} onChange={e => setDescription(e.target.value)}
-                  rows={3}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Pages Count</label>
-                  <input 
-                    type="number" required min="1"
-                    value={pages || ''} onChange={e => setPages(parseInt(e.target.value))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Base Price (₹)</label>
-                  <input 
-                    type="number" required min="0" step="0.5"
-                    value={basePrice || ''} onChange={e => setBasePrice(parseFloat(e.target.value))}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Availability</label>
-                <select 
-                  value={availability} onChange={e => setAvailability(e.target.value)}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
-                >
-                  <option value="available">Available for Students</option>
-                  <option value="hidden">Hidden</option>
-                </select>
-              </div>
-
-              <div className="flex space-x-3 pt-4">
-                <button type="button" onClick={() => setShowModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 bg-[#FF6B00] text-white rounded-lg text-sm font-medium hover:bg-[#e66000] disabled:opacity-50 flex justify-center items-center transition-colors">
-                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : (editMode ? 'Save Changes' : 'Upload Manual')}
-                </button>
-              </div>
-            </form>
-          </div>
         </div>
       )}
     </div>

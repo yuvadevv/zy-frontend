@@ -26,11 +26,11 @@ export const DeliveryPreferencesCard = () => {
         <MapPin className="w-5 h-5 text-primary shrink-0 mt-0.5" />
         <div className="flex flex-col gap-1">
           <span className="text-sm font-bold text-foreground flex items-center gap-2">
-            {academicRecord.classroom_number || 'Room not set'}
+            {academicRecord.classroom_id || 'Room not set'}
             <span className="text-[10px] uppercase bg-primary text-primary-foreground px-1.5 py-0.5 rounded-sm">Default</span>
           </span>
           <span className="text-xs text-muted-foreground">
-            {academicRecord.colleges?.name || 'College'}, {academicRecord.branches?.name || 'Branch'}, {academicRecord.block || 'Block'}, Section {academicRecord.sections?.name || 'N/A'}
+            {academicRecord.colleges?.name || 'College'}, {academicRecord.branches?.name || 'Branch'}, {academicRecord.block_id || 'Block'}, Section {academicRecord.sections?.name || 'N/A'}
           </span>
           {profile.delivery_notes && (
             <p className="text-xs text-muted-foreground mt-1 bg-background p-2 rounded-md border border-border/50">

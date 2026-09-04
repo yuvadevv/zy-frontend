@@ -47,7 +47,7 @@ export function SearchableDropdown({
   }, []);
 
   const filteredOptions = options.filter(opt => 
-    opt.label.toLowerCase().includes(searchQuery.toLowerCase())
+    (opt.label || '').toLowerCase().includes((searchQuery || '').toLowerCase())
   );
 
   return (

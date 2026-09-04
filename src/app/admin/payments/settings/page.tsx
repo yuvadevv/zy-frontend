@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
 import { Settings, Shield, AlertTriangle, CheckCircle, Wifi, Play, Lock } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function PaymentSettingsPage() {
   const [status, setStatus] = useState<any>(null);
@@ -39,9 +40,10 @@ export default function PaymentSettingsPage() {
     try {
       await adminClient.updatePaymentGateway({ provider, environment, enabled });
       await loadStatus();
+      toast.success('Settings saved successfully');
     } catch (err) {
       console.error(err);
-      alert('Failed to save settings');
+      toast.error('Failed to save settings');
     } finally {
       setSaving(false);
     }

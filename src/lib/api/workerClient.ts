@@ -1,6 +1,6 @@
-import { createClient } from '../supabase/client';
+import { SessionManager } from '@/utils/SessionManager';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500';
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
 
 export const workerClient = {
   async fetch(endpoint: string, options: RequestInit = {}, requireAuth = true) {
@@ -13,11 +13,9 @@ export const workerClient = {
     }
 
     if (requireAuth) {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.access_token) {
-        headers.set('Authorization', `Bearer ${session.access_token}`);
+      const token = SessionManager.getToken();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
       }
     }
 
@@ -40,11 +38,9 @@ export const workerClient = {
     const headers = new Headers(options.headers || {});
 
     if (requireAuth) {
-      const supabase = createClient();
-      const { data: { session } } = await supabase.auth.getSession();
-
-      if (session?.access_token) {
-        headers.set('Authorization', `Bearer ${session.access_token}`);
+      const token = SessionManager.getToken();
+      if (token) {
+        headers.set('Authorization', `Bearer ${token}`);
       }
     }
 
@@ -69,9 +65,12 @@ export const workerClient = {
     return await response.blob();
   },
 
-  // Catalog Endpoints (Public)
   async getPlatformStatus() {
     return this.fetch('/api/platform/status', {}, false);
+  },
+
+  async getPublicPricingSettings() {
+    return this.fetch('/api/public/settings/pricing', {}, false);
   },
 
   async getContent(type?: string) {
@@ -93,8 +92,8 @@ export const workerClient = {
     return this.fetch(`/api/manuals/${id}`, {}, false);
   },
 
-  async getManualPreviewBlob(id: string) {
-    return this.fetchBlob(`/api/manuals/${id}/preview`, {}, true);
+  async getManualFileBlob(id: string) {
+    return this.fetchBlob(`/api/manuals/${id}/file`, {}, true);
   },
 
   // Document Endpoints (Auth Required)
@@ -130,6 +129,13 @@ export const workerClient = {
 
   async getOrders() {
     return this.fetch('/api/orders');
+  },
+
+  async calculatePricing(payload: any) {
+    return this.fetch('/api/pricing/calculate', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
   },
 
   async getOrder(id: string) {

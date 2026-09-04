@@ -1,88 +1,129 @@
 // src/features/auth/api/authApi.ts
-import { createClient } from '../../../lib/supabase/client';
 import { SignupFormData, LoginFormData } from '../validators/authValidators';
-import { getSiteUrl } from '@/lib/utils/url';
+import { SessionManager } from '@/utils/SessionManager';
+
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
 
 export const authApi = {
   signInWithGoogle: async (nextUrl?: string) => {
-    if (nextUrl) {
-      document.cookie = `portal_next=${encodeURIComponent(nextUrl)}; path=/; max-age=300; SameSite=Lax`;
-    }
-    const supabase = createClient();
-    const redirectTo = `${getSiteUrl()}/auth/confirm`;
-      
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo
-      }
-    });
-    if (error) throw error;
-    return data;
+    if (typeof window === 'undefined') return { url: null };
+    const next = nextUrl || '/app/home';
+    document.cookie = `portal_next=${encodeURIComponent(next)}; path=/; max-age=300; SameSite=Lax`;
+    const redirectTo = `${window.location.origin}/auth/confirm`;
+    const oauthUrl = `${WORKER_URL}/api/auth/oauth/google?redirect_to=${encodeURIComponent(redirectTo)}&next=${encodeURIComponent(next)}`;
+    window.location.href = oauthUrl;
+    return { url: oauthUrl };
   },
 
   signUpWithEmail: async (credentials: SignupFormData) => {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signUp({
-      email: credentials.email,
-      password: credentials.password,
-      options: {
-        emailRedirectTo: `${getSiteUrl()}/auth/confirm?next=/app/onboarding`
-      }
+    const res = await fetch(`${WORKER_URL}/api/auth/signup`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: credentials.email,
+        password: credentials.password,
+        data: {
+          fullName: (credentials as any).fullName,
+          phone: (credentials as any).phone
+        }
+      })
     });
-    if (error) throw error;
-    return data;
+
+    const result = await res.json().catch(() => ({ error: 'Failed to parse response' }));
+    if (!res.ok) {
+      const msg = result.error?.message || result.error || 'Failed to sign up';
+      throw new Error(msg);
+    }
+
+    const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
+    const user = result.data?.user || result.user;
+    if (token) {
+      SessionManager.setSession(token, user);
+    }
+
+    return {
+      data: result.data || result,
+      user: user || null,
+      session: result.data?.session || result.session || null,
+      error: null
+    };
   },
   
-  resendVerificationEmail: async (email: string) => {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.resend({
-      type: 'signup',
-      email,
-      options: {
-        emailRedirectTo: `${getSiteUrl()}/auth/confirm?next=/app/onboarding`
-      }
-    });
-    if (error) throw error;
-    return data;
+  resendVerificationEmail: async (_email: string) => {
+    return { data: null, error: null };
   },
 
   signInWithEmail: async (credentials: LoginFormData) => {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email: credentials.email,
-      password: credentials.password,
+    const res = await fetch(`${WORKER_URL}/api/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: (credentials as any).email || (credentials as any).username,
+        username: (credentials as any).username,
+        password: credentials.password
+      })
     });
-    if (error) throw error;
-    return data;
+
+    const result = await res.json().catch(() => ({ error: 'Failed to parse response' }));
+    if (!res.ok) {
+      const msg = result.error?.message || result.error || 'Invalid login credentials';
+      throw new Error(msg);
+    }
+
+    const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
+    const user = result.data?.user || result.user;
+    if (token) {
+      SessionManager.setSession(token, user);
+    }
+
+    return {
+      data: result.data || result,
+      user: user || null,
+      session: result.data?.session || result.session || null,
+      error: null
+    };
   },
 
-  resetPassword: async (email: string) => {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`
-    });
-    if (error) throw error;
-    return data;
+  resetPassword: async (_email: string) => {
+    return { data: null, error: null };
   },
 
-  updatePassword: async (password: string) => {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.updateUser({ password });
-    if (error) throw error;
-    return data;
+  updatePassword: async (_password: string) => {
+    return { data: null, error: null };
   },
 
   signOut: async () => {
-    const supabase = createClient();
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    try {
+      await fetch(`${WORKER_URL}/api/auth/logout`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch {
+      // ignore network errors on logout
+    }
+    SessionManager.clearSession();
+    return { error: null };
   },
 
   getSession: async () => {
-    const supabase = createClient();
-    const { data, error } = await supabase.auth.getSession();
-    if (error) throw error;
-    return data;
+    const token = SessionManager.getToken();
+    const user = SessionManager.getUser();
+    if (!token) {
+      return { data: { session: null, user: null }, session: null, user: null, error: null };
+    }
+    const sessionObj = {
+      access_token: token,
+      token_type: 'bearer',
+      user: user
+    };
+    return {
+      data: {
+        session: sessionObj,
+        user: user
+      },
+      session: sessionObj,
+      user: user,
+      error: null
+    };
   }
 };

@@ -29,6 +29,7 @@ export default function AdminOrdersPage() {
   const [year, setYear] = useState('all');
   const [semester, setSemester] = useState('all');
   const [manual, setManual] = useState('all');
+  const [orderType, setOrderType] = useState('all');
   const [sort, setSort] = useState('newest');
   
   const [page, setPage] = useState(1);
@@ -52,7 +53,7 @@ export default function AdminOrdersPage() {
       
       const [data, dashboard] = await Promise.all([
         adminClient.getOrders({
-          page, limit: 25, search, status, branch, year, semester, manual_id: manual, sort
+          page, limit: 25, search, status, branch, year, semester, manual_id: manual, sort, order_type: orderType
         }),
         adminClient.getDashboard()
       ]);
@@ -66,7 +67,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, status, branch, year, semester, manual, sort]);
+  }, [page, search, status, branch, year, semester, manual, sort, orderType]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -87,7 +88,7 @@ export default function AdminOrdersPage() {
     try {
       // Need to fetch ALL matching to get IDs
       toast.loading("Selecting all matching...", { id: 'sel' });
-      const data = await adminClient.getOrders({ limit: 'all', search, status, branch, year, semester, manual_id: manual, sort });
+      const data = await adminClient.getOrders({ limit: 'all', search, status, branch, year, semester, manual_id: manual, sort, order_type: orderType });
       setSelectedOrders(new Set(data.orders.map((o: any) => o.publicId)));
       toast.success(`Selected ${data.orders.length} orders`, { id: 'sel' });
     } catch(err) {
@@ -151,7 +152,7 @@ export default function AdminOrdersPage() {
       toast.loading("Generating Excel...", { id: 'export' });
       let dataToExport = orders;
       if (exportType === 'all') {
-         const res = await adminClient.exportOrders({ search, status, branch, year, semester, manual_id: manual });
+         const res = await adminClient.exportOrders({ search, status, branch, year, semester, manual_id: manual, order_type: orderType });
          dataToExport = res.orders;
       } else {
          if (selectedOrders.size > 0) {
@@ -221,6 +222,12 @@ export default function AdminOrdersPage() {
             <option value="ready_for_pickup">Ready</option>
             <option value="delivered">Delivered</option>
             <option value="cancelled">Cancelled</option>
+          </select>
+          <select value={orderType} onChange={e => setOrderType(e.target.value)} className="border-gray-200 rounded-lg text-xs md:text-sm py-2 px-3 bg-gray-50">
+            <option value="all">All Order Types</option>
+            <option value="manual">Manuals</option>
+            <option value="custom_upload">Custom Uploads</option>
+            <option value="hall_ticket">Hall Tickets</option>
           </select>
           <select value={branch} onChange={e => setBranch(e.target.value)} className="border-gray-200 rounded-lg text-xs md:text-sm py-2 px-3 bg-gray-50">
             <option value="all">All Branches</option>

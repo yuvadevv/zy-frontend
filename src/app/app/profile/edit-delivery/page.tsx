@@ -38,8 +38,8 @@ export default function EditDeliveryPage() {
   useEffect(() => {
     if (profile && academicRecord) {
       reset({
-        block: academicRecord.block || '',
-        classroomNumber: academicRecord.classroom_number || '',
+        block: academicRecord.block_id || '',
+        classroomNumber: academicRecord.classroom_id || '',
         deliveryNotes: profile.delivery_notes || '',
       });
     }
@@ -56,8 +56,8 @@ export default function EditDeliveryPage() {
       });
 
       await studentService.updateAcademicRecord(profile.user_id, {
-        block: data.block,
-        classroom_number: data.classroomNumber,
+        block_id: data.block,
+        classroom_id: data.classroomNumber,
       });
 
       await refreshProfile();

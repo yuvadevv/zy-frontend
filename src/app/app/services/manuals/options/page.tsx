@@ -9,7 +9,6 @@ import { APP_ROUTES } from '@/constants/routes';
 import { useQuery } from '@tanstack/react-query';
 import { workerClient } from '@/lib/api/workerClient';
 import { mapManual } from '@/features/manuals/mappers';
-import { calculateManualPrice, getEstimatedDelivery } from '@/features/manuals/utils/priceEngine';
 
 function OptionsSelectionContent() {
   const router = useRouter();
@@ -50,12 +49,32 @@ function OptionsSelectionContent() {
   const manualDTO = manualResponse?.manual;
   const manual = manualDTO ? mapManual({
     ...manualDTO,
+    name: manualDTO.title,
     updated_at: new Date().toISOString(), // Fallback if missing
     language: 'English',
     uploaded_by: 'Admin'
   }) : null;
-  const priceBreakdown = manual ? calculateManualPrice(manual.basePrice, manual.pages, config) : null;
-  const estimatedDelivery = getEstimatedDelivery();
+  
+  const { data: pricingResponse, isLoading: pricingLoading } = useQuery({
+    queryKey: ['pricing', manualId, config],
+    queryFn: () => workerClient.calculatePricing({
+      items: [{
+        serviceType: 'manual',
+        manualId,
+        printOptions: {
+          color: config.color,
+          singleSided: config.singleSided,
+          bindingType: config.bindingType,
+          copies: config.copies
+        }
+      }],
+      deliveryMethod: 'delivery'
+    }),
+    enabled: !!manualId
+  });
+
+  const priceBreakdown = pricingResponse?.items?.[0] || null;
+  const orderSummary = pricingResponse?.summary || null;
 
   const handleContinue = () => {
     const configParams = new URLSearchParams({
@@ -80,7 +99,7 @@ function OptionsSelectionContent() {
     setPreviewLoading(true);
     setPreviewError(null);
     try {
-      const blob = await workerClient.getManualPreviewBlob(manualId);
+      const blob = await workerClient.getManualFileBlob(manualId);
       const url = URL.createObjectURL(blob);
       setPreviewUrl(url);
     } catch (e: any) {
@@ -89,9 +108,9 @@ function OptionsSelectionContent() {
       } else if (e.message?.includes('403')) {
         setPreviewError("You don't have permission to view this preview.");
       } else if (e.message?.includes('404')) {
-        setPreviewError('Preview unavailable for this manual.');
+        setPreviewError('File unavailable for this manual.');
       } else {
-        setPreviewError('Unable to load preview. Please try again.');
+        setPreviewError('Unable to load file. Please try again.');
       }
     } finally {
       setPreviewLoading(false);
@@ -102,7 +121,7 @@ function OptionsSelectionContent() {
     setShowPreview(false);
   };
 
-  if (!manual || !priceBreakdown) return <div className="p-8 text-center">Manual not found</div>;
+  if (!manual) return <div className="p-8 text-center">Manual not found</div>;
 
   return (
     <div className="flex flex-col min-h-screen bg-background pb-safe">
@@ -116,15 +135,21 @@ function OptionsSelectionContent() {
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6B00] mb-4"></div>
             <p className="text-gray-500 text-sm">Loading options...</p>
           </div>
-        ) : isError || !manual ? (
+        ) : isError || !manual || !priceBreakdown ? (
           <div className="flex-1 flex flex-col items-center justify-center px-4 mt-20 text-center">
-            <p className="text-red-500 font-medium mb-4">Unable to load print options</p>
+            <p className="text-red-500 font-medium mb-4">Unable to load print options or pricing</p>
             <button onClick={() => refetch()} className="bg-[#FF6B00] text-white px-6 py-2 rounded-xl">Try again</button>
           </div>
         ) : (
         <>
         {/* Manual Information Card */}
         <div className="px-4 mb-4">
+          {manualDTO.stock > 0 && manualDTO.stock <= 5 && (
+            <div className="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-2 rounded-xl text-sm font-medium mb-3 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4" />
+              Only {manualDTO.stock} {manualDTO.stock === 1 ? 'copy' : 'copies'} left in stock!
+            </div>
+          )}
           <div className="bg-card rounded-2xl border border-border p-5 shadow-sm">
             <span className="text-xs font-bold text-primary tracking-wider uppercase mb-2 block">Manual</span>
             <div className="flex justify-between items-start gap-2">
@@ -136,10 +161,10 @@ function OptionsSelectionContent() {
                 <button 
                   onClick={handleOpenPreview}
                   className="flex items-center gap-1.5 px-3 py-1.5 bg-[#FF6B00]/10 text-[#FF6B00] hover:bg-[#FF6B00]/20 rounded-full text-sm font-bold transition-colors shrink-0"
-                  aria-label="Preview manual"
+                  aria-label="View Full Manual"
                 >
                   <Eye className="w-4 h-4" />
-                  <span>Preview</span>
+                  <span>View Full Manual</span>
                 </button>
               )}
             </div>
@@ -149,36 +174,38 @@ function OptionsSelectionContent() {
           </div>
         </div>
 
-        <PrintOptions config={config} onChange={setConfig} />
+        <PrintOptions config={config} onChange={setConfig} maxCopies={manualDTO.stock || 100} />
 
         {/* Price Breakdown */}
         <div className="px-4 mt-2 mb-6">
           <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3">
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Base Manual</span>
-              <span className="font-medium">₹{priceBreakdown.basePrice}</span>
+              <span className="font-medium">₹{priceBreakdown.unitPrice}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Printing</span>
-              <span className="font-medium">₹{priceBreakdown.printingCost}</span>
+              <span className="font-medium">₹{priceBreakdown.printingAmount}</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Spiral Binding</span>
-              <span className="font-medium">₹{priceBreakdown.bindingCost}</span>
+              <span className="text-muted-foreground">Binding</span>
+              <span className="font-medium">₹{priceBreakdown.bindingFee}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Delivery</span>
-              <span className="font-bold text-green-600">FREE</span>
+              <span className="font-bold text-green-600">{orderSummary?.deliveryFee === 0 ? 'FREE' : `₹${orderSummary?.deliveryFee || 0}`}</span>
             </div>
             <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-1">
-              <span className="font-bold text-foreground">Total</span>
-              <span className="text-2xl font-black text-primary">₹{priceBreakdown.total}</span>
+              <span className="font-semibold text-foreground">Total (1 item)</span>
+              <div className="text-right">
+                <span className="text-xl font-bold text-[#FF6B00]">₹{orderSummary?.grandTotal || priceBreakdown.subtotal}</span>
+              </div>
             </div>
           </div>
           
           <div className="mt-4 bg-secondary/20 rounded-xl p-4 flex flex-col items-center justify-center border border-secondary/30">
             <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estimated Delivery</span>
-            <span className="text-sm font-bold text-foreground">{estimatedDelivery}</span>
+            <span className="text-sm font-bold text-foreground">{pricingResponse?.estimatedDelivery || 'Tomorrow, 9:15 AM'}</span>
             <span className="text-xs text-muted-foreground mt-2 text-center">Need it urgently? Visit the print shop with your Order ID for assistance.</span>
           </div>
         </div>
@@ -199,13 +226,13 @@ function OptionsSelectionContent() {
               <button 
                 onClick={handleClosePreview}
                 className="p-2 -ml-2 rounded-full hover:bg-secondary/50 transition-colors"
-                aria-label="Close preview"
+                aria-label="Close manual"
               >
                 <ArrowLeft className="w-5 h-5 text-foreground" />
               </button>
               <div className="flex flex-col">
                 <span className="text-sm font-bold text-foreground line-clamp-1">{manual.name}</span>
-                <span className="text-xs text-muted-foreground uppercase">PDF PREVIEW</span>
+                <span className="text-xs text-muted-foreground uppercase">FULL MANUAL</span>
               </div>
             </div>
           </div>
@@ -215,7 +242,7 @@ function OptionsSelectionContent() {
             {previewLoading && (
               <div className="flex flex-col items-center gap-3 text-muted-foreground">
                 <Loader2 className="w-8 h-8 animate-spin text-primary" />
-                <p className="text-sm font-medium">Loading preview...</p>
+                <p className="text-sm font-medium">Loading manual...</p>
               </div>
             )}
 
@@ -225,7 +252,7 @@ function OptionsSelectionContent() {
                   <AlertCircle className="w-8 h-8" />
                 </div>
                 <div>
-                  <p className="font-bold text-foreground mb-1">Preview Failed</p>
+                  <p className="font-bold text-foreground mb-1">Load Failed</p>
                   <p className="text-sm text-muted-foreground">{previewError}</p>
                 </div>
                 <button 
@@ -244,7 +271,7 @@ function OptionsSelectionContent() {
               <iframe 
                 src={`${previewUrl}#toolbar=0&navpanes=0&scrollbar=0`}
                 className="w-full h-full border-none"
-                title={`${manual.name} Preview`}
+                title={`${manual.name} File`}
               />
             )}
           </div>

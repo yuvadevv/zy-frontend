@@ -8,23 +8,32 @@ import { CheckCircle2 } from 'lucide-react';
 export const SuccessStep = () => {
   const router = useRouter();
 
+  const goToDashboard = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('isFirstLogin', 'true');
+      document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
+      window.location.href = '/app/home';
+    }
+  };
+
   useEffect(() => {
     // Set flag for first-time dashboard animation
     if (typeof window !== 'undefined') {
       localStorage.setItem('isFirstLogin', 'true');
+      document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
     }
 
     const timer = setTimeout(() => {
-      router.push('/app/home');
-    }, 2000);
+      goToDashboard();
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [router]);
+  }, []);
 
   return (
     <motion.div
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="flex flex-col items-center justify-center h-full text-center py-12"
+      className="flex flex-col items-center justify-center h-full text-center py-12 px-4"
     >
       <motion.div 
         initial={{ scale: 0 }}
@@ -48,9 +57,16 @@ export const SuccessStep = () => {
       </motion.div>
       
       <h2 className="text-3xl font-bold text-black mb-4 tracking-tight">Welcome to BLINTZY!</h2>
-      <p className="text-gray-500 text-lg mb-8 max-w-[240px] mx-auto">
+      <p className="text-gray-500 text-lg mb-8 max-w-[260px] mx-auto">
         Your account has been created successfully.
       </p>
+
+      <button
+        onClick={goToDashboard}
+        className="w-full max-w-xs py-3.5 px-6 bg-orange-500 hover:bg-orange-600 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/25 transition-all transform active:scale-95"
+      >
+        Go to Dashboard
+      </button>
     </motion.div>
   );
 };

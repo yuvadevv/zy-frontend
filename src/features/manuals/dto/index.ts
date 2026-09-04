@@ -37,6 +37,7 @@ export interface ManualDTO {
   updated_at: string;
   language: string;
   availability: 'in_stock' | 'out_of_stock' | 'pre_order';
+  stock: number;
   base_price: number;
   preview_image_url?: string;
   uploaded_by?: string;

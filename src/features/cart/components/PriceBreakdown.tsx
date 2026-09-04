@@ -24,7 +24,11 @@ export const PriceBreakdown = ({ summary }: PriceBreakdownProps) => {
       
       <div className="flex justify-between items-center text-sm text-muted-foreground">
         <span>Delivery</span>
-        <span className="font-bold text-green-600">FREE</span>
+        {summary.deliveryFee > 0 ? (
+          <span className="font-medium text-foreground">₹{summary.deliveryFee.toFixed(2)}</span>
+        ) : (
+          <span className="font-bold text-green-600">FREE</span>
+        )}
       </div>
       
       <div className="h-px w-full bg-border/60 my-1"></div>

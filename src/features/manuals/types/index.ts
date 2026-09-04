@@ -31,6 +31,7 @@ export interface Manual {
   updatedAt: string;
   language: string;
   availability: 'in_stock' | 'out_of_stock' | 'pre_order';
+  stock: number;
   basePrice: number;
   previewImageUrl?: string;
   uploadedBy?: string;
@@ -43,4 +44,11 @@ export interface PrintConfig {
   color: boolean;
   bindingType: 'none' | 'spiral' | 'softbound' | 'hardbound';
   paperSize: 'a4' | 'letter';
+}
+export interface PriceBreakdown {
+  basePrice: number;
+  printingCost: number;
+  bindingCost: number;
+  colorCost?: number;
+  total: number;
 }

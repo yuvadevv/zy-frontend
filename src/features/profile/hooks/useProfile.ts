@@ -28,7 +28,7 @@ export const useProfile = () => {
     semester: 1, // Optional, or fetch
     section: academicRecord.sections?.name || '',
     rollNumber: academicRecord.roll_number,
-    classroomNumber: academicRecord.classroom_number
+    classroomNumber: academicRecord.classroom_id
   } as any : undefined; // using as any to allow classroomNumber for now
 
   return { 

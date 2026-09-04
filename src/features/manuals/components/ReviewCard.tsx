@@ -1,6 +1,5 @@
 import React from 'react';
-import { Manual, PrintConfig } from '../types';
-import { PriceBreakdown } from '../utils/priceEngine';
+import { Manual, PrintConfig, PriceBreakdown } from '../types';
 import { Button } from '@/design-system/components/buttons/Button/Button';
 import { motion } from 'framer-motion';
 import { Eye } from 'lucide-react';

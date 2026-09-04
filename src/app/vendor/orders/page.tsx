@@ -29,6 +29,7 @@ export default function VendorOrdersPage() {
   const [year, setYear] = useState('all');
   const [semester, setSemester] = useState('all');
   const [manual, setManual] = useState('all');
+  const [orderType, setOrderType] = useState('all');
   const [sort, setSort] = useState('newest');
   
   const [page, setPage] = useState(1);
@@ -52,7 +53,7 @@ export default function VendorOrdersPage() {
       
       const [data, dashboard] = await Promise.all([
         vendorClient.getOrders({
-          page, limit: 25, search, status, branch, year, semester, manual_id: manual, sort
+          page, limit: 25, search, status, branch, year, semester, manual_id: manual, order_type: orderType, sort
         }),
         vendorClient.getDashboard()
       ]);
@@ -66,7 +67,7 @@ export default function VendorOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, search, status, branch, year, semester, manual, sort]);
+  }, [page, search, status, branch, year, semester, manual, orderType, sort]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -87,7 +88,7 @@ export default function VendorOrdersPage() {
     try {
       // Need to fetch ALL matching to get IDs
       toast.loading("Selecting all matching...", { id: 'sel' });
-      const data = await vendorClient.getOrders({ limit: 'all', search, status, branch, year, semester, manual_id: manual, sort });
+      const data = await vendorClient.getOrders({ limit: 'all', search, status, branch, year, semester, manual_id: manual, order_type: orderType, sort });
       setSelectedOrders(new Set(data.orders.map((o: any) => o.publicId)));
       toast.success(`Selected ${data.orders.length} orders`, { id: 'sel' });
     } catch(err) {
@@ -151,7 +152,7 @@ export default function VendorOrdersPage() {
       toast.loading("Generating Excel...", { id: 'export' });
       let dataToExport = orders;
       if (exportType === 'all') {
-         const res = await vendorClient.exportOrders({ search, status, branch, year, semester, manual_id: manual });
+         const res = await vendorClient.exportOrders({ search, status, branch, year, semester, manual_id: manual, order_type: orderType });
          dataToExport = res.orders;
       } else {
          if (selectedOrders.size > 0) {
@@ -195,6 +196,7 @@ export default function VendorOrdersPage() {
          setYear(year ? year.toString() : 'all');
          setSemester(semester ? semester.toString() : 'all');
          setStatus('all');
+         setOrderType('all');
          setSearch('');
          setPage(1);
          toast.success("Filters applied for batch.");
@@ -214,6 +216,12 @@ export default function VendorOrdersPage() {
         </div>
         
         <div className="flex flex-wrap gap-2 w-full xl:w-auto items-center">
+          <select value={orderType} onChange={e => setOrderType(e.target.value)} className="border-gray-200 rounded-lg text-xs md:text-sm py-2 px-3 bg-gray-50">
+            <option value="all">All Order Types</option>
+            <option value="manual">Manuals</option>
+            <option value="custom_upload">Custom Uploads</option>
+            <option value="hall_ticket">Hall Tickets</option>
+          </select>
           <select value={status} onChange={e => setStatus(e.target.value)} className="border-gray-200 rounded-lg text-xs md:text-sm py-2 px-3 bg-gray-50">
             <option value="all">All Statuses</option>
             <option value="received">Received</option>
@@ -250,7 +258,7 @@ export default function VendorOrdersPage() {
             <option value="price_desc">Sort: Amount High-Low</option>
           </select>
           
-          <button onClick={() => { setSearch(''); setStatus('all'); setBranch('all'); setYear('all'); setSemester('all'); setManual('all'); setSort('newest'); }} className="px-3 py-2 text-xs md:text-sm text-gray-500 hover:text-gray-900 whitespace-nowrap font-medium transition-colors">
+          <button onClick={() => { setSearch(''); setStatus('all'); setOrderType('all'); setBranch('all'); setYear('all'); setSemester('all'); setManual('all'); setSort('newest'); }} className="px-3 py-2 text-xs md:text-sm text-gray-500 hover:text-gray-900 whitespace-nowrap font-medium transition-colors">
             Clear All
           </button>
         </div>
@@ -374,7 +382,7 @@ export default function VendorOrdersPage() {
                     <tr>
                       <td colSpan={7} className="px-5 py-16 text-center text-gray-500 text-base">
                         No orders match your current filters.
-                        <button onClick={() => { setSearch(''); setStatus('all'); setBranch('all'); setYear('all'); setSemester('all'); }} className="block mx-auto mt-3 text-[#FF6B00] hover:underline font-medium">Clear all filters</button>
+                        <button onClick={() => { setSearch(''); setStatus('all'); setOrderType('all'); setBranch('all'); setYear('all'); setSemester('all'); }} className="block mx-auto mt-3 text-[#FF6B00] hover:underline font-medium">Clear all filters</button>
                       </td>
                     </tr>
                   ) : (
@@ -467,7 +475,7 @@ export default function VendorOrdersPage() {
             ) : orders.length === 0 ? (
               <div className="py-12 text-center text-gray-500 text-base">
                 No orders match your current filters.
-                <button onClick={() => { setSearch(''); setStatus('all'); setBranch('all'); setYear('all'); setSemester('all'); }} className="block mx-auto mt-3 text-[#FF6B00] hover:underline font-medium">Clear all filters</button>
+                <button onClick={() => { setSearch(''); setStatus('all'); setOrderType('all'); setBranch('all'); setYear('all'); setSemester('all'); }} className="block mx-auto mt-3 text-[#FF6B00] hover:underline font-medium">Clear all filters</button>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

@@ -1,36 +1,32 @@
-import { NextResponse } from 'next/server'
-import type { NextRequest } from 'next/server'
-import { createServerClient } from '@supabase/ssr'
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+function parseJwt(token: string) {
+  try {
+    if (!token) return null;
+    const cleanToken = decodeURIComponent(token).replace(/^Bearer\s+/i, '').trim();
+    const parts = cleanToken.split('.');
+    if (parts.length < 2) return null;
+    const base64Url = parts[1];
+    const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+    const pad = base64.length % 4;
+    const padded = pad ? base64 + '='.repeat(4 - pad) : base64;
+    const raw = atob(padded);
+    const bytes = Uint8Array.from(raw, (c) => c.charCodeAt(0));
+    const jsonStr = new TextDecoder().decode(bytes);
+    const parsed = JSON.parse(jsonStr);
+    if (parsed.exp && Date.now() / 1000 > parsed.exp) {
+      return null;
+    }
+    return parsed;
+  } catch {
+    return null;
+  }
+}
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  })
-
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) => request.cookies.set(name, value))
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
-        },
-      },
-    }
-  )
-
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const token = request.cookies.get('bl_auth_token')?.value;
+  const user = token ? parseJwt(token) : null;
 
   const isPublicRoute = 
     request.nextUrl.pathname === '/' ||
@@ -41,45 +37,33 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/auth/confirm');
 
   if (isPublicRoute && user) {
-    return NextResponse.redirect(new URL('/app/home', request.url))
+    return NextResponse.redirect(new URL('/app/home', request.url));
   }
 
   if (!isPublicRoute && !user && request.nextUrl.pathname.startsWith('/app')) {
-    return NextResponse.redirect(new URL('/login', request.url))
+    return NextResponse.redirect(new URL('/login', request.url));
   }
 
   // Profile completion check for onboarding
   if (user && request.nextUrl.pathname.startsWith('/app')) {
-    const { data: profile } = await supabase
-      .from('student_profiles')
-      .select('profile_completed')
-      .eq('user_id', user.id)
-      .single()
+    const isCompleted = 
+      request.cookies.get('bl_profile_completed')?.value === 'true' || 
+      Boolean(user.user_metadata?.profile_completed);
 
-    const isCompleted = profile?.profile_completed
-
-    // If accessing anything inside /app EXCEPT onboarding, but profile isn't complete
     if (!isCompleted && !request.nextUrl.pathname.startsWith('/app/onboarding')) {
-      return NextResponse.redirect(new URL('/app/onboarding', request.url))
+      return NextResponse.redirect(new URL('/app/onboarding', request.url));
     }
 
-    // If accessing onboarding but profile IS complete
     if (isCompleted && request.nextUrl.pathname.startsWith('/app/onboarding')) {
-      return NextResponse.redirect(new URL('/app/home', request.url))
+      return NextResponse.redirect(new URL('/app/home', request.url));
     }
   }
 
-  return supabaseResponse
+  return NextResponse.next();
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
-}
+};

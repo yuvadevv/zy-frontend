@@ -4,10 +4,8 @@ import { Package, FileText, ChevronRight } from 'lucide-react';
 import { OrderHistoryItem } from '../types';
 import { formatHistoryDate, formatHistoryCurrency } from '../utils/formatters';
 import { OrderStatusBadge } from './OrderStatusBadge';
-import { ReorderButton } from './ReorderButton';
 import { OrderActionsMenu } from './OrderActionsMenu';
 import { APP_ROUTES } from '@/constants/routes';
-import { motion, PanInfo } from 'framer-motion';
 
 interface OrderCardProps {
   order: OrderHistoryItem;
@@ -16,48 +14,15 @@ interface OrderCardProps {
 export const OrderCard = ({ order }: OrderCardProps) => {
   const router = useRouter();
   const cardRef = useRef<HTMLDivElement>(null);
-  const pressTimer = useRef<NodeJS.Timeout | null>(null);
 
   const handleTrack = () => {
     router.push(APP_ROUTES.ORDERS.DETAILS(order.id));
   };
 
-  const handleReorder = () => {
-    // Analytics/Reorder Logic here
-    router.push(APP_ROUTES.CHECKOUT); // Example route
-  };
-
-  const startPress = () => {
-    pressTimer.current = setTimeout(() => {
-      // Trigger long press bottom sheet (Actions Menu)
-      // For now we simulate by triggering a custom event or state
-      if (window.navigator.vibrate) window.navigator.vibrate(50);
-      alert('Long Press Detected: Open Actions Menu');
-    }, 500);
-  };
-
-  const endPress = () => {
-    if (pressTimer.current) clearTimeout(pressTimer.current);
-  };
-
-  const handlePanEnd = (e: any, info: PanInfo) => {
-    const threshold = 50;
-    if (info.offset.x < -threshold) {
-      handleTrack(); // Swipe left to track
-    } else if (info.offset.x > threshold) {
-      handleReorder(); // Swipe right to reorder
-    }
-  };
-
   return (
-    <motion.div 
+    <div 
       ref={cardRef}
-      onPanEnd={handlePanEnd}
-      onTapStart={startPress}
-      onTap={endPress}
-      onTapCancel={endPress}
       onClick={handleTrack}
-      whileTap={{ scale: 0.97, boxShadow: '0 12px 40px rgba(0,0,0,0.1)' }}
       className="bg-white border border-gray-100 rounded-[24px] p-5 shadow-[0_8px_30px_rgb(0,0,0,0.04)] hover:border-orange-500/50 transition-all cursor-pointer flex flex-col gap-3 group relative overflow-hidden"
     >
       <div className="flex justify-between items-start pointer-events-none">
@@ -89,7 +54,6 @@ export const OrderCard = ({ order }: OrderCardProps) => {
         </div>
         
         <div className="flex items-center gap-2" onClick={e => e.stopPropagation()}>
-          <ReorderButton orderId={order.id} variant="icon" />
           <OrderActionsMenu 
             orderId={order.id} 
             order={order}
@@ -103,6 +67,6 @@ export const OrderCard = ({ order }: OrderCardProps) => {
           </div>
         </div>
       </div>
-    </motion.div>
+    </div>
   );
 };

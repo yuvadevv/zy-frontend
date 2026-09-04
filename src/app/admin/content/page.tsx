@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
 import { Loader2, Plus, Image as ImageIcon, Bell, Trash2, Edit2, AlertCircle, Calendar, Upload } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import DataTable, { Column } from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 
@@ -101,8 +102,9 @@ export default function AdminContentPage() {
     try {
       await adminClient.deleteContent(id);
       loadData();
+      toast.success('Content deleted successfully');
     } catch (err: any) {
-      alert(err.message || 'Failed to delete');
+      toast.error(err.message || 'Failed to delete');
     }
   };
 
@@ -195,8 +197,9 @@ export default function AdminContentPage() {
 
       setShowBannerModal(false);
       loadData();
+      toast.success('Banner saved successfully');
     } catch (err: any) {
-      alert(err.message || 'Failed to save banner');
+      toast.error(err.message || 'Failed to save banner');
     } finally {
       setIsSubmitting(false);
     }
@@ -223,8 +226,9 @@ export default function AdminContentPage() {
       
       setShowAnnouncementModal(false);
       loadData();
+      toast.success('Announcement saved successfully');
     } catch (err: any) {
-      alert(err.message || 'Failed to save announcement');
+      toast.error(err.message || 'Failed to save announcement');
     } finally {
       setIsSubmitting(false);
     }

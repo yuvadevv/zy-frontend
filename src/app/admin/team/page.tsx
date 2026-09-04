@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
 import { Loader2, Plus, Shield, User, Mail, ShieldAlert } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 
 export default function AdminTeamPage() {
   const [team, setTeam] = useState<any[]>([]);
@@ -44,8 +45,9 @@ export default function AdminTeamPage() {
       setShowAddModal(false);
       setNewMember({ id: '', email: '', name: '', role_id: '' });
       loadData();
+      toast.success('Member added successfully');
     } catch (err: any) {
-      alert(err.message || 'Failed to add member');
+      toast.error(err.message || 'Failed to add member');
     } finally {
       setAdding(false);
     }

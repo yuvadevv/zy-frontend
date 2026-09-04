@@ -43,16 +43,16 @@ export const AcademicInformationCard = () => {
           </div>
           <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
             <span className="block text-xs text-muted-foreground mb-1">Block</span>
-            <span className="font-bold text-foreground">{academicRecord.block || 'N/A'}</span>
+            <span className="font-bold text-foreground">{academicRecord.block_id || 'N/A'}</span>
           </div>
           <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
             <span className="block text-xs text-muted-foreground mb-1">Roll Number</span>
             <span className="font-bold text-foreground">{academicRecord.roll_number || 'N/A'}</span>
           </div>
-          {academicRecord.classroom_number && (
+          {academicRecord.classroom_id && (
             <div className="bg-muted/30 p-3 rounded-xl border border-border/50 col-span-2">
               <span className="block text-xs text-muted-foreground mb-1">Classroom Number</span>
-              <span className="font-bold text-foreground">{academicRecord.classroom_number}</span>
+              <span className="font-bold text-foreground">{academicRecord.classroom_id}</span>
             </div>
           )}
         </div>

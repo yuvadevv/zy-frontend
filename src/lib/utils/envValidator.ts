@@ -9,9 +9,14 @@ export const requireEnvVar = (value: string | undefined, name: string): string =
 
 export const getSupabaseConfig = () => {
   return {
-    // Next.js requires static references to process.env.NEXT_PUBLIC_* to inline them on the client
-    url: requireEnvVar(process.env.NEXT_PUBLIC_SUPABASE_URL, 'NEXT_PUBLIC_SUPABASE_URL'),
-    anonKey: requireEnvVar(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY, 'NEXT_PUBLIC_SUPABASE_ANON_KEY'),
-    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '', // Optional on client, required on server scripts
+    url: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    anonKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
+    serviceRoleKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
+  };
+};
+
+export const getWorkerConfig = () => {
+  return {
+    workerUrl: process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787'
   };
 };

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import { toast } from 'react-hot-toast';
 import { vendorClient } from '@/lib/api/vendorClient';
 import { Loader2, ArrowLeft, Download, FileText, CheckCircle, Clock, MapPin, Package, Printer } from 'lucide-react';
 import Link from 'next/link';
@@ -71,8 +72,8 @@ export default function VendorOrderDetails() {
       a.remove();
       URL.revokeObjectURL(url);
     } catch (err) {
-      console.error('Download failed', err);
-      alert('Failed to download document securely');
+      console.error(err);
+      toast.error('Failed to download document securely');
     }
   };
 

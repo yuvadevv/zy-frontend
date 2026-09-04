@@ -1,12 +1,18 @@
 'use client';
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
-import { createClient } from '../../../lib/supabase/client';
+import { SessionManager, AuthUser } from '@/utils/SessionManager';
 
-interface AuthContextType {
-  user: User | null;
-  session: Session | null;
+export interface AuthSession {
+  access_token: string;
+  token_type?: string;
+  user?: AuthUser | null;
+  [key: string]: any;
+}
+
+export interface AuthContextType {
+  user: AuthUser | null;
+  session: AuthSession | null;
   isLoading: boolean;
 }
 
@@ -17,30 +23,34 @@ const AuthContext = createContext<AuthContextType>({
 });
 
 export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null);
-  const [session, setSession] = useState<Session | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<AuthSession | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const supabase = createClient();
+    const initAuth = () => {
+      const token = SessionManager.getToken();
+      const currentUser = SessionManager.getUser();
 
-    const fetchSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      setSession(session);
-      setUser(session?.user ?? null);
+      if (token) {
+        setSession({ access_token: token, user: currentUser });
+        setUser(currentUser);
+      } else {
+        setSession(null);
+        setUser(null);
+      }
       setIsLoading(false);
     };
 
-    fetchSession();
+    initAuth();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-    });
-
-    return () => {
-      subscription.unsubscribe();
+    const handleStorage = (e: StorageEvent) => {
+      if (e.key === 'bl_session_token' || e.key === 'bl_session_user') {
+        initAuth();
+      }
     };
+    window.addEventListener('storage', handleStorage);
+    return () => window.removeEventListener('storage', handleStorage);
   }, []);
 
   return (

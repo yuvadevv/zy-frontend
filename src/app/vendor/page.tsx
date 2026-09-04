@@ -26,6 +26,12 @@ export default function VendorDashboard() {
         vendorClient.getDashboard(),
         vendorClient.getOrders({ limit: 50, search })
       ]);
+
+      if (statsData?.password_change_required) {
+        router.push('/vendor/change-password');
+        return;
+      }
+
       setStats(statsData);
       setOrders(ordersData.orders);
     } catch (err: any) {

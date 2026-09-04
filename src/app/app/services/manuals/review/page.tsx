@@ -5,11 +5,11 @@ import { ArrowLeft, Loader2, AlertCircle } from 'lucide-react';
 import { ReviewCard } from '@/features/manuals/components/ReviewCard';
 import { PrintConfig } from '@/features/manuals/types';
 import { mapManual } from '@/features/manuals/mappers';
-import { calculateManualPrice, getEstimatedDelivery } from '@/features/manuals/utils/priceEngine';
 import { APP_ROUTES } from '@/constants/routes';
 import { useCart } from '@/features/cart/providers/CartProvider';
 import { CartItem } from '@/features/cart/types';
 import { workerClient } from '@/lib/api/workerClient';
+import { useQuery } from '@tanstack/react-query';
 
 function ReviewSelectionContent() {
   const router = useRouter();
@@ -44,11 +44,33 @@ function ReviewSelectionContent() {
     }
   }, [manualId]);
 
-  if (loading) return <div className="p-8 text-center">Loading...</div>;
+  const { data: pricingResponse, isLoading: pricingLoading } = useQuery({
+    queryKey: ['pricing', manualId, config],
+    queryFn: () => workerClient.calculatePricing({
+      items: [{
+        serviceType: 'manual',
+        manualId,
+        printOptions: {
+          color: config.color,
+          singleSided: config.singleSided,
+          bindingType: config.bindingType,
+          copies: config.copies
+        }
+      }],
+      deliveryMethod: 'delivery'
+    }),
+    enabled: !!manualId
+  });
+
+  if (loading || pricingLoading) return <div className="p-8 text-center">Loading...</div>;
   if (!manual) return <div className="p-8 text-center">Manual not found</div>;
 
-  const priceBreakdown = calculateManualPrice(manual.basePrice, manual.pages, config);
-  const estimatedDelivery = getEstimatedDelivery();
+  const priceBreakdown = pricingResponse?.items?.[0] || null;
+  const orderSummary = pricingResponse?.summary || null;
+  
+  if (!priceBreakdown) return <div className="p-8 text-center">Failed to calculate price.</div>;
+
+  const estimatedDelivery = pricingResponse?.estimatedDelivery || 'Tomorrow, 9:15 AM';
 
   const handleAddToCart = () => {
     setIsAdding(true);
@@ -68,11 +90,11 @@ function ReviewSelectionContent() {
         paperSize: config.paperSize || 'a4',
       },
       priceBreakdown: {
-        base: priceBreakdown.basePrice,
-        printing: priceBreakdown.printingCost,
-        binding: priceBreakdown.bindingCost,
+        base: priceBreakdown?.unitPrice || 0,
+        printing: priceBreakdown?.printingAmount || 0,
+        binding: priceBreakdown?.bindingFee || 0,
         color: config.color ? 4 * config.copies : 0, // Approx color portion
-        total: priceBreakdown.total
+        total: priceBreakdown?.subtotal || 0
       },
       status: 'in_cart',
       editable: true,
@@ -97,7 +119,13 @@ function ReviewSelectionContent() {
         <ReviewCard 
           manual={manual} 
           config={config} 
-          priceBreakdown={priceBreakdown} 
+          priceBreakdown={{
+            basePrice: priceBreakdown.unitPrice,
+            printingCost: priceBreakdown.printingAmount,
+            bindingCost: priceBreakdown.bindingFee,
+            
+            total: priceBreakdown.finalTotal
+          }} 
           estimatedDelivery={estimatedDelivery}
           onAddToCart={handleAddToCart}
           isAddingToCart={isAdding}

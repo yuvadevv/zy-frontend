@@ -1,85 +1,85 @@
-import { createClient } from '../../../lib/supabase/client';
+import { workerClient } from '../../../lib/api/workerClient';
 import { StudentProfile, StudentAcademicRecord } from '../types';
 
 export const studentService = {
   getProfile: async (userId: string): Promise<StudentProfile | null> => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('student_profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null; // No rows found
-      throw error;
+    try {
+      const data = await workerClient.fetch('/api/students/me');
+      if (!data?.student) return null;
+      if (typeof document !== 'undefined') {
+        document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
+      }
+      const s = data.student;
+      return {
+        user_id: s.id || userId,
+        full_name: s.name || '',
+        search_name: (s.name || '').toLowerCase(),
+        email: s.email || '',
+        phone_number: s.phone || '',
+        avatar_path: null,
+        profile_completed: true,
+        profile_completion_percentage: 100,
+        delivery_notes: s.delivery_notes || '',
+        created_at: s.created_at,
+        updated_at: s.updated_at,
+      };
+    } catch (error: any) {
+      return null;
     }
-    return data;
   },
 
   getAcademicRecord: async (userId: string): Promise<StudentAcademicRecord | null> => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('student_academic_records')
-      .select(`
-        *,
-        colleges (id, name),
-        branches (id, name),
-        academic_years (id, name),
-        sections (id, name)
-      `)
-      .eq('student_id', userId)
-      .single();
-
-    if (error) {
-      if (error.code === 'PGRST116') return null; // No rows found
-      throw error;
+    try {
+      const data = await workerClient.fetch('/api/students/me');
+      if (!data?.student) return null;
+      const s = data.student;
+      return {
+        student_id: s.id || userId,
+        roll_number: s.roll_number || '',
+        college_id: s.college_id || '',
+        department_id: s.department_id || '',
+        branch_id: s.branch_id || '',
+        academic_year_id: s.study_year_id || s.year || '',
+        semester_id: s.semester_id || s.semester || '',
+        section_id: s.section || '',
+        colleges: s.college_name ? { id: s.college_id, name: s.college_name } : undefined,
+        branches: s.branch_name ? { id: s.branch_id, department_id: '', name: s.branch_name } : undefined,
+        academic_years: s.year_label ? { id: s.year, name: s.year_label } : undefined,
+        sections: s.section ? { id: s.section, semester_id: '', name: s.section } : undefined,
+      };
+    } catch (error: any) {
+      return null;
     }
-    return data;
   },
   
   updateProfile: async (userId: string, updates: Partial<StudentProfile>) => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('student_profiles')
-      .update(updates)
-      .eq('user_id', userId)
-      .select()
-      .single();
-      
-    if (error) throw error;
-    return data;
+    const data = await workerClient.fetch('/api/students/me', {
+      method: 'PUT',
+      body: JSON.stringify({
+        name: updates.full_name,
+        phone: updates.phone_number,
+        email: updates.email
+      })
+    });
+    return data?.student;
   },
 
   updateAcademicRecord: async (userId: string, updates: Partial<StudentAcademicRecord>) => {
-    const supabase = createClient();
-    const { data, error } = await supabase
-      .from('student_academic_records')
-      .update(updates)
-      .eq('student_id', userId)
-      .select()
-      .single();
-      
-    if (error) throw error;
-    return data;
+    const data = await workerClient.fetch('/api/students/me', {
+      method: 'PUT',
+      body: JSON.stringify({
+        roll_number: updates.roll_number,
+        college_id: updates.college_id,
+        branch_id: updates.branch_id,
+        study_year_id: updates.academic_year_id,
+        semester_id: updates.semester_id,
+        section: updates.section_id
+      })
+    });
+    return data?.student;
   },
 
-  uploadAvatar: async (userId: string, file: File): Promise<string> => {
-    const supabase = createClient();
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${userId}-${Math.random()}.${fileExt}`;
-    const filePath = `avatars/${fileName}`;
-
-    const { error: uploadError } = await supabase.storage
-      .from('student-profiles')
-      .upload(filePath, file, { upsert: true });
-
-    if (uploadError) throw uploadError;
-
-    const { data } = supabase.storage
-      .from('student-profiles')
-      .getPublicUrl(filePath);
-
-    return data.publicUrl;
+  uploadAvatar: async (_userId: string, file: File): Promise<string> => {
+    return URL.createObjectURL(file);
   }
 };

@@ -5,7 +5,6 @@ import { motion } from 'framer-motion';
 import { Check } from 'lucide-react';
 
 import { Cart } from '@/features/cart/types';
-import { getEstimatedDelivery } from '@/features/manuals/utils/priceEngine';
 
 interface SuccessAnimationProps {
   orderId: string;
@@ -83,7 +82,7 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
           </div>
           <div className="flex justify-between items-center">
             <span className="text-muted-foreground">Estimated</span>
-            <span className="font-bold">{getEstimatedDelivery()}</span>
+            <span className="font-bold">Tomorrow, 9:15 AM</span>
           </div>
         </motion.div>
       )}

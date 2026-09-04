@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, use } from 'react';
 import { useParams } from 'next/navigation';
 import { adminClient } from '@/lib/api/adminClient';
 import { ArrowLeft, CheckCircle, Clock, MapPin, Phone, Mail, FileText, User, CreditCard, X } from 'lucide-react';
@@ -125,12 +125,25 @@ export default function AdminOrderDetails() {
                 <div key={idx} className="py-4 first:pt-0 last:pb-0">
                   <div className="flex justify-between items-start">
                     <div>
-                      <h4 className="font-bold text-gray-900 text-lg">{item.title}</h4>
-                      <p className="text-sm text-gray-500 mt-1">{item.pages} Pages • {item.printType} • Binding: {item.binding}</p>
+                      <h4 className="font-bold text-gray-900 text-lg">{item.title || item.name}</h4>
+                      <p className="text-sm text-gray-500 mt-1">{item.pages} Pages • {item.printType || item.print_type} • Binding: {item.binding || item.binding_type}</p>
+                      
+                      {item.document_uuid && (
+                        <div className="mt-2">
+                          <a 
+                            href={`${process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500'}/api/documents/stream/${item.document_uuid}`} 
+                            target="_blank" rel="noopener noreferrer"
+                            className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full hover:bg-blue-100 transition-colors border border-blue-100"
+                          >
+                            <FileText className="w-3 h-3 mr-1.5" />
+                            View Document: {item.document_filename || 'PDF'}
+                          </a>
+                        </div>
+                      )}
                     </div>
                     <div className="text-right">
-                      <div className="font-bold text-gray-900 text-lg">{formatMoney(item.totalPrice)}</div>
-                      <div className="text-sm text-gray-500">{item.quantity} x {formatMoney(item.unitPrice)}</div>
+                      <div className="font-bold text-gray-900 text-lg">{formatMoney(item.totalPrice || item.item_total)}</div>
+                      <div className="text-sm text-gray-500">{item.quantity} x {formatMoney(item.unitPrice || item.base_price)}</div>
                     </div>
                   </div>
                 </div>

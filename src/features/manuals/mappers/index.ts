@@ -34,6 +34,7 @@ export const mapManual = (dto: ManualDTO): Manual => ({
   updatedAt: dto.updated_at,
   language: dto.language,
   availability: dto.availability,
+  stock: dto.stock || 0,
   basePrice: dto.base_price,
   previewImageUrl: dto.preview_image_url,
   uploadedBy: dto.uploaded_by,

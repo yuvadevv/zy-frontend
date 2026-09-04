@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { Download, FileText, FileSpreadsheet, Database, Loader2, AlertCircle } from 'lucide-react';
+import { toast } from 'react-hot-toast';
 import { adminClient } from '@/lib/api/adminClient';
 
 export default function AdminExportsPage() {
@@ -42,7 +43,8 @@ export default function AdminExportsPage() {
       document.body.removeChild(a);
       
     } catch (err: any) {
-      alert(`Failed to export ${type}: ${err.message || 'Unknown error'}`);
+      console.error(err);
+      toast.error(`Failed to export ${type}: ${err.message || 'Unknown error'}`);
     } finally {
       setLoading(null);
     }

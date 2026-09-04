@@ -46,6 +46,7 @@ export interface CartSummary {
   subtotal: number;
   discount: number;
   tax: number;
+  deliveryFee: number;
   total: number;
 }
 

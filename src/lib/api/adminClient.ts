@@ -1,6 +1,6 @@
-import { createClient } from '../supabase/client';
+import { SessionManager } from '@/utils/SessionManager';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500';
+const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
 
 export const adminClient = {
   async fetch(endpoint: string, options: RequestInit = {}) {
@@ -10,11 +10,9 @@ export const adminClient = {
       headers.set('Content-Type', 'application/json');
     }
 
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-
-    if (session?.access_token) {
-      headers.set('Authorization', `Bearer ${session.access_token}`);
+    const token = SessionManager.getToken();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
     }
 
     const response = await fetch(`${WORKER_URL}${endpoint}`, {
@@ -24,7 +22,7 @@ export const adminClient = {
     });
 
     // For document access which returns raw binary stream
-    if (endpoint.includes('/access') && response.ok) {
+    if ((endpoint.includes('/access') || endpoint.endsWith('/file')) && response.ok) {
       return response;
     }
 
@@ -44,7 +42,8 @@ export const adminClient = {
   async getOrders(params: {
     status?: string, search?: string, page?: number, limit?: number | 'all',
     branch?: string, year?: string, semester?: string, manual_id?: string,
-    payment_status?: string, min_price?: string, max_price?: string, sort?: string
+    payment_status?: string, min_price?: string, max_price?: string, sort?: string,
+    order_type?: string
   } = {}) {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
@@ -215,6 +214,12 @@ export const adminClient = {
     });
   },
 
+  async deleteSubject(id: string) {
+    return this.fetch(`/api/admin/academic/subjects/${id}`, {
+      method: 'DELETE'
+    });
+  },
+
   async getManuals(params: { page?: number, limit?: number } = {}) {
     const query = new URLSearchParams();
     if (params.page) query.append('page', params.page.toString());
@@ -228,9 +233,7 @@ export const adminClient = {
   async createManual(data: FormData) {
     // Requires bypassing default JSON headers in this.fetch
     // We will use native fetch directly with the token
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
+    const token = SessionManager.getToken();
     const res = await fetch(`${WORKER_URL}/api/admin/manuals`, {
       method: 'POST',
       headers: {
@@ -243,28 +246,9 @@ export const adminClient = {
     return result;
   },
 
-  async uploadManualPreview(id: string, file: File) {
-    const formData = new FormData();
-    formData.append('file', file);
 
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
 
-    const res = await fetch(`${WORKER_URL}/api/admin/manuals/${id}/preview-upload`, {
-      method: 'POST',
-      headers: {
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
-      },
-      body: formData
-    });
-
-    const result = await res.json();
-    if (!res.ok) throw new Error(result.error?.message || result.error || 'Preview upload failed');
-    return result;
-  },
-
-  async updateManual(id: string, data: { title?: string, description?: string, pages?: number, base_price?: number, availability_status?: string }) {
+  async updateManual(id: string, data: { title?: string, description?: string, pages?: number, base_price?: number, availability_status?: string, stock?: number }) {
     return this.fetch(`/api/admin/manuals/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(data)
@@ -275,6 +259,14 @@ export const adminClient = {
     return this.fetch(`/api/admin/manuals/${id}`, {
       method: 'DELETE'
     });
+  },
+
+  async getManualFileBlob(id: string) {
+    const res = await this.fetch(`/api/manuals/${id}/file`);
+    // Note: this.fetch will intercept the stream if it thinks it's JSON,
+    // wait, this.fetch automatically parses JSON if response.ok is true, UNLESS endpoint includes '/access'.
+    // Let's modify this.fetch to also not parse JSON if endpoint ends with '/file'.
+    return await (res as unknown as Response).blob();
   },
 
   async getSettings() {
@@ -312,6 +304,56 @@ export const adminClient = {
     if (params.limit) query.append('limit', params.limit.toString());
     const q = query.toString();
     return this.fetch(q ? `/api/admin/vendors?${q}` : '/api/admin/vendors');
+  },
+
+  async createVendor(data: any) {
+    return this.fetch('/api/admin/vendors', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async getVendor(id: string) {
+    return this.fetch(`/api/admin/vendors/${id}`);
+  },
+
+  async updateVendor(id: string, data: any) {
+    return this.fetch(`/api/admin/vendors/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateVendorStatus(id: string, status: string) {
+    return this.fetch(`/api/admin/vendors/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status })
+    });
+  },
+
+  async resetVendorPassword(id: string, password: string) {
+    return this.fetch(`/api/admin/vendors/${id}/reset-password`, {
+      method: 'POST',
+      body: JSON.stringify({ password })
+    });
+  },
+
+  async getVendorStats(id: string) {
+    return this.fetch(`/api/admin/vendors/${id}/stats`);
+  },
+
+  async getVendorOrders(id: string, params: { status?: string, search?: string, page?: number, limit?: number } = {}) {
+    const query = new URLSearchParams();
+    if (params.status) query.append('status', params.status);
+    if (params.search) query.append('search', params.search);
+    if (params.page) query.append('page', params.page.toString());
+    if (params.limit) query.append('limit', params.limit.toString());
+    const q = query.toString();
+    return this.fetch(q ? `/api/admin/vendors/${id}/orders?${q}` : `/api/admin/vendors/${id}/orders`);
+  },
+
+  async getVendorActivity(id: string) {
+    return this.fetch(`/api/admin/vendors/${id}/activity`);
   },
 
   async getAuditLogs(params: { actor?: string, action?: string, page?: number, limit?: number } = {}) {
@@ -353,14 +395,9 @@ export const adminClient = {
   },
 
   async uploadContentMedia(formData: FormData) {
-
     // Use native fetch to bypass default JSON headers
-    const { createClient } = require('../supabase/client');
-    const supabase = createClient();
-    const { data: { session } } = await supabase.auth.getSession();
-    const token = session?.access_token;
+    const token = SessionManager.getToken();
 
-    const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500';
     const res = await fetch(`${WORKER_URL}/api/admin/content/upload`, {
       method: 'POST',
       headers: { ...(token ? { 'Authorization': `Bearer ${token}` } : {}) },
