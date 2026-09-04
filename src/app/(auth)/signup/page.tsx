@@ -12,6 +12,7 @@ import { AuthLayout } from '@/features/auth/components/AuthLayout';
 import { TextInput } from '@/design-system/components/inputs/TextInput/TextInput';
 import { PasswordInput } from '@/design-system/components/inputs/PasswordInput/PasswordInput';
 import { Loader2, Mail } from 'lucide-react';
+import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -23,6 +24,17 @@ export default function SignupPage() {
   const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
+    // Check if redirected with OAuth hash tokens
+    const oauthRes = handleOAuthHashRedirect();
+    if (oauthRes.handled) {
+      if (oauthRes.error) {
+        setError(oauthRes.error);
+      } else {
+        setIsLoading(true);
+      }
+      return;
+    }
+
     let timer: NodeJS.Timeout;
     if (resendCooldown > 0) {
       timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);

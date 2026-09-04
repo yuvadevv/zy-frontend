@@ -12,6 +12,7 @@ import { AuthLayout } from '@/features/auth/components/AuthLayout';
 import { TextInput } from '@/design-system/components/inputs/TextInput/TextInput';
 import { PasswordInput } from '@/design-system/components/inputs/PasswordInput/PasswordInput';
 import { Loader2, MailWarning } from 'lucide-react';
+import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
 
 function LoginContent() {
   const router = useRouter();
@@ -24,6 +25,17 @@ function LoginContent() {
   const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
+    // Check if redirected with OAuth hash tokens
+    const oauthRes = handleOAuthHashRedirect();
+    if (oauthRes.handled) {
+      if (oauthRes.error) {
+        setError(oauthRes.error);
+      } else {
+        setIsLoading(true);
+      }
+      return;
+    }
+
     const urlError = searchParams.get('error');
     if (urlError) {
       setError(decodeURIComponent(urlError));
