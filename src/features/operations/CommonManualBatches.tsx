@@ -1,12 +1,15 @@
 import React, { useEffect, useState } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
+import { vendorClient } from '@/lib/api/vendorClient';
 import { BookOpen, Users, Package, AlertCircle } from 'lucide-react';
 import { formatMoney } from '@/utils/formatters';
 
 export default function CommonManualBatches({ 
-  onSelectBatch 
+  onSelectBatch,
+  clientType = 'admin'
 }: { 
-  onSelectBatch: (filters: { manual_id: string, branch: string, year: string, semester: string }) => void 
+  onSelectBatch: (filters: { manual_id: string, branch: string, year: string, semester: string }) => void,
+  clientType?: 'admin' | 'vendor'
 }) {
   const [batches, setBatches] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -14,7 +17,8 @@ export default function CommonManualBatches({
   useEffect(() => {
     async function load() {
       try {
-        const res = await adminClient.getCommonManualBatches();
+        const client = clientType === 'vendor' ? vendorClient : adminClient;
+        const res = await client.getCommonManualBatches();
         setBatches(res.batches || []);
       } catch (err) {
         console.error(err);

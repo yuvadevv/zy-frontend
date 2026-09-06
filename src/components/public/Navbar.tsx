@@ -1,5 +1,9 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
+import toast from 'react-hot-toast';
+
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
@@ -16,6 +20,20 @@ const navLinks = [
 ];
 
 export function Navbar() {
+
+  const { data: bootstrapData } = useQuery({
+    queryKey: ["bootstrap"],
+    queryFn: fetchBootstrapConfig,
+    staleTime: 1000 * 60,
+  });
+  const isComingSoon = bootstrapData?.data?.coming_soon;
+
+  const handleRestrictedAction = (e: React.MouseEvent) => {
+    if (isComingSoon) {
+      e.preventDefault();
+      toast('This feature is currently disabled during Coming Soon mode.', { icon: '🔒' });
+    }
+  };
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
@@ -147,13 +165,13 @@ export function Navbar() {
           {/* Actions */}
           <div className="hidden lg:flex items-center gap-4">
             <Link
-              href="/app/login"
+              href="/app/login" onClick={handleRestrictedAction}
               className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors px-4 py-2"
             >
               Login
             </Link>
             <Link
-              href="/app/login"
+              href="/app/login" onClick={handleRestrictedAction}
               className="text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 transition-all px-5 py-2.5 rounded-full shadow-sm hover:shadow-[0_4px_14px_0_rgba(249,115,22,0.39)] hover:-translate-y-[1px] active:scale-95"
             >
               Get Started
@@ -205,14 +223,20 @@ export function Navbar() {
             <div className="flex flex-col gap-4 pb-12">
               <Link
                 href="/app/login"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={(e) => {
+                  handleRestrictedAction(e);
+                  if (!e.defaultPrevented) setIsMobileMenuOpen(false);
+                }}
                 className="text-lg font-semibold text-center text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors py-4 rounded-2xl"
               >
                 Login
               </Link>
               <Link
                 href="/app/login"
-                onClick={() => setIsMobileMenuOpen(false)}
+                onClick={(e) => {
+                  handleRestrictedAction(e);
+                  if (!e.defaultPrevented) setIsMobileMenuOpen(false);
+                }}
                 className="text-lg font-semibold text-center text-white bg-orange-500 hover:bg-orange-600 transition-colors py-4 rounded-2xl shadow-sm"
               >
                 Get Started

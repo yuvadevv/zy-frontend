@@ -1,5 +1,9 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
+import toast from 'react-hot-toast';
+
 import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -7,6 +11,20 @@ import { ArrowRight } from 'lucide-react';
 import { fadeInUp } from './animations';
 
 export function CTA() {
+
+  const { data: bootstrapData } = useQuery({
+    queryKey: ["bootstrap"],
+    queryFn: fetchBootstrapConfig,
+    staleTime: 1000 * 60,
+  });
+  const isComingSoon = bootstrapData?.data?.coming_soon;
+
+  const handleRestrictedAction = (e: React.MouseEvent) => {
+    if (isComingSoon) {
+      e.preventDefault();
+      toast('This feature is currently disabled during Coming Soon mode.', { icon: '🔒' });
+    }
+  };
   return (
     <section className="relative overflow-hidden bg-orange-500 text-white py-24 border-y border-orange-600">
       <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
@@ -32,7 +50,7 @@ export function CTA() {
           className="flex flex-col sm:flex-row justify-center gap-4"
         >
           <Link
-            href="/app/login"
+            href="/app/login" onClick={handleRestrictedAction}
             className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-white px-8 text-lg font-bold text-orange-600 shadow-xl transition-all hover:-translate-y-1 hover:shadow-2xl active:scale-95"
           >
             Start Printing <ArrowRight className="w-5 h-5" />

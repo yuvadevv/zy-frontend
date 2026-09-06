@@ -105,9 +105,40 @@ export const vendorClient = {
   },
 
   async getDocumentAccessUrl(documentId: string) {
-
     const res = await this.fetch(`/api/vendor/documents/${documentId}/access`);
     const blob = await (res as unknown as Response).blob();
     return URL.createObjectURL(blob);
+  },
+
+  async getDocumentBlob(documentId: string): Promise<Blob> {
+    const res = await this.fetch(`/api/vendor/documents/${documentId}/access`);
+    return (res as unknown as Response).blob();
+  },
+
+  async getDocuments(params: any = {}) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) query.append(key, value.toString());
+    });
+    return this.fetch(`/api/vendor/documents?${query.toString()}`);
+  },
+
+  async getActivity(params: any = {}) {
+    const query = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) query.append(key, value.toString());
+    });
+    return this.fetch(`/api/vendor/activity?${query.toString()}`);
+  },
+
+  async getProfile() {
+    return this.fetch('/api/vendor/profile');
+  },
+
+  async updateProfile(data: any) {
+    return this.fetch('/api/vendor/profile', {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
   }
 };

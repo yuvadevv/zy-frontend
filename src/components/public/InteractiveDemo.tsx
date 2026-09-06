@@ -1,5 +1,9 @@
 'use client';
 
+import { useQuery } from '@tanstack/react-query';
+import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
+import toast from 'react-hot-toast';
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Upload, Palette, Copy, BookOpen, MapPin, CheckCircle, ArrowRight } from 'lucide-react';
@@ -7,6 +11,20 @@ import Link from 'next/link';
 import { SectionContainer, SectionHeading } from './SectionContainer';
 
 export function InteractiveDemo() {
+
+  const { data: bootstrapData } = useQuery({
+    queryKey: ["bootstrap"],
+    queryFn: fetchBootstrapConfig,
+    staleTime: 1000 * 60,
+  });
+  const isComingSoon = bootstrapData?.data?.coming_soon;
+
+  const handleRestrictedAction = (e: React.MouseEvent) => {
+    if (isComingSoon) {
+      e.preventDefault();
+      toast('This feature is currently disabled during Coming Soon mode.', { icon: '🔒' });
+    }
+  };
   const [step, setStep] = useState(1);
 
   const nextStep = () => {
@@ -113,7 +131,7 @@ export function InteractiveDemo() {
                   <button onClick={resetDemo} className="py-4 px-8 bg-gray-100 hover:bg-gray-200 rounded-xl font-bold transition-colors">
                     Restart Demo
                   </button>
-                  <Link href="/app/login" className="py-4 px-8 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30">
+                  <Link href="/app/login" onClick={handleRestrictedAction} className="py-4 px-8 bg-orange-500 hover:bg-orange-600 text-white rounded-xl font-bold transition-colors flex items-center justify-center gap-2 shadow-lg shadow-orange-500/30">
                     Start Printing For Real <ArrowRight className="w-5 h-5" />
                   </Link>
                 </div>

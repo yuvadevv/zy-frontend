@@ -176,7 +176,7 @@ export default function HomeDashboard() {
           <Suspense fallback={<WidgetSkeleton />}>
             <section>
               <SectionHeader title="Today's Highlights" />
-              <TodaysHighlights highlights={[]} />
+              <TodaysHighlights />
             </section>
           </Suspense>
         );

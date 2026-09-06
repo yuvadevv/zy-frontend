@@ -93,15 +93,22 @@ export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 10
       </div>
 
       {/* Binding */}
-      {(!allowedBindings || (allowedBindings.length > 0 && !allowedBindings.includes('none'))) && (
+      {(!allowedBindings || (allowedBindings.length > 0)) && (
         <div className="flex flex-col gap-3">
           <label className="font-semibold text-foreground">Binding Option</label>
-          <div className="grid grid-cols-1 gap-3">
+          <div className="grid grid-cols-2 gap-3">
             <button
-              onClick={() => {}}
-              className={`p-4 rounded-xl border text-center transition-all flex items-center justify-center gap-2 whitespace-nowrap bg-primary border-primary text-primary-foreground font-bold shadow-md`}
+              onClick={() => updateConfig({ bindingType: 'none' })}
+              className={`p-4 rounded-xl border text-center transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 ${config.bindingType === 'none' ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>
+              {config.bindingType === 'none' && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
+              No Binding
+            </button>
+            <button
+              onClick={() => updateConfig({ bindingType: 'spiral' })}
+              className={`p-4 rounded-xl border text-center transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 ${config.bindingType === 'spiral' ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
+            >
+              {config.bindingType === 'spiral' && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
               Spiral Binding
             </button>
           </div>

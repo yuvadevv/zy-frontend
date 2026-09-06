@@ -50,6 +50,12 @@ export const SessionManager = {
       localStorage.removeItem('bl_session_token');
       localStorage.removeItem('bl_session_user');
       document.cookie = 'bl_auth_token=; path=/; max-age=0; SameSite=Lax';
+      window.dispatchEvent(new CustomEvent('auth:logout'));
+      
+      const isAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/admin/login') || window.location.pathname.startsWith('/vendor/login');
+      if (!isAuthPage) {
+        window.location.href = '/login';
+      }
     } catch (e) {
       console.warn('Failed to clear session', e);
     }

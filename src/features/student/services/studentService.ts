@@ -45,7 +45,7 @@ export const studentService = {
         colleges: s.college_name ? { id: s.college_id, name: s.college_name } : undefined,
         branches: s.branch_name ? { id: s.branch_id, department_id: '', name: s.branch_name } : undefined,
         academic_years: s.year_label ? { id: s.year, name: s.year_label } : undefined,
-        sections: s.section ? { id: s.section, semester_id: '', name: s.section } : undefined,
+        sections: s.section ? { id: s.section, semester_id: '', name: s.section_name || s.section } : undefined,
       };
     } catch (error: any) {
       return null;

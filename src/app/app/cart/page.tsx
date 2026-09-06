@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { CartProvider, useCart } from '@/features/cart/providers/CartProvider';
 import { CartList } from '@/features/cart/components/CartList';
 import { PriceBreakdown } from '@/features/cart/components/PriceBreakdown';
-import { DeliveryCard } from '@/features/cart/components/DeliveryCard';
+import { DeliveryCard } from '@/features/checkout/components/DeliveryCard';
 import { CouponSection } from '@/features/cart/components/CouponSection';
 import { StickyCheckoutBar } from '@/features/cart/components/StickyCheckoutBar';
 import { CartSkeleton, CartErrorState } from '@/features/cart/components/CartStates';
@@ -54,7 +54,7 @@ const CartPageContent = () => {
             
             <div className="h-px w-full bg-border/50 my-2"></div>
             
-            <DeliveryCard info={cart.deliveryInfo} onEdit={() => console.log('Edit delivery')} />
+            <DeliveryCard />
             
             <CouponSection />
             

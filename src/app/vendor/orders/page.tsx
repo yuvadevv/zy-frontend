@@ -19,8 +19,9 @@ export default function VendorOrdersPage() {
   const [error, setError] = useState<string | null>(null);
   const [selectedOrders, setSelectedOrders] = useState<Set<string>>(new Set());
   
-  // Dashboard Metrics
+  // Dashboard Metrics & Profile
   const [metrics, setMetrics] = useState<any>(null);
+  const [vendorId, setVendorId] = useState<string | null>(null);
 
   // Filters
   const [search, setSearch] = useState('');
@@ -51,17 +52,19 @@ export default function VendorOrdersPage() {
       setLoading(true);
       setError(null);
       
-      const [data, dashboard] = await Promise.all([
+      const [data, dashboard, profile] = await Promise.all([
         vendorClient.getOrders({
           page, limit: 25, search, status, branch, year, semester, manual_id: manual, order_type: orderType, sort
         }),
-        vendorClient.getDashboard()
+        vendorClient.getDashboard(),
+        vendorClient.getProfile()
       ]);
       
       setOrders(data.orders);
       setTotalPages(data.totalPages || 1);
       setTotalCount(data.total || 0);
       setMetrics(dashboard.orders);
+      setVendorId(profile.id);
     } catch (err: any) {
       setError(err.message || 'Failed to load orders');
     } finally {
@@ -190,7 +193,9 @@ export default function VendorOrdersPage() {
       </div>
       
       {/* Common Manual Batches */}
-      <CommonManualBatches onSelectBatch={({ manual_id, branch, year, semester }) => {
+      <CommonManualBatches 
+        clientType="vendor"
+        onSelectBatch={({ manual_id, branch, year, semester }) => {
          setManual(manual_id || 'all');
          setBranch(branch ? branch.toString() : 'all');
          setYear(year ? year.toString() : 'all');
@@ -219,7 +224,7 @@ export default function VendorOrdersPage() {
           <select value={orderType} onChange={e => setOrderType(e.target.value)} className="border-gray-200 rounded-lg text-xs md:text-sm py-2 px-3 bg-gray-50">
             <option value="all">All Order Types</option>
             <option value="manual">Manuals</option>
-            <option value="custom_upload">Custom Uploads</option>
+            <option value="custom">Custom Uploads</option>
             <option value="hall_ticket">Hall Tickets</option>
           </select>
           <select value={status} onChange={e => setStatus(e.target.value)} className="border-gray-200 rounded-lg text-xs md:text-sm py-2 px-3 bg-gray-50">
@@ -369,6 +374,7 @@ export default function VendorOrdersPage() {
                     <th className="px-5 py-4">Student & Academic</th>
                     <th className="px-5 py-4">Manual / Item</th>
                     <th className="px-5 py-4">Amount & Payment</th>
+                    <th className="px-5 py-4">Vendor Assignment</th>
                     <th className="px-5 py-4">Status & ETA</th>
                     <th className="px-5 py-4 text-right">Action</th>
                   </tr>
@@ -381,8 +387,17 @@ export default function VendorOrdersPage() {
                   ) : orders.length === 0 ? (
                     <tr>
                       <td colSpan={7} className="px-5 py-16 text-center text-gray-500 text-base">
-                        No orders match your current filters.
-                        <button onClick={() => { setSearch(''); setStatus('all'); setOrderType('all'); setBranch('all'); setYear('all'); setSemester('all'); }} className="block mx-auto mt-3 text-[#FF6B00] hover:underline font-medium">Clear all filters</button>
+                        {search || status !== 'all' || orderType !== 'all' || branch !== 'all' || year !== 'all' || semester !== 'all' ? (
+                          <>
+                            No orders match your current filters.
+                            <button onClick={() => { setSearch(''); setStatus('all'); setOrderType('all'); setBranch('all'); setYear('all'); setSemester('all'); }} className="block mx-auto mt-3 text-[#FF6B00] hover:underline font-medium">Clear all filters</button>
+                          </>
+                        ) : (
+                          <>
+                            <div className="font-bold text-gray-700 mb-1">No orders assigned to you yet.</div>
+                            <div className="text-sm">You will see orders here once they are assigned by the Administrator.</div>
+                          </>
+                        )}
                       </td>
                     </tr>
                   ) : (
@@ -403,6 +418,7 @@ export default function VendorOrdersPage() {
                         <td className="px-5 py-4">
                           <div className="font-semibold text-gray-900">{order.student?.name || 'Not provided'}</div>
                           <div className="text-xs text-gray-500 mt-0.5">{order.student?.rollNumber || '-'}</div>
+                          <div className="text-xs text-gray-500 mt-0.5">{order.student?.phone || order.studentPhone || '-'}</div>
                           <div className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider">
                             {order.academic?.branchCode || '-'} {order.academic?.yearLabel ? `• ${order.academic.yearLabel}` : ''} {order.academic?.semesterLabel ? `• ${order.academic.semesterLabel}` : ''}
                           </div>
@@ -417,10 +433,25 @@ export default function VendorOrdersPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4">
-                          <div className="font-bold text-gray-900 text-base">{formatMoney(order.pricing?.grandTotal)}</div>
+                          <div className="font-bold text-gray-900 text-base">{formatMoney(order.pricing?.grandTotal || order.total)}</div>
                           <div className={`text-[10px] uppercase font-black tracking-widest mt-1 ${order.paymentStatus === 'paid' ? 'text-green-600' : 'text-amber-600'}`}>
                             {order.paymentStatus || 'Pending'}
                           </div>
+                        </td>
+                        <td className="px-5 py-4">
+                          {!order.vendorId ? (
+                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-gray-100 text-gray-600">
+                               AVAILABLE
+                             </span>
+                          ) : order.vendorId === vendorId ? (
+                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700">
+                               PROCESSING BY YOU
+                             </span>
+                          ) : (
+                             <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-semibold bg-blue-100 text-blue-700">
+                               PROCESSING BY {order.vendorName?.toUpperCase() || 'VENDOR'}
+                             </span>
+                          )}
                         </td>
                         <td className="px-5 py-4">
                           <StatusControl orderId={order.publicId} currentStatus={order.status} clientType="vendor" onUpdated={loadData} />

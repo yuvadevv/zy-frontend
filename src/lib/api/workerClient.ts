@@ -25,6 +25,10 @@ export const workerClient = {
       headers
     });
 
+    if (response.status === 401) {
+      SessionManager.clearSession();
+    }
+
     const data = await response.json();
 
     if (!response.ok) {
@@ -49,6 +53,10 @@ export const workerClient = {
       ...options,
       headers
     });
+
+    if (response.status === 401) {
+      SessionManager.clearSession();
+    }
 
     if (!response.ok) {
       let errorMessage = 'Worker API error';
@@ -120,10 +128,10 @@ export const workerClient = {
   },
 
   // Orders Endpoints (Auth Required)
-  async createOrder(items: unknown[], deliveryDetails: unknown) {
+  async createOrder(items: unknown[], deliveryDetails: unknown, couponCode?: string | null) {
     return this.fetch('/api/orders', {
       method: 'POST',
-      body: JSON.stringify({ items, deliveryDetails })
+      body: JSON.stringify({ items, deliveryDetails, couponCode })
     });
   },
 
@@ -132,7 +140,7 @@ export const workerClient = {
   },
 
   async calculatePricing(payload: any) {
-    return this.fetch('/api/pricing/calculate', {
+    return this.fetch('/api/orders/calculate-pricing', {
       method: 'POST',
       body: JSON.stringify(payload)
     });

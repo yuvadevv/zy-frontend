@@ -46,11 +46,18 @@ export const usePlaceOrder = () => {
         serviceType: item.serviceType === 'xerox' ? 'custom' : item.serviceType,
         manualId: item.serviceType === 'manual' ? (item.referenceId || item.id) : null,
         documentId: (item.serviceType === 'hall_ticket' || item.serviceType === 'custom' || item.serviceType === 'xerox') ? (item.referenceId || item.id) : null,
-        printOptions: item.printOptions
+        printOptions: {
+          ...item.printOptions,
+          copies: item.quantity
+        }
       }));
 
       // 1. Create Order
-      const apiResponse = await workerClient.createOrder(itemsPayload, request.checkoutState.deliveryDetails);
+      const apiResponse = await workerClient.createOrder(
+        itemsPayload, 
+        request.checkoutState.deliveryDetails, 
+        request.checkoutState.couponCode
+      );
       const orderId = apiResponse.orderId;
 
       // 2. Initialize Payment

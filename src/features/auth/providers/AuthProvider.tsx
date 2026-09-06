@@ -50,7 +50,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       }
     };
     window.addEventListener('storage', handleStorage);
-    return () => window.removeEventListener('storage', handleStorage);
+    
+    const handleLogoutEvent = () => {
+      initAuth();
+    };
+    window.addEventListener('auth:logout', handleLogoutEvent);
+    
+    return () => {
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('auth:logout', handleLogoutEvent);
+    };
   }, []);
 
   return (

@@ -91,8 +91,8 @@ function ReviewSelectionContent() {
       },
       priceBreakdown: {
         base: priceBreakdown?.unitPrice || 0,
-        printing: priceBreakdown?.printingAmount || 0,
-        binding: priceBreakdown?.bindingFee || 0,
+        printing: priceBreakdown?.printingCost || 0,
+        binding: priceBreakdown?.bindingCost || 0,
         color: config.color ? 4 * config.copies : 0, // Approx color portion
         total: priceBreakdown?.subtotal || 0
       },
@@ -121,10 +121,10 @@ function ReviewSelectionContent() {
           config={config} 
           priceBreakdown={{
             basePrice: priceBreakdown.unitPrice,
-            printingCost: priceBreakdown.printingAmount,
-            bindingCost: priceBreakdown.bindingFee,
+            printingCost: priceBreakdown.printingCost,
+            bindingCost: priceBreakdown.bindingCost,
             
-            total: priceBreakdown.finalTotal
+            total: priceBreakdown.subtotal
           }} 
           estimatedDelivery={estimatedDelivery}
           onAddToCart={handleAddToCart}

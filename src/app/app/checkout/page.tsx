@@ -7,10 +7,8 @@ import { CheckoutProvider, useCheckout } from '@/features/checkout/providers/Che
 import { usePlaceOrder } from '@/features/checkout/hooks/usePlaceOrder';
 import { AppHeader } from '@/features/app-shell/components/AppHeader';
 import { CheckoutHeader } from '@/features/checkout/components/CheckoutHeader';
-import { DeliveryCard } from '@/features/checkout/components/DeliveryCard';
 import { PaymentMethodCard } from '@/features/checkout/components/PaymentMethodCard';
 import { OrderNotesCard } from '@/features/checkout/components/OrderNotesCard';
-import { CouponCard } from '@/features/checkout/components/CouponCard';
 import { OrderSummaryCard } from '@/features/checkout/components/OrderSummaryCard';
 import { TermsCard } from '@/features/checkout/components/TermsCard';
 import { StickyCheckoutBar } from '@/features/checkout/components/StickyCheckoutBar';
@@ -22,7 +20,7 @@ import { workerClient } from '@/lib/api/workerClient';
 
 const CheckoutPageContent = () => {
   const router = useRouter();
-  const { cart } = useCart();
+  const { cart, coupon, deliveryDetails } = useCart();
   const { state, setDeliveryDetails, setPaymentMethodId, setCouponCode, setStudentNotes, setTermsAccepted, isValid, clearSession } = useCheckout();
   const { placeOrder, isPlacingOrder, error: orderError } = usePlaceOrder();
   
@@ -46,9 +44,13 @@ const CheckoutPageContent = () => {
         serviceType: i.serviceType,
         manualId: i.referenceId,
         documentId: i.referenceId, // Will use referenceId for custom uploads as well
-        printOptions: i.printOptions
+        printOptions: {
+          ...i.printOptions,
+          copies: i.quantity
+        }
       })) || [],
-      deliveryMethod: state.deliveryDetails?.mode || 'delivery'
+      deliveryMethod: state.deliveryDetails?.mode || 'delivery',
+      couponCode: state.couponCode || coupon
     }),
     enabled: !!cart && cart.items.length > 0
   });
@@ -60,10 +62,22 @@ const CheckoutPageContent = () => {
   const handlePlaceOrder = async () => {
     if (!cart) return;
     
+    // Merge checkout state with cart provider state for delivery and coupon
+    const finalCheckoutState = {
+      ...state,
+      couponCode: state.couponCode || coupon || null,
+      deliveryDetails: state.deliveryDetails || {
+        mode: 'CLASSROOM',
+        locationName: deliveryDetails ? `College Campus - ${deliveryDetails.building} Room ${deliveryDetails.roomNumber}` : 'College Campus',
+        building: deliveryDetails?.building,
+        roomNumber: deliveryDetails?.roomNumber
+      } as any
+    };
+
     const response = await placeOrder({
       cartId: cart.cartId,
       cartItems: cart.items,
-      checkoutState: state,
+      checkoutState: finalCheckoutState,
       idempotencyKey: Math.random().toString(36).substring(7)
     }, finalTotal);
 
@@ -104,9 +118,6 @@ const CheckoutPageContent = () => {
       ) : (
         <>
           <main className="flex-1 flex flex-col gap-6 w-full max-w-4xl mx-auto pb-40">
-            <h1 className="text-2xl font-bold text-foreground">Secure Checkout</h1>
-            <DeliveryCard />
-            
             <PaymentMethodCard 
               selectedId={state.paymentMethodId}
               onSelect={setPaymentMethodId}
@@ -115,12 +126,6 @@ const CheckoutPageContent = () => {
             <OrderNotesCard 
               notes={state.studentNotes}
               onChange={setStudentNotes}
-            />
-            
-            <CouponCard 
-              appliedCode={state.couponCode}
-              onApply={setCouponCode}
-              onRemove={() => setCouponCode(null)}
             />
             
             <OrderSummaryCard cart={cartWithBackendPricing} />

@@ -4,22 +4,43 @@ import { Cart, CartItem, CartStateStatus } from '../types';
 import { PrintConfig } from '@/features/manuals/types';
 import { TAX_RATE } from '../constants';
 
+export interface DeliveryDetails {
+  building: string;
+  roomNumber: string;
+}
+
 interface CartContextType {
   cart: Cart | null;
   status: CartStateStatus;
+  coupon: string | null;
+  deliveryDetails: DeliveryDetails | null;
+  setDeliveryDetails: (details: DeliveryDetails) => void;
   updateQuantity: (id: string, quantity: number) => void;
   removeItem: (id: string) => void;
-  applyCoupon: (code: string) => void;
+  applyCoupon: (code: string | null) => Promise<{ success: boolean; error?: string }>;
   refreshCart: () => void;
   addItem: (item: CartItem) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+import { useProfile } from '@/features/profile/hooks/useProfile';
+
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [cart, setCart] = useState<Cart | null>(null);
   const [status, setStatus] = useState<CartStateStatus>('loading');
   const [coupon, setCoupon] = useState<string | null>(null);
+  const [deliveryDetails, setDeliveryDetailsState] = useState<DeliveryDetails | null>(null);
+  const { academic, isLoading: isProfileLoading } = useProfile();
+
+  useEffect(() => {
+    if (!isProfileLoading && academic && !deliveryDetails) {
+      setDeliveryDetailsState({
+        building: academic.branchName || 'Main Block',
+        roomNumber: academic.classroomNumber || academic.section || 'N/A'
+      });
+    }
+  }, [academic, isProfileLoading]);
 
   const fetchCart = () => {
     setStatus('loading');
@@ -36,32 +57,66 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     fetchCart();
   }, []);
 
-  const recalculateCart = (items: CartItem[]) => {
-    let subtotal = 0;
-    const updatedItems = items.map(item => {
-      // The total is already calculated when the item is added and stored in priceBreakdown
-      // We only multiply by quantity if we are supporting multiple identical items via cart
-      // For BLINTZY, copies are inside config, so quantity is usually 1.
-      subtotal += item.priceBreakdown.total * item.quantity;
-      return item;
-    });
+  const recalculateCart = async (items: CartItem[], currentCoupon?: string | null) => {
+    try {
+      setStatus('loading');
+      
+      if (items.length === 0) {
+        setCart(prev => prev ? { ...prev, items: [], summary: { subtotal: 0, discount: 0, tax: 0, deliveryFee: 0, total: 0 } } : null);
+        setStatus('empty');
+        return;
+      }
 
-    const discount = coupon ? subtotal * 0.1 : 0;
-    const discountedTotal = subtotal - discount;
-    const tax = 0; // Removing tax to match unified pricing display
-    const grandTotal = discountedTotal + tax;
+      // We need to map CartItem to the API expected structure
+      const apiItems = items.map((item: any) => ({
+        serviceType: item.serviceType || item.type,
+        manualId: (item.serviceType === 'manual' || item.type === 'manual') ? (item.referenceId || item.id.split('_')[1] || item.id) : undefined,
+        documentId: ((item.serviceType || item.type) === 'hall_ticket' || (item.serviceType || item.type) === 'custom') ? (item.referenceId || item.id.split('_')[1] || item.id) : undefined,
+        pages: item.printOptions?.pages || item.config?.pages || 0,
+        printOptions: {
+          copies: item.quantity,
+          color: item.printOptions?.color ?? item.config?.color,
+          singleSided: item.printOptions?.singleSided ?? item.config?.singleSided,
+          bindingType: item.printOptions?.bindingType ?? item.config?.bindingType,
+          paperSize: item.printOptions?.paperSize ?? item.config?.paperSize
+        }
+      }));
 
-    setCart(prev => {
-      const newSummary = { subtotal, discount, tax, deliveryFee: 0, total: grandTotal };
-      return prev 
-        ? { ...prev, items: updatedItems, summary: newSummary }
-        : { cartId: `cart_${Date.now()}`, items: updatedItems, summary: newSummary };
-    });
-    
-    if (updatedItems.length === 0) {
-      setStatus('empty');
-    } else {
+      const finalCoupon = currentCoupon !== undefined ? currentCoupon : coupon;
+
+      const res = await import('@/lib/api/workerClient').then(m => m.workerClient.calculatePricing({
+        items: apiItems,
+        deliveryMethod: 'delivery',
+        couponCode: finalCoupon
+      }));
+
+      // Update cart summary with authoritative backend data
+      setCart(prev => {
+        const newSummary = { 
+          subtotal: res.summary.subtotal, 
+          discount: res.summary.couponDiscount || 0, 
+          tax: 0, 
+          deliveryFee: res.summary.deliveryFee || 0, 
+          total: res.summary.grandTotal 
+        };
+        return prev 
+          ? { ...prev, items, summary: newSummary }
+          : { cartId: `cart_${Date.now()}`, items, summary: newSummary };
+      });
+
+      if (res.couponError && finalCoupon) {
+        setCoupon(null);
+        // Will need to handle error in CouponSection directly, but for now we reset the invalid coupon
+        throw new Error(res.couponError);
+      } else {
+        setCoupon(res.appliedCoupon || null);
+      }
+
       setStatus('success');
+    } catch (err) {
+      console.error('Failed to recalculate cart:', err);
+      setStatus('error');
+      throw err;
     }
   };
 
@@ -78,9 +133,16 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     recalculateCart(items);
   };
 
-  const applyCoupon = (code: string) => {
-    setCoupon(code);
-    if (cart) recalculateCart(cart.items);
+  const applyCoupon = async (code: string | null) => {
+    if (cart) {
+      try {
+        await recalculateCart(cart.items, code);
+        return { success: true };
+      } catch (err: any) {
+        return { success: false, error: err.message };
+      }
+    }
+    return { success: false, error: 'Cart is empty' };
   };
 
   const addItem = (item: CartItem) => {
@@ -103,6 +165,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
     <CartContext.Provider value={{
       cart,
       status,
+      coupon,
+      deliveryDetails,
+      setDeliveryDetails: setDeliveryDetailsState,
       updateQuantity,
       removeItem,
       applyCoupon,

@@ -130,7 +130,7 @@ function OptionsSelectionContent() {
           <h1 className="text-2xl font-bold text-foreground">Print Options</h1>
         </div>
 
-        {isLoading ? (
+        {(isLoading || pricingLoading) ? (
           <div className="flex-1 flex flex-col items-center justify-center mt-20">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#FF6B00] mb-4"></div>
             <p className="text-gray-500 text-sm">Loading options...</p>
@@ -180,16 +180,12 @@ function OptionsSelectionContent() {
         <div className="px-4 mt-2 mb-6">
           <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3">
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Base Manual</span>
-              <span className="font-medium">₹{priceBreakdown.unitPrice}</span>
-            </div>
-            <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Printing</span>
-              <span className="font-medium">₹{priceBreakdown.printingAmount}</span>
+              <span className="font-medium">₹{priceBreakdown.printingCost}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Binding</span>
-              <span className="font-medium">₹{priceBreakdown.bindingFee}</span>
+              <span className="font-medium">₹{priceBreakdown.bindingCost}</span>
             </div>
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Delivery</span>

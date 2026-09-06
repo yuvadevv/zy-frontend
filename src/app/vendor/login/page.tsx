@@ -10,6 +10,7 @@ import { authService } from '@/features/auth/services/authService';
 import { TextInput } from '@/design-system/components/inputs/TextInput/TextInput';
 import { PasswordInput } from '@/design-system/components/inputs/PasswordInput/PasswordInput';
 import { Loader2, Printer } from 'lucide-react';
+import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
 
 export default function VendorLoginPage() {
   const [isLoading, setIsLoading] = useState(false);
@@ -17,6 +18,17 @@ export default function VendorLoginPage() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const urlError = searchParams.get('error');
+
+  React.useEffect(() => {
+    const oauthRes = handleOAuthHashRedirect();
+    if (oauthRes.handled) {
+      if (oauthRes.error) {
+        setError(oauthRes.error);
+      } else {
+        setIsLoading(true);
+      }
+    }
+  }, []);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema)
@@ -28,7 +40,7 @@ export default function VendorLoginPage() {
     setError(null);
     try {
       await authService.signInWithEmail(data);
-      router.replace('/vendor');
+      window.location.href = '/vendor';
     } catch (err: any) {
       setError(err.message || 'Failed to sign in');
       setIsLoading(false);

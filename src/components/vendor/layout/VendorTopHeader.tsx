@@ -65,6 +65,11 @@ export default function VendorTopHeader({ onMenuClick, title }: VendorTopHeaderP
             placeholder="Search active orders..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && searchQuery.trim()) {
+                router.push(`/vendor/orders?search=${encodeURIComponent(searchQuery.trim())}`);
+              }
+            }}
           />
         </div>
       </div>

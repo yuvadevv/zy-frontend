@@ -44,7 +44,9 @@ export const PrintDetailsCard = ({ item }: PrintDetailsCardProps) => {
         </div>
         <div className="flex flex-col gap-1">
           <span className="text-muted-foreground text-xs font-medium uppercase tracking-wider">Binding</span>
-          <span className="font-semibold text-foreground capitalize">{printConfig.bindingType}</span>
+          <span className="font-semibold text-foreground capitalize">
+            {printConfig.bindingType === 'none' ? 'No Binding' : printConfig.bindingType}
+          </span>
         </div>
       </div>
 

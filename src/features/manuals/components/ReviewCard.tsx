@@ -38,7 +38,7 @@ export const ReviewCard = ({ manual, config, priceBreakdown, estimatedDelivery, 
           <div className="flex flex-col">
             <span className="text-muted-foreground">Binding</span>
             <span className="font-semibold text-foreground capitalize">
-              {config.bindingType === 'none' ? 'Stapled' : config.bindingType}
+              {config.bindingType === 'none' ? 'No Binding' : config.bindingType}
             </span>
           </div>
           <div className="flex flex-col">
@@ -49,10 +49,6 @@ export const ReviewCard = ({ manual, config, priceBreakdown, estimatedDelivery, 
       </div>
 
       <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Base Manual</span>
-          <span className="font-medium">₹{priceBreakdown.basePrice}</span>
-        </div>
         <div className="flex justify-between text-sm">
           <span className="text-muted-foreground">Printing</span>
           <span className="font-medium">₹{priceBreakdown.printingCost}</span>
