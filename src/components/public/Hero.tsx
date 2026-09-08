@@ -51,12 +51,15 @@ export function Hero() {
           >
             
             <motion.div variants={fadeInUp} className="mb-6">
-              <h1 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-gray-900 leading-[1.1]">
+              <h1 className="text-orange-500 font-bold tracking-wide uppercase text-sm mb-4">
+                A Smarter Way to Print and Access Academic Documents
+              </h1>
+              <h2 className="text-5xl lg:text-7xl font-extrabold tracking-tight text-gray-900 leading-[1.1]">
                 {heading} <br/>
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-orange-400">
                   {headingHighlight}
                 </span>
-              </h1>
+              </h2>
             </motion.div>
             
             <motion.p variants={fadeInUp} className="text-lg lg:text-xl text-gray-600 mb-10 max-w-lg leading-relaxed">

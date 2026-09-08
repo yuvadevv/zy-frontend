@@ -21,7 +21,16 @@ export const ReviewStep = () => {
     setIsLoading(true);
     setError(null);
     try {
-      const mappedSemesterId = "00000000-0000-0000-0000-000000000001"; // Mock or resolve from backend
+      // Fetch academic options to get a valid semester ID for the selected year
+      const { academicService } = await import('../services/academicService');
+      const options = await academicService.getAllOptions();
+      
+      const validSemester = options.semesters.find(s => s.academic_year_id === step2Data.academicYearId);
+      const mappedSemesterId = validSemester ? validSemester.id : "";
+
+      if (!mappedSemesterId) {
+        throw new Error("Could not find a valid semester for the selected academic year.");
+      }
       
       if (user) {
         await authService.submitOnboarding(
@@ -30,7 +39,7 @@ export const ReviewStep = () => {
           step1Data,
           step2Data,
           mappedSemesterId,
-          "" // Empty string or omit, since classroom_id is gone. But submitOnboarding still takes mappedClassroomId as a parameter right now? Wait, I didn't remove the param from submitOnboarding, I just ignored it. Let me pass "" to avoid issues.
+          "" // Empty string or omit, since classroom_id is gone.
         );
         await refreshProfile();
       } else {

@@ -3,13 +3,15 @@ import { Navbar } from '@/components/public/Navbar';
 import { Footer } from '@/components/public/Footer';
 import { Building2, Printer, Briefcase, Mail, HelpCircle, ArrowRight } from 'lucide-react';
 import { DynamicSupportEmail } from './DynamicSupportEmail';
+import { getPublicPlatformStatus } from '@/lib/api/server/platform';
 
 export const metadata: Metadata = {
   title: 'Contact | BLINTZY Campus Printing',
   description: 'Get in touch with BLINTZY for business inquiries, print partnerships, and college integrations.',
 };
 
-export default function ContactPage() {
+export default async function ContactPage() {
+  const status = await getPublicPlatformStatus();
   return (
     <div className="flex flex-col min-h-screen bg-white">
       <Navbar />
@@ -136,7 +138,7 @@ export default function ContactPage() {
         </div>
       </main>
       
-      <Footer />
+      <Footer socialLinks={status?.social_links} />
     </div>
   );
 }

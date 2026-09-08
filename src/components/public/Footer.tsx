@@ -1,7 +1,17 @@
 import React from 'react';
 import Link from 'next/link';
+import { SocialLinks } from '@/lib/api/server/platform';
+import { validateSocialUrl } from '@/utils/socialValidation';
 
-export function Footer() {
+type FooterProps = {
+  socialLinks?: SocialLinks;
+};
+
+export function Footer({ socialLinks = {} }: FooterProps) {
+  const validTwitter = validateSocialUrl(socialLinks?.twitter, 'twitter');
+  const validLinkedin = validateSocialUrl(socialLinks?.linkedin, 'linkedin');
+  const validInstagram = validateSocialUrl(socialLinks?.instagram, 'instagram');
+
   return (
     <footer className="bg-gray-900 text-gray-400 py-16 border-t border-gray-800">
       <div className="container mx-auto px-6 max-w-7xl">
@@ -53,9 +63,15 @@ export function Footer() {
         <div className="flex flex-col md:flex-row items-center justify-between pt-8 border-t border-gray-800 text-sm">
           <p>© {new Date().getFullYear()} Blintzy Inc. All rights reserved.</p>
           <div className="flex gap-4 mt-4 md:mt-0">
-            <span className="hover:text-white cursor-pointer transition-colors">Twitter</span>
-            <span className="hover:text-white cursor-pointer transition-colors">LinkedIn</span>
-            <span className="hover:text-white cursor-pointer transition-colors">Instagram</span>
+            {validTwitter && (
+              <a href={validTwitter} target="_blank" rel="noopener noreferrer" className="hover:text-white cursor-pointer transition-colors">Twitter</a>
+            )}
+            {validLinkedin && (
+              <a href={validLinkedin} target="_blank" rel="noopener noreferrer" className="hover:text-white cursor-pointer transition-colors">LinkedIn</a>
+            )}
+            {validInstagram && (
+              <a href={validInstagram} target="_blank" rel="noopener noreferrer" className="hover:text-white cursor-pointer transition-colors">Instagram</a>
+            )}
           </div>
           <span className="mt-4 md:mt-0 opacity-50">Version 1.0.0</span>
         </div>

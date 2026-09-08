@@ -10,6 +10,11 @@ export interface BootstrapConfig {
   feature_flags: Record<string, boolean>;
   support: string;
   server_time: string;
+  social_links?: {
+    twitter?: string;
+    linkedin?: string;
+    instagram?: string;
+  };
 }
 
 export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: BootstrapConfig }> {
@@ -34,7 +39,8 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
         force_update: false,
         feature_flags: {},
         support: response.support_email || "",
-        server_time: new Date().toISOString()
+        server_time: new Date().toISOString(),
+        social_links: response.social_links || {}
       }
     };
   } catch (err) {
@@ -51,7 +57,8 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
         force_update: false,
         feature_flags: {},
         support: "",
-        server_time: new Date().toISOString()
+        server_time: new Date().toISOString(),
+        social_links: {}
       }
     };
   }

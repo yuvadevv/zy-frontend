@@ -52,7 +52,10 @@ export function BootstrapGuard({ children }: { children: React.ReactNode }) {
   };
 
   if (isOffline) return <NoInternetScreen />;
-  if (isLoading) return <SplashScreen />;
+  if (isLoading) {
+    if (isPublicRoute) return <>{children}</>;
+    return <SplashScreen />;
+  }
   if (isError) return <SplashScreen />; // Or generic retry screen
   if (data?.data.maintenance && !isAdminOrVendor) return <MaintenanceScreen />;
   if (data?.data.coming_soon && !isAdminOrVendor) {

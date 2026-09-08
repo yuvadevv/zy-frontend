@@ -5,7 +5,12 @@ export const studentService = {
   getProfile: async (userId: string): Promise<StudentProfile | null> => {
     try {
       const data = await workerClient.fetch('/api/students/me');
-      if (!data?.student) return null;
+      if (!data?.student) {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+        return null;
+      }
       if (typeof document !== 'undefined') {
         document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
       }
@@ -24,6 +29,11 @@ export const studentService = {
         updated_at: s.updated_at,
       };
     } catch (error: any) {
+      if (error?.message?.toLowerCase().includes('not found')) {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+      }
       return null;
     }
   },
@@ -31,7 +41,12 @@ export const studentService = {
   getAcademicRecord: async (userId: string): Promise<StudentAcademicRecord | null> => {
     try {
       const data = await workerClient.fetch('/api/students/me');
-      if (!data?.student) return null;
+      if (!data?.student) {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+        return null;
+      }
       const s = data.student;
       return {
         student_id: s.id || userId,
@@ -48,6 +63,11 @@ export const studentService = {
         sections: s.section ? { id: s.section, semester_id: '', name: s.section_name || s.section } : undefined,
       };
     } catch (error: any) {
+      if (error?.message?.toLowerCase().includes('not found')) {
+        if (typeof document !== 'undefined') {
+          document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+      }
       return null;
     }
   },
