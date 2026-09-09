@@ -12,6 +12,7 @@ import CommonManualBatches from '@/features/operations/CommonManualBatches';
 import ImportWizard from '@/features/operations/ImportWizard';
 import { generateExcelExport } from '@/features/operations/ExportGenerator';
 import { MobileOrderCard } from '@/features/operations/MobileOrderCard';
+import { Printer } from 'lucide-react';
 
 export default function AdminOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -168,6 +169,46 @@ export default function AdminOrdersPage() {
     }
   };
 
+  const handleDownloadDocument = async (docId: string, filename: string) => {
+    try {
+      toast.loading('Preparing download...', { id: 'doc' });
+      const blob = await adminClient.getDocumentBlob(docId);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename || 'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success('Download started', { id: 'doc' });
+    } catch (err) {
+      toast.error('Failed to download document', { id: 'doc' });
+    }
+  };
+
+  const handlePrintDocument = async (docId: string) => {
+    try {
+      toast.loading('Preparing print...', { id: 'doc' });
+      const blob = await adminClient.getDocumentBlob(docId);
+      const url = URL.createObjectURL(blob);
+      const iframe = document.createElement('iframe');
+      iframe.style.display = 'none';
+      iframe.src = url;
+      document.body.appendChild(iframe);
+      iframe.onload = () => {
+        iframe.contentWindow?.print();
+        toast.success('Ready to print', { id: 'doc' });
+        setTimeout(() => {
+          document.body.removeChild(iframe);
+          URL.revokeObjectURL(url);
+        }, 3000);
+      };
+    } catch (err) {
+      toast.error('Failed to print document', { id: 'doc' });
+    }
+  };
+
   return (
     <div className="space-y-6 max-w-7xl mx-auto pb-20 p-4 md:p-6">
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2">
@@ -187,6 +228,28 @@ export default function AdminOrdersPage() {
              <Download className="w-4 h-4"/> Export Filtered
            </button>
         </div>
+      </div>
+      
+      {/* Quick Filters */}
+      <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200 pb-4">
+        {[
+          { id: 'all', label: 'All Orders' },
+          { id: 'manual', label: 'Manuals' },
+          { id: 'hall_ticket', label: 'Hall Tickets' },
+          { id: 'custom', label: 'Custom Uploads' }
+        ].map(tab => (
+          <button
+            key={tab.id}
+            onClick={() => setOrderType(tab.id)}
+            className={`px-5 py-2.5 rounded-xl text-sm font-bold transition-all shadow-sm ${
+              orderType === tab.id 
+                ? 'bg-[#FF6B00] text-white ring-2 ring-[#FF6B00]/20 ring-offset-1' 
+                : 'bg-white text-gray-600 hover:bg-gray-50 border border-gray-200'
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
       </div>
       
       {/* Common Manual Batches */}
@@ -429,12 +492,32 @@ export default function AdminOrdersPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <Link 
-                            href={`/admin/orders/${order.publicId}`}
-                            className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                          >
-                            Manage
-                          </Link>
+                          <div className="flex justify-end gap-2 items-center">
+                            {order.items?.some((i: any) => i.document_id) && (
+                              <div className="flex gap-1 mr-2 border-r border-gray-200 pr-3">
+                                <button
+                                  onClick={() => handleDownloadDocument(order.items.find((i: any) => i.document_id).document_id, order.items.find((i: any) => i.document_id).document_filename)}
+                                  className="p-2 text-gray-500 hover:text-[#FF6B00] hover:bg-orange-50 rounded-lg transition-colors"
+                                  title="Download Document"
+                                >
+                                  <Download className="w-4 h-4" />
+                                </button>
+                                <button
+                                  onClick={() => handlePrintDocument(order.items.find((i: any) => i.document_id).document_id)}
+                                  className="p-2 text-gray-500 hover:text-[#FF6B00] hover:bg-orange-50 rounded-lg transition-colors"
+                                  title="Direct Print"
+                                >
+                                  <Printer className="w-4 h-4" />
+                                </button>
+                              </div>
+                            )}
+                            <Link 
+                              href={`/admin/orders/${order.publicId}`}
+                              className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
+                            >
+                              Manage
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     ))

@@ -108,6 +108,24 @@ export const adminClient = {
     });
   },
 
+  async getDocumentBlob(documentId: string) {
+    const headers = new Headers();
+    const token = SessionManager.getToken();
+    if (token) {
+      headers.set('Authorization', `Bearer ${token}`);
+    }
+
+    const response = await fetch(`${WORKER_URL}/api/documents/stream/${documentId}`, {
+      headers
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to fetch document');
+    }
+
+    return await response.blob();
+  },
+
   async getDocumentAccessUrl(documentId: string) {
     // This requires the admin to fetch it with their JWT. We can return the full endpoint
     // and let the frontend attach auth, or download it via fetch and blob.

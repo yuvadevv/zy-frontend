@@ -39,8 +39,21 @@ export default function SignupPage() {
     if (resendCooldown > 0) {
       timer = setTimeout(() => setResendCooldown(c => c - 1), 1000);
     }
-    return () => clearTimeout(timer);
-  }, [resendCooldown]);
+    
+    let pollInterval: NodeJS.Timeout;
+    if (verificationEmail) {
+      pollInterval = setInterval(() => {
+        if (typeof document !== 'undefined' && document.cookie.includes('bl_auth_token=')) {
+          router.push('/verified?next=%2Fapp%2Fonboarding');
+        }
+      }, 2000);
+    }
+
+    return () => {
+      clearTimeout(timer);
+      clearInterval(pollInterval);
+    };
+  }, [resendCooldown, verificationEmail, router]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<SignupFormData>({
     resolver: zodResolver(signupSchema)
@@ -52,7 +65,7 @@ export default function SignupPage() {
     setError(null);
     try {
       const response = await authService.signUpWithEmail(data);
-      if (response?.user && !response?.session) {
+      if (!response?.session) {
         setVerificationEmail(data.email);
       } else {
         router.push('/app/onboarding');

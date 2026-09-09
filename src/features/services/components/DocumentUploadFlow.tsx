@@ -77,11 +77,10 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
   });
 
   const breakdown = pricingResponse?.items?.[0] || {
-    subtotal: 0,
+    subtotal: undefined,
     printingCost: 0,
     bindingCost: 0,
-    colorCost: 0,
-    total: 0
+    colorCost: 0
   };
   
   const handleAddToCart = () => {
@@ -102,7 +101,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
         printing: breakdown.printingCost,
         binding: breakdown.bindingCost,
         color: breakdown.colorCost,
-        total: breakdown.total
+        total: breakdown.subtotal
       },
       status: 'in_cart',
       editable: true,
@@ -215,34 +214,48 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
                 onChange={setConfig} 
                 allowedBindings={allowedBindings}
               />
+              
+              <div className="mt-8">
+                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3 mb-6">
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Printing</span>
+                    <span className="font-medium">₹{breakdown.printingCost !== undefined ? breakdown.printingCost : '...'}</span>
+                  </div>
+                  {config.bindingType !== 'none' && (
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">Binding</span>
+                      <span className="font-medium">₹{breakdown.bindingCost !== undefined ? breakdown.bindingCost : '...'}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">Delivery</span>
+                    <span className="font-bold text-green-600">FREE</span>
+                  </div>
+                  <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-1">
+                    <span className="font-bold text-foreground">Total Price</span>
+                    <span className="text-2xl font-black text-primary">₹{breakdown.subtotal !== undefined ? breakdown.subtotal : '...'}</span>
+                  </div>
+                </div>
+                
+                <div className="bg-secondary/20 rounded-xl p-4 flex flex-col items-center justify-center border border-secondary/30 mb-6">
+                  <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estimated Delivery</span>
+                  <span className="text-sm font-bold text-foreground">{pricingResponse?.estimatedDelivery || 'Tomorrow, 9:15 AM'}</span>
+                </div>
+
+                <button
+                  onClick={handleAddToCart}
+                  disabled={isAdding || breakdown.subtotal === undefined}
+                  className="w-full bg-primary text-primary-foreground font-bold py-6 text-lg rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform disabled:opacity-70 disabled:hover:scale-100"
+                >
+                  {isAdding ? 'Adding to Cart...' : breakdown.subtotal === undefined ? 'Calculating Price...' : 'Add to Cart'}
+                </button>
+              </div>
             </>
           )}
         </div>
       </div>
-
-      {file && !isScanning && pageCount && (
-        <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border shadow-[0_-4px_10px_rgba(0,0,0,0.05)] p-4">
-          <div className="max-w-4xl mx-auto">
-            <div className="flex justify-between items-center mb-3">
-              <span className="text-sm text-muted-foreground font-medium">Delivery: <span className="text-green-600 font-bold">FREE</span></span>
-              <span className="text-sm font-bold text-foreground">{pricingResponse?.estimatedDelivery || 'Tomorrow, 9:15 AM'}</span>
-            </div>
-            <div className="flex gap-4">
-              <div className="flex flex-col justify-center">
-                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground leading-none">Total</span>
-                <span className="text-xl font-black text-foreground">₹{breakdown.total || '...'}</span>
-              </div>
-              <button 
-                onClick={handleAddToCart}
-                disabled={isAdding}
-                className="flex-1 bg-primary text-primary-foreground font-bold py-3.5 rounded-xl shadow-md active:scale-95 transition-all"
-              >
-                {isAdding ? 'Adding...' : 'Add to Cart →'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };
+
+

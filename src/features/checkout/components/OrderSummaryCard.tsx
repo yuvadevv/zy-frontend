@@ -26,7 +26,9 @@ export const OrderSummaryCard = ({ cart }: OrderSummaryCardProps) => {
               <span className="font-semibold">{item.title}</span>
               <span className="text-xs text-muted-foreground">Qty: {item.quantity}</span>
             </div>
-            <span className="font-bold">₹{item.priceBreakdown.total.toFixed(2)}</span>
+            <span className="font-bold">
+              ₹{typeof item.priceBreakdown.total === 'number' ? item.priceBreakdown.total.toFixed(2) : '...'}
+            </span>
           </div>
         ))}
       </div>

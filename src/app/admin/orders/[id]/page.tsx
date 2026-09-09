@@ -84,6 +84,20 @@ export default function AdminOrderDetails() {
     }
   };
 
+  const handleOpenPdf = async (docId: string, filename: string) => {
+    try {
+      toast.loading('Opening document...', { id: 'pdf' });
+      const blob = await adminClient.getDocumentBlob(docId);
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+      toast.success('Document opened', { id: 'pdf' });
+      // Clean up after some time
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch (err) {
+      toast.error('Failed to open document', { id: 'pdf' });
+    }
+  };
+
   if (loading) return <div className="max-w-7xl mx-auto p-6 flex justify-center py-20 text-gray-500 font-medium tracking-wide">Loading order details...</div>;
 
   if (error || !order) {
@@ -128,16 +142,15 @@ export default function AdminOrderDetails() {
                       <h4 className="font-bold text-gray-900 text-lg">{item.title || item.name}</h4>
                       <p className="text-sm text-gray-500 mt-1">{item.pages} Pages • {item.printType || item.print_type} • Binding: {item.binding || item.binding_type}</p>
                       
-                      {item.document_uuid && (
+                      {item.document_id && (
                         <div className="mt-2">
-                          <a 
-                            href={`${process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500'}/api/documents/stream/${item.document_uuid}`} 
-                            target="_blank" rel="noopener noreferrer"
-                            className="inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 text-xs font-medium rounded-full hover:bg-blue-100 transition-colors border border-blue-100"
+                          <button 
+                            onClick={() => handleOpenPdf(item.document_id, item.document_filename || 'document.pdf')}
+                            className="inline-flex items-center px-4 py-2 bg-primary/10 text-primary text-xs font-bold rounded-xl hover:bg-primary/20 transition-colors border border-primary/20"
                           >
-                            <FileText className="w-3 h-3 mr-1.5" />
+                            <FileText className="w-4 h-4 mr-2" />
                             View Document: {item.document_filename || 'PDF'}
-                          </a>
+                          </button>
                         </div>
                       )}
                     </div>

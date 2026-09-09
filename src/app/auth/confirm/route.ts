@@ -31,7 +31,8 @@ export async function GET(request: Request) {
       const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
       
       if (token) {
-        const response = NextResponse.redirect(`${origin}${safeNext}`);
+        const verifiedUrl = `${origin}/verified?next=${encodeURIComponent(safeNext)}`;
+        const response = NextResponse.redirect(verifiedUrl);
         response.cookies.set('bl_auth_token', token, {
           path: '/',
           maxAge: 60 * 60 * 24 * 30, // 30 days
@@ -84,7 +85,7 @@ export async function GET(request: Request) {
             localStorage.setItem('bl_session_token', token);
             if (user) localStorage.setItem('bl_session_user', JSON.stringify(user));
             document.cookie = 'bl_auth_token=' + encodeURIComponent(token) + '; path=/; max-age=2592000; SameSite=Lax';
-            window.location.replace('${safeNext}');
+            window.location.replace('/verified?next=' + encodeURIComponent('${safeNext}'));
             return;
           }
         }
