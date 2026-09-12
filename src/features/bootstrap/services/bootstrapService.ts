@@ -19,7 +19,9 @@ export interface BootstrapConfig {
 
 export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: BootstrapConfig }> {
   try {
-    const response = await workerClient.getPlatformStatus();
+    const rawResponse = await workerClient.getPlatformStatus();
+    const response = rawResponse.data || rawResponse;
+
     const isMaintenance = typeof response.maintenance_mode === 'object' && response.maintenance_mode !== null
       ? Boolean((response.maintenance_mode as any).enabled)
       : Boolean(response.maintenance_mode);
@@ -44,7 +46,7 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
       }
     };
   } catch (err) {
-    console.error('Failed to fetch platform status:', err);
+    console.warn('Failed to fetch platform status (fallback active):', err);
     // Fallback if worker is completely down
     return {
       success: false,

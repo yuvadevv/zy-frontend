@@ -18,7 +18,8 @@ import { CTA } from '@/components/public/CTA';
 import { Footer } from '@/components/public/Footer';
 import { getPublicPlatformStatus } from '@/lib/api/server/platform';
 
-import { constructMetadata } from '@/lib/seo/metadata';
+import { constructMetadata, siteConfig } from '@/lib/seo/metadata';
+import Script from 'next/script';
 
 export const metadata: Metadata = constructMetadata({
   canonicalPath: '',
@@ -26,8 +27,40 @@ export const metadata: Metadata = constructMetadata({
 
 export default async function LandingPage() {
   const status = await getPublicPlatformStatus();
+  
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Organization",
+        "@id": `${siteConfig.url}/#organization`,
+        "name": siteConfig.name,
+        "url": siteConfig.url,
+        "logo": {
+          "@type": "ImageObject",
+          "url": `${siteConfig.url}/icon.png`
+        },
+        "sameAs": Object.values(siteConfig.links)
+      },
+      {
+        "@type": "WebSite",
+        "@id": `${siteConfig.url}/#website`,
+        "url": siteConfig.url,
+        "name": siteConfig.name,
+        "publisher": {
+          "@id": `${siteConfig.url}/#organization`
+        }
+      }
+    ]
+  };
+
   return (
     <div className="flex flex-col min-h-screen bg-white overflow-hidden selection:bg-orange-500 selection:text-white">
+      <Script
+        id="json-ld-homepage"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
       <main>
         <Hero />

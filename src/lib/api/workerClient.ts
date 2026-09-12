@@ -163,5 +163,21 @@ export const workerClient = {
       method: 'POST',
       body: JSON.stringify({ providerOrderId, providerPaymentId, providerSignature })
     });
+  },
+
+  // Refunds
+  async getRefundHistory() {
+    return this.fetch('/api/refunds');
+  },
+
+  // Notifications
+  async getNotifications() {
+    return this.fetch('/api/notifications');
+  },
+
+  async markNotificationRead(id: string) {
+    return this.fetch(`/api/notifications/${id}/read`, {
+      method: 'POST'
+    });
   }
 };

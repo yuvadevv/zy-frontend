@@ -7,15 +7,15 @@ export const notificationService = {
     return await notificationApi.getNotifications(page);
   },
   
-  markAsRead: async (id: string) => {
+  markAsRead: async (id: string): Promise<void> => {
     return await notificationApi.markAsRead(id);
   },
   
-  markAllAsRead: async () => {
+  markAllAsRead: async (): Promise<void> => {
     return await notificationApi.markAllAsRead();
   },
 
-  archiveNotification: async (id: string) => {
+  archiveNotification: async (id: string): Promise<void> => {
     return await notificationApi.updateStatus(id, 'ARCHIVED');
   }
 };

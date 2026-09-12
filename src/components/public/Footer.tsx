@@ -15,7 +15,7 @@ export function Footer({ socialLinks = {} }: FooterProps) {
   return (
     <footer className="bg-gray-900 text-gray-400 py-16 border-t border-gray-800">
       <div className="container mx-auto px-6 max-w-7xl">
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-8 mb-16">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 mb-16">
           <div className="col-span-2 lg:col-span-2">
             <Link href="/" className="flex items-center gap-2 mb-6">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white font-bold text-xl shadow-sm">
@@ -37,6 +37,16 @@ export function Footer({ socialLinks = {} }: FooterProps) {
               <li><Link href="/#how-it-works" className="hover:text-orange-500 transition-colors">How it Works</Link></li>
               <li><Link href="/app/login" className="hover:text-orange-500 transition-colors">Student Login</Link></li>
               <li><Link href="/app/login" className="hover:text-orange-500 transition-colors">Sign Up</Link></li>
+            </ul>
+          </div>
+
+          <div>
+            <h4 className="text-white font-bold mb-4">Services</h4>
+            <ul className="space-y-3 text-sm">
+              <li><Link href="/services/academic-manual-printing" className="hover:text-orange-500 transition-colors">Manual Printing</Link></li>
+              <li><Link href="/services/custom-pdf-printing" className="hover:text-orange-500 transition-colors">PDF Printing</Link></li>
+              <li><Link href="/services/hall-ticket-printing" className="hover:text-orange-500 transition-colors">Hall Tickets</Link></li>
+              <li><Link href="/services/campus-document-delivery" className="hover:text-orange-500 transition-colors">Campus Delivery</Link></li>
             </ul>
           </div>
 

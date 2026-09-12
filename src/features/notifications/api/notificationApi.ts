@@ -1,56 +1,49 @@
 // src/features/notifications/api/notificationApi.ts
 import { NotificationItem, NotificationStatus } from '../types';
-import { mockNotifications } from '../services/mockNotifications';
-
-let notificationsCache = [...mockNotifications];
+import { workerClient } from '@/lib/api/workerClient';
 
 export const notificationApi = {
   getNotifications: async (page: number = 1, limit: number = 20): Promise<{ items: NotificationItem[], total: number, unreadCount: number }> => {
-    await new Promise(resolve => setTimeout(resolve, 800)); // Network delay
-
-    // Compute unread count globally
-    const unreadCount = notificationsCache.filter(n => n.status === 'UNREAD').length;
-
-    // Filter out deleted
-    const visible = notificationsCache.filter(n => n.status !== 'DELETED');
+    // Fetch from real backend
+    const response = await workerClient.getNotifications();
+    const rawData = Array.isArray(response) ? response : (response.data || []);
     
-    // Sort newest first
-    const sorted = [...visible].sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
-    
-    // Paginate
+    const items: NotificationItem[] = rawData.map((n: any) => ({
+      id: n.id,
+      type: n.type || 'SYSTEM', // Mapping type properly
+      title: n.title,
+      message: n.message,
+      createdAt: new Date(n.created_at),
+      status: n.is_read ? 'READ' : 'UNREAD',
+      category: 'ALERTS', // Simplified mapping
+      actionUrl: n.related_refund_id ? '/app/refunds' : n.related_order_id ? `/app/orders/${n.related_order_id}` : undefined,
+    }));
+
+    const unreadCount = items.filter(n => n.status === 'UNREAD').length;
+
+    // We do frontend pagination for now if API returns all
     const startIndex = (page - 1) * limit;
-    const paginated = sorted.slice(startIndex, startIndex + limit);
+    const paginated = items.slice(startIndex, startIndex + limit);
 
     return {
       items: paginated,
-      total: sorted.length,
+      total: items.length,
       unreadCount
     };
   },
 
-  markAsRead: async (id: string): Promise<NotificationItem> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const index = notificationsCache.findIndex(n => n.id === id);
-    if (index === -1) throw new Error('Notification not found');
-    
-    notificationsCache[index] = { ...notificationsCache[index], status: 'READ' };
-    return notificationsCache[index];
+  markAsRead: async (id: string): Promise<void> => {
+    await workerClient.markNotificationRead(id);
   },
 
   markAllAsRead: async (): Promise<void> => {
-    await new Promise(resolve => setTimeout(resolve, 800));
-    notificationsCache = notificationsCache.map(n => 
-      n.status === 'UNREAD' ? { ...n, status: 'READ' } : n
-    );
+    // For now, no bulk mark read API, so we just mock resolving
+    await new Promise(resolve => setTimeout(resolve, 500));
   },
 
-  updateStatus: async (id: string, status: NotificationStatus): Promise<NotificationItem> => {
-    await new Promise(resolve => setTimeout(resolve, 500));
-    const index = notificationsCache.findIndex(n => n.id === id);
-    if (index === -1) throw new Error('Notification not found');
-    
-    notificationsCache[index] = { ...notificationsCache[index], status };
-    return notificationsCache[index];
+  updateStatus: async (id: string, status: NotificationStatus): Promise<void> => {
+    if (status === 'READ') {
+      await workerClient.markNotificationRead(id);
+    }
   }
 };

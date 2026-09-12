@@ -1,12 +1,12 @@
 // src/features/notifications/components/NotificationHeader.tsx
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Bell, Settings, ChevronLeft } from 'lucide-react';
+import { Bell, Settings, ChevronLeft, RefreshCw } from 'lucide-react';
 import { useNotifications } from '../providers/NotificationProvider';
 
 export const NotificationHeader = () => {
   const router = useRouter();
-  const { unreadCount, markAllAsRead } = useNotifications();
+  const { unreadCount, markAllAsRead, refresh, isLoading } = useNotifications();
 
   return (
     <header className="sticky top-0 z-50 flex items-center justify-between px-4 py-3 bg-background/80 backdrop-blur-md border-b border-border">
@@ -33,6 +33,14 @@ export const NotificationHeader = () => {
             Mark all read
           </button>
         )}
+        <button 
+          onClick={() => refresh()}
+          disabled={isLoading}
+          className="p-1 text-muted-foreground hover:text-foreground disabled:opacity-50"
+          title="Refresh notifications"
+        >
+          <RefreshCw className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`} />
+        </button>
         <button 
           onClick={() => router.push('/app/notifications/preferences')}
           className="text-muted-foreground hover:text-foreground"
