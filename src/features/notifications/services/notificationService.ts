@@ -7,6 +7,10 @@ export const notificationService = {
     return await notificationApi.getNotifications(page);
   },
   
+  getUnreadCount: async (): Promise<number> => {
+    return await notificationApi.getUnreadCount();
+  },
+  
   markAsRead: async (id: string): Promise<void> => {
     return await notificationApi.markAsRead(id);
   },

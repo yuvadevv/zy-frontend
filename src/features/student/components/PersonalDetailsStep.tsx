@@ -67,7 +67,7 @@ export const PersonalDetailsStep = () => {
       transition={{ duration: 0.3 }}
       className="flex flex-col h-full"
     >
-      <div className="flex-1 overflow-y-auto pt-4 px-1 pb-16 space-y-4">
+      <div className="flex-1 overflow-y-auto pt-4 px-1 pb-4 space-y-4">
         <div className="text-center mb-6">
           <h2 className="text-2xl font-bold text-black">Personal Details</h2>
           <p className="text-gray-500 text-sm mt-1">Tell us a bit about yourself</p>
@@ -111,7 +111,10 @@ export const PersonalDetailsStep = () => {
         </form>
       </div>
 
-      <div className="w-full mt-auto pt-4 pb-2 safe-area-bottom bg-white border-t border-transparent z-10 flex gap-3">
+      <div 
+        className="w-full mt-auto pt-4 bg-white flex gap-3 shrink-0"
+        style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}
+      >
         <button 
           type="button"
           onClick={() => setStep(1)}

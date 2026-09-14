@@ -26,7 +26,7 @@ export function constructMetadata({
   title = `${siteConfig.name} | Campus Printing & Academic Documents`,
   description = siteConfig.description,
   image = siteConfig.ogImage,
-  icons = "/favicon.ico",
+  icons = "/icon.png",
   noIndex = false,
   canonicalPath = "",
 }: ConstructMetadataProps = {}): Metadata {

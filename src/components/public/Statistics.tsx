@@ -36,11 +36,15 @@ const Counter = ({ from, to }: { from: number, to: number }) => {
   return <span ref={ref}>{count.toLocaleString()}{to > 1000 ? '+' : ''}</span>;
 };
 
-export function Statistics() {
+export function Statistics({ data }: { data?: any[] }) {
+  const stats = data && data.length > 0 
+    ? data.map(d => ({ label: d.title, value: parseInt((d.message || '0').replace(/,/g, '')) }))
+    : publicContent.statistics;
+
   return (
     <SectionContainer className="bg-orange-500 text-white">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto text-center divide-x divide-orange-400">
-        {publicContent.statistics.map((stat, i) => (
+        {stats.map((stat, i) => (
           <div key={i} className="flex flex-col items-center justify-center p-4">
             <span className="text-4xl md:text-5xl font-extrabold mb-2 text-white">
               <Counter from={0} to={stat.value} />

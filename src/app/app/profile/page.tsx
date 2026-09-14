@@ -25,12 +25,11 @@ export default function ProfilePage() {
     try {
       setIsLoggingOut(true);
       await authService.logout();
-      router.push('/login');
     } catch (error) {
       console.error('Logout failed:', error);
-      router.push('/login');
     } finally {
-      setIsLoggingOut(false);
+      // Hard redirect so browser re-reads cleared HttpOnly cookies
+      window.location.href = '/login';
     }
   };
 

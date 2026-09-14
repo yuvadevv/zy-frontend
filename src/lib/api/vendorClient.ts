@@ -110,6 +110,22 @@ export const vendorClient = {
     return URL.createObjectURL(blob);
   },
 
+  async getCustomFileDownloadUrl(fileId: string): Promise<string> {
+    const res = await fetch(`${WORKER_URL}/api/custom-files/${fileId}/download`, {
+      cache: 'no-store',
+      headers: {
+        Authorization: `Bearer ${SessionManager.getToken() ?? ''}`
+      }
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      const message = (data as any).error?.message || (data as any).error || 'Failed to download file';
+      throw Object.assign(new Error(message), { status: res.status });
+    }
+    const blob = await res.blob();
+    return URL.createObjectURL(blob);
+  },
+
   async getDocumentBlob(documentId: string): Promise<Blob> {
     const res = await this.fetch(`/api/vendor/documents/${documentId}/access`);
     return (res as unknown as Response).blob();

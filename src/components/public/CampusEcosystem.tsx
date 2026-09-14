@@ -49,7 +49,7 @@ export function CampusEcosystem() {
 
         <motion.div variants={scaleUp} className="mt-8 md:mt-0 flex flex-col items-center">
           <div className="w-32 h-32 rounded-[2rem] bg-orange-500 flex items-center justify-center shadow-[0_0_60px_rgba(249,115,22,0.4)] relative">
-            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-20" />
+
             <span className="text-4xl font-extrabold text-white relative z-10">B</span>
           </div>
           <span className="mt-4 font-bold text-xl text-white tracking-widest">BLINTZY</span>

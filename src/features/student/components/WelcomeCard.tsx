@@ -23,17 +23,30 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({ onContinue, userName }
           <GraduationCap className="w-10 h-10 sm:w-12 sm:h-12 text-orange-500" />
         </div>
         <h2 className="text-2xl sm:text-3xl font-bold text-black mb-3 sm:mb-4 tracking-tight">Welcome to BLINTZY</h2>
-        <p className="text-gray-500 mb-6 sm:mb-8 text-base sm:text-lg max-w-xs mx-auto">
-          Let's set up your student account in less than a minute.
+        <p className="text-gray-500 mb-6 sm:mb-8 text-base sm:text-lg max-w-xs mx-auto leading-relaxed">
+          Let’s set up your student account in less than a minute.
         </p>
       </div>
       
-      <div className="w-full mt-auto pt-4 sm:pt-6 pb-2 safe-area-bottom">
+      <div 
+        className="w-full mt-auto pt-4 sm:pt-6"
+        style={{ paddingBottom: 'calc(16px + env(safe-area-inset-bottom))' }}
+      >
         <button 
           onClick={onContinue}
           className="w-full bg-orange-500 text-white h-[56px] rounded-2xl font-bold text-lg hover:bg-orange-600 active:scale-[0.98] transition-all disabled:opacity-50"
         >
           Get Started
+        </button>
+        <button 
+          onClick={async () => {
+            const { authService } = await import('@/features/auth/services/authService');
+            try { await authService.logout(); } catch (e) {}
+            window.location.href = '/login';
+          }}
+          className="w-full mt-3 text-gray-500 font-medium py-3 hover:text-gray-800 transition-colors"
+        >
+          Not you? Log Out
         </button>
       </div>
     </motion.div>

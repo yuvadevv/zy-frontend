@@ -5,12 +5,18 @@ import { validateSocialUrl } from '@/utils/socialValidation';
 
 type FooterProps = {
   socialLinks?: SocialLinks;
+  contactData?: { email?: string; phone?: string; } | null;
+  termsUrl?: string | null;
+  privacyUrl?: string | null;
 };
 
-export function Footer({ socialLinks = {} }: FooterProps) {
+export function Footer({ socialLinks = {}, contactData = null, termsUrl, privacyUrl }: FooterProps) {
   const validTwitter = validateSocialUrl(socialLinks?.twitter, 'twitter');
   const validLinkedin = validateSocialUrl(socialLinks?.linkedin, 'linkedin');
   const validInstagram = validateSocialUrl(socialLinks?.instagram, 'instagram');
+
+  const email = contactData?.email || 'support@blintzy.com';
+  const phone = contactData?.phone || '+91 (800) 123-4567';
 
   return (
     <footer className="bg-gray-900 text-gray-400 py-16 border-t border-gray-800">
@@ -26,8 +32,8 @@ export function Footer({ socialLinks = {} }: FooterProps) {
             <p className="text-sm leading-relaxed max-w-xs mb-6">
               Campus printing, delivered smarter. We connect students, faculty, and vendors into one seamless digital ecosystem.
             </p>
-            <p className="text-sm">support@blintzy.com</p>
-            <p className="text-sm mt-1">+91 (800) 123-4567</p>
+            <p className="text-sm">{email}</p>
+            <p className="text-sm mt-1">{phone}</p>
           </div>
           
           <div>
@@ -63,8 +69,20 @@ export function Footer({ socialLinks = {} }: FooterProps) {
           <div>
             <h4 className="text-white font-bold mb-4">Legal</h4>
             <ul className="space-y-3 text-sm">
-              <li><Link href="/terms" className="hover:text-orange-500 transition-colors">Terms of Service</Link></li>
-              <li><Link href="/privacy" className="hover:text-orange-500 transition-colors">Privacy Policy</Link></li>
+              <li>
+                {termsUrl ? (
+                  <a href={termsUrl} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">Terms of Service</a>
+                ) : (
+                  <Link href="/terms" className="hover:text-orange-500 transition-colors">Terms of Service</Link>
+                )}
+              </li>
+              <li>
+                {privacyUrl ? (
+                  <a href={privacyUrl} target="_blank" rel="noopener noreferrer" className="hover:text-orange-500 transition-colors">Privacy Policy</a>
+                ) : (
+                  <Link href="/privacy" className="hover:text-orange-500 transition-colors">Privacy Policy</Link>
+                )}
+              </li>
               <li><Link href="/#faq" className="hover:text-orange-500 transition-colors">FAQ</Link></li>
             </ul>
           </div>

@@ -42,6 +42,8 @@ export interface ManualDTO {
   preview_image_url?: string;
   uploaded_by?: string;
   preview_object_key?: string;
+  pdf_source?: string;
+  public_url?: string;
 }
 
 export interface PrintConfigDTO {

@@ -134,6 +134,12 @@ export const adminClient = {
     return URL.createObjectURL(blob);
   },
 
+  async getCustomFileDownloadUrl(fileId: string) {
+    const res = await this.fetch(`/api/custom-files/${fileId}/download`);
+    const blob = await (res as unknown as Response).blob();
+    return URL.createObjectURL(blob);
+  },
+
   async getRoles() {
     return this.fetch('/api/admin/roles');
   },

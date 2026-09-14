@@ -43,22 +43,59 @@ export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: bo
     const fetchBanners = async () => {
       try {
         const response = await workerClient.getContent('banner');
-        if (response.content && response.content.length > 0) {
+        if (response.content && Array.isArray(response.content)) {
+          // Check if Code Tantra banner exists
+          const hasCodeTantra = response.content.some((c: any) => c.title?.includes('Code Tantra'));
+
+          let content = [...response.content];
+          if (!hasCodeTantra) {
+            const codeTantraBanner = {
+              id: 'code-tantra-default',
+              type: 'banner',
+              title: 'Code Tantra Files 🔥',
+              message: 'Upload your files. Print with BLINTZY.',
+              cta_label: 'Upload Files',
+              cta_url: '/app/services/upload?source=code-tantra-banner',
+              theme: 'orange',
+              icon: 'document',
+              metadata: {
+                label: 'SECOND YEAR STUDENTS',
+                supportLine: ''
+              }
+            };
+            
+            if (content.length > 0) {
+              content.splice(1, 0, codeTantraBanner);
+            } else {
+              content.push(codeTantraBanner);
+            }
+          }
+
           // Map backend schema to frontend expected format
-          const mappedBanners = response.content.map((b: any, index: number) => ({
-            id: b.id,
-            index,
-            isImage: b.type === 'banner_image' || !!b.image_key,
-            imageUrl: b.image_key ? `${process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500'}/api/public/${b.image_key}` : '',
-            title: b.title,
-            desc: b.message,
-            cta: b.cta_label,
-            bg: getThemeClass(b.theme),
-            iconName: b.icon,
-            textColor: 'text-white',
-            descColor: 'text-white/80',
-            route: b.cta_url || '#'
-          }));
+          const mappedBanners = content.map((b: any, index: number) => {
+            let meta = {};
+            try {
+              meta = typeof b.metadata === 'string' ? JSON.parse(b.metadata || '{}') : (b.metadata || {});
+            } catch (e) {
+              console.warn('Invalid metadata for banner', b.id);
+            }
+            return {
+              id: b.id || `banner-${index}`,
+              index,
+              isImage: b.type === 'banner_image' || !!b.image_key,
+              imageUrl: b.image_key ? `${process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500'}/api/public/${b.image_key}` : '',
+              title: b.title,
+              desc: b.message,
+              cta: b.cta_label,
+              bg: getThemeClass(b.theme),
+              iconName: b.icon,
+              textColor: 'text-white',
+              descColor: 'text-white/80',
+              route: b.cta_url || '#',
+              label: (meta as any).label,
+              supportLine: (meta as any).supportLine
+            };
+          });
           setBanners(mappedBanners);
         }
       } catch (err) {
@@ -163,6 +200,11 @@ export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: bo
                 {getIcon(banners[current].iconName)}
 
                 <div className="relative z-10 max-w-[70%] flex flex-col items-start gap-2">
+                  {banners[current].label && (
+                    <span className="px-2 py-0.5 bg-white/20 rounded-md text-[10px] font-bold tracking-wider text-white uppercase backdrop-blur-sm -mb-1 border border-white/10">
+                      {banners[current].label}
+                    </span>
+                  )}
                   <h3 className={`text-[20px] font-black leading-tight ${banners[current].textColor}`}>
                     {banners[current].title}
                   </h3>
@@ -171,18 +213,25 @@ export const PromoBanners = ({ hasActiveOrders = false }: { hasActiveOrders?: bo
                   </p>
 
                   {banners[current].cta && (
-                    <motion.button
-                      whileTap={{ scale: 0.97 }}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        if (banners[current].route) {
-                          router.push(banners[current].route);
-                        }
-                      }}
-                      className="mt-1 -translate-y-1 px-5 h-[36px] bg-white text-gray-900 font-bold rounded-[12px] text-xs shadow-sm hover:scale-105 transition-transform"
-                    >
-                      {banners[current].cta}
-                    </motion.button>
+                    <div className="flex flex-col items-start gap-1">
+                      <motion.button
+                        whileTap={{ scale: 0.97 }}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (banners[current].route) {
+                            router.push(banners[current].route);
+                          }
+                        }}
+                        className="mt-1 px-5 h-[36px] bg-white text-gray-900 font-bold rounded-[12px] text-xs shadow-sm hover:scale-105 transition-transform"
+                      >
+                        {banners[current].cta}
+                      </motion.button>
+                      {banners[current].supportLine && (
+                        <span className="text-[10px] font-medium text-white/70 ml-1">
+                          {banners[current].supportLine}
+                        </span>
+                      )}
+                    </div>
                   )}
                 </div>
               </>

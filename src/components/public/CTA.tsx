@@ -27,7 +27,7 @@ export function CTA() {
   };
   return (
     <section className="relative overflow-hidden bg-orange-500 text-white py-24 border-y border-orange-600">
-      <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
+
       <div className="absolute top-[-50%] left-[-10%] w-[500px] h-[500px] bg-white/10 rounded-full blur-[80px] pointer-events-none" />
       <div className="absolute bottom-[-50%] right-[-10%] w-[500px] h-[500px] bg-black/10 rounded-full blur-[80px] pointer-events-none" />
       

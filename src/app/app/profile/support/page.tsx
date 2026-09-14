@@ -7,7 +7,15 @@ import { useSupport } from '@/hooks/useSupport';
 
 export default function SupportPage() {
   const router = useRouter();
-  const { supportPhone, supportEmail, supportWhatsapp, callSupport, emailSupport, openWhatsAppSupport } = useSupport();
+  const { supportPhone, supportEmail, supportWhatsapp, callSupport, emailSupport, openWhatsAppSupport, appVersion, termsUrl, privacyPolicyUrl } = useSupport();
+
+  const openPdf = (url: string | null) => {
+    if (url) {
+      window.open(url, '_blank');
+    } else {
+      alert('Document not currently available.');
+    }
+  };
 
   const links: any[] = [];
 
@@ -33,10 +41,10 @@ export default function SupportPage() {
   }
 
   links.push(
-    { icon: HelpCircle, title: 'FAQ', desc: 'Common questions', action: () => {}, color: 'text-purple-500', bg: 'bg-purple-50' },
-    { icon: FileText, title: 'Terms & Conditions', desc: 'Legal agreements', action: () => {}, color: 'text-gray-500', bg: 'bg-gray-100' },
-    { icon: Shield, title: 'Privacy Policy', desc: 'How we handle data', action: () => {}, color: 'text-green-500', bg: 'bg-green-50' },
-    { icon: Info, title: 'About BLINTZY', desc: 'Our mission & vision', action: () => {}, color: 'text-teal-500', bg: 'bg-teal-50' }
+    { icon: HelpCircle, title: 'FAQ', desc: 'Common questions', action: () => router.push('/app/profile/support/faq'), color: 'text-purple-500', bg: 'bg-purple-50' },
+    { icon: FileText, title: 'Terms & Conditions', desc: 'Legal agreements', action: () => openPdf(termsUrl), color: 'text-gray-500', bg: 'bg-gray-100' },
+    { icon: Shield, title: 'Privacy Policy', desc: 'How we handle data', action: () => openPdf(privacyPolicyUrl), color: 'text-green-500', bg: 'bg-green-50' },
+    { icon: Info, title: 'About BLINTZY', desc: 'Our mission & vision', action: () => router.push('/app/profile/support/about'), color: 'text-teal-500', bg: 'bg-teal-50' }
   );
 
   return (
@@ -72,7 +80,7 @@ export default function SupportPage() {
 
         <div className="mt-8 flex justify-center">
           <span className="text-xs font-semibold text-gray-400 uppercase tracking-widest">
-            App Version v1.0.0
+            {appVersion || 'App Version v1.0.0'}
           </span>
         </div>
       </div>

@@ -69,6 +69,41 @@ export const NotificationProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return () => { mounted = false; };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    
+    const checkUnread = async () => {
+      if (document.visibilityState === 'visible') {
+        try {
+          const count = await notificationService.getUnreadCount();
+          setUnreadCount(count);
+        } catch (e) {}
+      }
+    };
+
+    const startPolling = () => {
+      if (interval) clearInterval(interval);
+      interval = setInterval(checkUnread, 60000); // 60 seconds
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        checkUnread();
+        startPolling();
+      } else {
+        if (interval) clearInterval(interval);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    startPolling();
+
+    return () => {
+      if (interval) clearInterval(interval);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   const loadMore = async () => {
     if (!hasMore || isLoadingMore) return;
     await fetchNotifications(page + 1, true);

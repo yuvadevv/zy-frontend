@@ -13,7 +13,7 @@ export function AppHeader({ title }: { title: string }) {
   const itemCount = cart?.items?.length || 0;
 
   return (
-    <header className="sticky top-0 z-0 flex flex-col justify-end w-full bg-[#FF6B00] text-white pt-[env(safe-area-inset-top)] h-[72px] pb-[1.625rem] px-6 rounded-b-[44px]">
+    <header className="sticky top-0 z-0 flex flex-col justify-end w-full bg-[#FF6B00] text-white pt-safe h-[72px] pb-[1.625rem] px-6 rounded-b-[44px]">
       <div className="flex items-center justify-between w-full relative z-10">
         <div className="flex items-center gap-3 z-10">
           {!isHome ? (

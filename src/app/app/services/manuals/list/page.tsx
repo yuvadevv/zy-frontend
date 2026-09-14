@@ -38,7 +38,7 @@ function ManualListContent() {
     if (!manualsResponse?.manuals) return [];
     return manualsResponse.manuals.map((m: any) => ({
       ...m,
-      name: m.title,
+      name: m.title || m.name || 'Unnamed Manual',
       availability: m.stock > 0 && (m.availability === 'available' || m.availability === 'in_stock') ? 'in_stock' : 'out_of_stock',
       stock: m.stock || 0,
       updated_at: new Date().toISOString(), // Fallback if missing

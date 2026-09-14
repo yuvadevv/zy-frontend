@@ -43,7 +43,8 @@ const CheckoutPageContent = () => {
         id: i.id,
         serviceType: i.serviceType,
         manualId: i.referenceId,
-        documentId: i.referenceId, // Will use referenceId for custom uploads as well
+        documentId: ['hall_ticket', 'custom', 'code_tantra_files'].includes(i.serviceType) ? i.referenceId : undefined,
+        pages: i.printOptions?.pages || (i.printOptions as any)?.totalPages || (i as any).config?.pages || (i as any).meta?.totalPages || 0,
         printOptions: {
           ...i.printOptions,
           copies: i.quantity

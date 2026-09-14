@@ -11,7 +11,7 @@ interface PdfScannerProps {
   onScanComplete: (pages: number, documentId: string) => void;
   onScanFailed: () => void;
 }
-import { PDFDocument } from 'pdf-lib';
+import { getPdfPageCount } from '../utils/pdfParser';
 
 export const PdfScanner = ({ file, serviceType, onScanComplete, onScanFailed }: PdfScannerProps) => {
   const [status, setStatus] = useState<'scanning' | 'reading' | 'success' | 'error'>('scanning');
@@ -23,9 +23,7 @@ export const PdfScanner = ({ file, serviceType, onScanComplete, onScanFailed }: 
     const scanFile = async () => {
       try {
         // Step 1: Scanning... read locally to bypass Cloudflare Worker CPU limits
-        const arrayBuffer = await file.arrayBuffer();
-        const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
-        const localPageCount = pdfDoc.getPageCount();
+        const localPageCount = await getPdfPageCount(file);
 
         if (!mounted) return;
         setStatus('reading');

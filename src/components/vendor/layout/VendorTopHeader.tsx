@@ -26,9 +26,10 @@ export default function VendorTopHeader({ onMenuClick, title }: VendorTopHeaderP
   const handleSignOut = async () => {
     try {
       await authService.logout();
-      router.replace('/vendor/login');
     } catch (err) {
       console.error("Sign out failed", err);
+    } finally {
+      window.location.href = '/vendor/login';
     }
   };
 

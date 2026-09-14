@@ -1,4 +1,4 @@
-export type ServiceType = 'manual' | 'hall_ticket' | 'custom' | 'xerox' | 'certificate' | 'other';
+export type ServiceType = 'manual' | 'hall_ticket' | 'custom' | 'xerox' | 'certificate' | 'other' | 'code_tantra_files';
 
 export interface CartItemPrintOptions {
   copies: number;

@@ -2,7 +2,8 @@
 
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
-import { Loader2, Save, AlertCircle, Settings2, Globe, Truck, CreditCard, Calendar } from 'lucide-react';
+import { Loader2, Save, AlertCircle, Settings2, Globe, Truck, CreditCard, Calendar, Info } from 'lucide-react';
+import Link from 'next/link';
 import toast from 'react-hot-toast';
 
 export default function AdminSettingsPage() {
@@ -176,17 +177,16 @@ export default function AdminSettingsPage() {
               </div>
             </div>
 
-            <div>
-              <h3 className="text-sm font-medium text-gray-700 mb-3 border-b pb-2">Binding Fees (₹)</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">No Binding</label>
-                  <input type="number" step="0.5" required value={pricingSettings.bindingFees.none} onChange={e => setPricingSettings({...pricingSettings, bindingFees: {...pricingSettings.bindingFees, none: parseFloat(e.target.value)}})} className="w-full border rounded px-3 py-2 text-sm bg-gray-50" readOnly />
-                </div>
-                <div>
-                  <label className="block text-xs text-gray-500 mb-1">Spiral Binding</label>
-                  <input type="number" step="0.5" required value={pricingSettings.bindingFees.spiral} onChange={e => setPricingSettings({...pricingSettings, bindingFees: {...pricingSettings.bindingFees, spiral: parseFloat(e.target.value)}})} className="w-full border rounded px-3 py-2 text-sm" />
-                </div>
+            <div className="bg-blue-50 border border-blue-100 rounded-lg p-4 flex items-start gap-3">
+              <Info className="w-5 h-5 text-blue-600 shrink-0 mt-0.5" />
+              <div>
+                <h4 className="text-sm font-semibold text-blue-900">Advanced Pricing Moved</h4>
+                <p className="text-sm text-blue-700 mt-1">
+                  Page-range based pricing for Spiral Binding, Vendor Costs, and BLINTZY Margins are now managed in the new Financials module.
+                </p>
+                <Link href="/admin/financials" className="inline-block mt-2 text-sm font-medium text-blue-600 hover:text-blue-800">
+                  Go to Financials & Vendor Margins &rarr;
+                </Link>
               </div>
             </div>
 

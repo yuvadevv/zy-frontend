@@ -5,6 +5,9 @@ export function useSupport() {
   const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(null);
   const [supportPhone, setSupportPhone] = useState<string | null>(null);
   const [supportEmail, setSupportEmail] = useState<string | null>(null);
+  const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [termsUrl, setTermsUrl] = useState<string | null>(null);
+  const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -22,6 +25,9 @@ export function useSupport() {
           if (data.support_email) {
             setSupportEmail(data.support_email);
           }
+          if (data.app_version) setAppVersion(data.app_version);
+          if (data.terms_pdf_url) setTermsUrl(data.terms_pdf_url);
+          if (data.privacy_policy_pdf_url) setPrivacyPolicyUrl(data.privacy_policy_pdf_url);
         }
       } catch (error) {
         console.error('Failed to fetch platform support configuration', error);
@@ -102,6 +108,9 @@ export function useSupport() {
     supportWhatsapp,
     supportPhone,
     supportEmail,
+    appVersion,
+    termsUrl,
+    privacyPolicyUrl,
     isLoading,
     isAvailable: !!supportWhatsapp || !!supportPhone || !!supportEmail,
     openWhatsAppSupport,

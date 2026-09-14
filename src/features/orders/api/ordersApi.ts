@@ -92,7 +92,8 @@ export const ordersApi = {
           discount: ro.discount || 0,
           grandTotal: ro.grand_total
         },
-        timeline: []
+        timeline: [],
+        customFiles: response.customFiles || []
       };
     } catch (e) {
       // Fallback

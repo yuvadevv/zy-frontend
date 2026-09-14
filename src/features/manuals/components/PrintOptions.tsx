@@ -3,18 +3,36 @@ import React from 'react';
 import { PrintConfig } from '../types';
 import { motion } from 'framer-motion';
 
+import { useBindingPricingRules } from '@/hooks/useBindingPricingRules';
+
 interface PrintOptionsProps {
   config: PrintConfig;
   onChange: (config: PrintConfig) => void;
   allowedBindings?: PrintConfig['bindingType'][];
   maxCopies?: number;
+  pageCount?: number | null;
 }
 
-export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 100 }: PrintOptionsProps) => {
+export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 100, pageCount = null }: PrintOptionsProps) => {
+  const { data: bindingRules } = useBindingPricingRules();
+
   const updateConfig = (updates: Partial<PrintConfig>) => {
     onChange({ ...config, ...updates });
   };
 
+  // Determine spiral binding availability and price
+  let spiralAvailable = true;
+  let spiralPrice = null;
+
+  if (pageCount && bindingRules && bindingRules.length > 0) {
+    const activeRules = bindingRules.filter(r => r.is_active === 1 || (r as any).is_active === true);
+    const matchedRule = activeRules.find(r => pageCount >= r.min_pages && pageCount <= r.max_pages);
+    if (matchedRule) {
+      spiralPrice = matchedRule.price;
+    } else {
+      spiralAvailable = false;
+    }
+  }
   return (
     <div className="flex flex-col gap-6 p-4">
       {/* Copies */}
@@ -105,11 +123,26 @@ export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 10
               No Binding
             </button>
             <button
-              onClick={() => updateConfig({ bindingType: 'spiral' })}
-              className={`p-4 rounded-xl border text-center transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 ${config.bindingType === 'spiral' ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
+              onClick={() => {
+                if (spiralAvailable) updateConfig({ bindingType: 'spiral' });
+              }}
+              disabled={!spiralAvailable}
+              className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${config.bindingType === 'spiral' ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
             >
-              {config.bindingType === 'spiral' && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
-              Spiral Binding
+              <div className="flex items-center gap-2">
+                {config.bindingType === 'spiral' && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
+                Spiral Binding
+              </div>
+              {spiralPrice !== null && (
+                <span className={`text-xs ${config.bindingType === 'spiral' ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>
+                  (₹{spiralPrice} per copy)
+                </span>
+              )}
+              {!spiralAvailable && pageCount && (
+                <span className="text-[10px] text-destructive max-w-[120px] whitespace-normal leading-tight">
+                  Unavailable for {pageCount} pages
+                </span>
+              )}
             </button>
           </div>
         </div>

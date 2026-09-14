@@ -44,7 +44,9 @@ export async function GET(request: Request) {
     } catch (err) {
       console.error('OAuth exchange error in frontend confirm:', err);
     }
-    return NextResponse.redirect(`${origin}/login?error=OAuth+exchange+failed`);
+    const errorResponse = NextResponse.redirect(`${origin}/login?message=Email+verified+successfully.+Please+log+in.`);
+    errorResponse.cookies.delete('bl_auth_token');
+    return errorResponse;
   }
 
   // If code is not present, check if client browser received tokens via URL hash (Implicit Grant flow)

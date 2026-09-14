@@ -17,7 +17,8 @@ import {
   Download, 
   FileSignature, 
   Settings, 
-  X
+  X,
+  Bell
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -52,6 +53,7 @@ const navGroups = [
     label: 'CUSTOMERS',
     items: [
       { href: '/admin/users', icon: Users, label: 'Users' },
+      { href: '/admin/notifications', icon: Bell, label: 'Notifications' },
     ],
   },
   {
@@ -72,6 +74,7 @@ const navGroups = [
     items: [
       { href: '/admin/audit', icon: FileSignature, label: 'Audit Logs' },
       { href: '/admin/settings', icon: Settings, label: 'Settings' },
+      { href: '/admin/financials', icon: CreditCard, label: 'Vendor Margins & Revenue' },
     ],
   },
 ];

@@ -39,7 +39,24 @@ export const TodaysHighlights = () => {
       try {
         const response = await workerClient.getContent('highlight');
         if (response.content && Array.isArray(response.content)) {
-          const sorted = response.content.sort((a: any, b: any) => (a.priority || 99) - (b.priority || 99));
+          let content = [...response.content];
+          const hasCodeTantraHighlight = content.some((c: any) => c.title?.includes('Code Tantra'));
+          
+          if (!hasCodeTantraHighlight) {
+            content.unshift({
+              id: 'code-tantra-highlight-default',
+              type: 'highlight',
+              title: 'Code Tantra Upload',
+              message: 'Upload and print your files easily.',
+              cta_label: 'Upload Now',
+              cta_url: '/app/services/upload?source=code-tantra-highlight',
+              theme: 'orange',
+              icon: 'document',
+              priority: -1 // Ensure it shows first
+            });
+          }
+
+          const sorted = content.sort((a: any, b: any) => (a.priority || 99) - (b.priority || 99));
           setHighlights(sorted);
         }
       } catch (err) {

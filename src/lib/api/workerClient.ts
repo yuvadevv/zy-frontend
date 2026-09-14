@@ -1,6 +1,8 @@
 import { SessionManager } from '@/utils/SessionManager';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
+const rawWorkerUrl = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
+// Force localhost instead of 127.0.0.1 so that HttpOnly cookies set on localhost are sent
+const WORKER_URL = rawWorkerUrl.replace('127.0.0.1', 'localhost');
 
 export const workerClient = {
   async fetch(endpoint: string, options: RequestInit = {}, requireAuth = true) {
@@ -21,6 +23,7 @@ export const workerClient = {
 
     const response = await fetch(`${WORKER_URL}${endpoint}`, {
       cache: 'no-store',
+      credentials: 'include',
       ...options,
       headers
     });
@@ -38,6 +41,16 @@ export const workerClient = {
     return data;
   },
 
+  async request(endpoint: string, options: RequestInit = {}, requireAuth = true) {
+    return this.fetch(endpoint, options, requireAuth);
+  },
+
+  async getCustomFileDownloadUrl(fileId: string) {
+    const res = await this.fetch(`/api/custom-files/${fileId}/download`);
+    const blob = await (res as unknown as Response).blob();
+    return URL.createObjectURL(blob);
+  },
+
   async fetchBlob(endpoint: string, options: RequestInit = {}, requireAuth = true) {
     const headers = new Headers(options.headers || {});
 
@@ -50,6 +63,7 @@ export const workerClient = {
 
     const response = await fetch(`${WORKER_URL}${endpoint}`, {
       cache: 'no-store',
+      credentials: 'include',
       ...options,
       headers
     });
@@ -79,6 +93,14 @@ export const workerClient = {
 
   async getPublicPricingSettings() {
     return this.fetch('/api/public/settings/pricing', {}, false);
+  },
+
+  async getCodeTantraSettings() {
+    return this.fetch('/api/public/settings/code-tantra', {}, false);
+  },
+
+  async getFaqs() {
+    return this.fetch('/api/faqs', {}, false);
   },
 
   async getContent(type?: string) {
@@ -124,6 +146,13 @@ export const workerClient = {
   async deleteDocument(id: string) {
     return this.fetch(`/api/documents/${id}`, {
       method: 'DELETE'
+    });
+  },
+
+  async createOversizedRequest(payload: any) {
+    return this.fetch('/api/custom-files/oversized-requests', {
+      method: 'POST',
+      body: JSON.stringify(payload)
     });
   },
 

@@ -39,12 +39,10 @@ export default function SecurityPage() {
     try {
       setIsLoggingOut(true);
       await authService.logout();
-      router.push('/login');
     } catch (error) {
       console.error('Logout failed:', error);
-      router.push('/login');
     } finally {
-      setIsLoggingOut(false);
+      window.location.href = '/login';
     }
   };
 

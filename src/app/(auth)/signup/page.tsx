@@ -25,15 +25,17 @@ export default function SignupPage() {
 
   useEffect(() => {
     // Check if redirected with OAuth hash tokens
-    const oauthRes = handleOAuthHashRedirect();
-    if (oauthRes.handled) {
-      if (oauthRes.error) {
-        setError(oauthRes.error);
-      } else {
-        setIsLoading(true);
+    const checkOAuth = async () => {
+      const oauthRes = await handleOAuthHashRedirect();
+      if (oauthRes.handled) {
+        if (oauthRes.error) {
+          setError(oauthRes.error);
+        } else {
+          setIsLoading(true);
+        }
       }
-      return;
-    }
+    };
+    checkOAuth();
 
     let timer: NodeJS.Timeout;
     if (resendCooldown > 0) {
@@ -181,7 +183,17 @@ export default function SignupPage() {
 
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-xl text-sm text-center border border-red-100">
-            {error}
+            <p>{error}</p>
+            {error.includes('already registered') && (
+              <div className="mt-3 flex gap-2 justify-center">
+                <Link href="/login" className="px-4 py-2 bg-white text-orange-600 rounded-lg border border-red-200 font-semibold hover:bg-orange-50 transition-colors text-xs">
+                  Go to Login
+                </Link>
+                <Link href="/forgot-password" className="px-4 py-2 bg-white text-orange-600 rounded-lg border border-red-200 font-semibold hover:bg-orange-50 transition-colors text-xs">
+                  Forgot Password
+                </Link>
+              </div>
+            )}
           </div>
         )}
 

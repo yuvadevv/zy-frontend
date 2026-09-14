@@ -26,20 +26,21 @@ function LoginContent() {
 
   useEffect(() => {
     // Check if redirected with OAuth hash tokens
-    const oauthRes = handleOAuthHashRedirect();
-    if (oauthRes.handled) {
-      if (oauthRes.error) {
-        setError(oauthRes.error);
-      } else {
-        setIsLoading(true);
+    handleOAuthHashRedirect().then(oauthRes => {
+      if (oauthRes.handled) {
+        if (oauthRes.error) {
+          setError(oauthRes.error);
+        } else {
+          setIsLoading(true);
+        }
+        return;
       }
-      return;
-    }
 
-    const urlError = searchParams.get('error');
-    if (urlError) {
-      setError(decodeURIComponent(urlError));
-    }
+      const urlError = searchParams.get('error');
+      if (urlError) {
+        setError(decodeURIComponent(urlError));
+      }
+    });
   }, [searchParams]);
 
   useEffect(() => {

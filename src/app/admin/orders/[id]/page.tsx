@@ -3,7 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import { useParams } from 'next/navigation';
 import { adminClient } from '@/lib/api/adminClient';
-import { ArrowLeft, CheckCircle, Clock, MapPin, Phone, Mail, FileText, User, CreditCard, X } from 'lucide-react';
+import { ArrowLeft, CheckCircle, Clock, MapPin, Phone, Mail, FileText, User, CreditCard, X, FileArchive, Download, Trash, TrendingUp } from 'lucide-react';
 import Link from 'next/link';
 import { formatMoney, formatDate, formatCompactETA } from '@/utils/formatters';
 import { toast } from 'react-hot-toast';
@@ -26,6 +26,14 @@ export default function AdminOrderDetails() {
       setLoading(true);
       setError(null);
       const data = await adminClient.getOrder(id);
+      
+      try {
+        const revenueRes = await adminClient.fetch(`/api/admin/orders/${id}/revenue`);
+        data.revenue = revenueRes.order;
+      } catch (err) {
+        // Revenue not found or error, it's fine
+      }
+      
       setOrder(data);
     } catch (err: any) {
       setError(err.message || 'Failed to load order details');
@@ -98,6 +106,30 @@ export default function AdminOrderDetails() {
     }
   };
 
+  const handleDownloadCustomFile = async (fileId: string, filename: string) => {
+    try {
+      toast.loading('Generating download link...', { id: 'customFile' });
+      const url = await adminClient.getCustomFileDownloadUrl(fileId);
+      window.open(url, '_blank');
+      toast.success('Download started', { id: 'customFile' });
+    } catch (err) {
+      toast.error('Failed to generate download link', { id: 'customFile' });
+    }
+  };
+
+  const handleDeleteCustomFile = async (fileId: string) => {
+    if (!confirm('Are you sure you want to delete this file permanently?')) return;
+    try {
+      toast.loading('Deleting file...', { id: 'deleteFile' });
+      // We will need adminClient.deleteCustomFile for this, or standard fetch
+      await adminClient.fetch(`/api/custom-files/${fileId}`, { method: 'DELETE' });
+      toast.success('File deleted', { id: 'deleteFile' });
+      fetchOrder();
+    } catch (err) {
+      toast.error('Failed to delete file', { id: 'deleteFile' });
+    }
+  };
+
   if (loading) return <div className="max-w-7xl mx-auto p-6 flex justify-center py-20 text-gray-500 font-medium tracking-wide">Loading order details...</div>;
 
   if (error || !order) {
@@ -163,6 +195,49 @@ export default function AdminOrderDetails() {
               ))}
             </div>
           </div>
+
+          {/* Custom Files */}
+          {order.customFiles && order.customFiles.length > 0 && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-sm font-bold text-gray-500 tracking-wider uppercase flex items-center mb-4">
+                <FileArchive className="w-4 h-4 mr-2" /> Custom Uploads
+              </h3>
+              
+              <div className="divide-y divide-gray-100">
+                {order.customFiles.map((file: any, idx: number) => (
+                  <div key={idx} className="py-4 first:pt-0 last:pb-0 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <FileArchive className="w-5 h-5 text-primary" />
+                      </div>
+                      <div>
+                        <h4 className="font-bold text-gray-900 text-sm truncate max-w-xs">{file.fileName}</h4>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {(file.fileSize / 1024 / 1024).toFixed(2)} MB • Status: {file.uploadStatus}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleDownloadCustomFile(file.fileId, file.fileName)}
+                        className="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-700 text-xs font-bold rounded-lg hover:bg-blue-100 transition-colors"
+                      >
+                        <Download className="w-4 h-4 mr-1.5" />
+                        Download
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteCustomFile(file.fileId)}
+                        className="inline-flex items-center p-1.5 bg-red-50 text-red-700 rounded-lg hover:bg-red-100 transition-colors"
+                        title="Delete File"
+                      >
+                        <Trash className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* Pricing Summary */}
           <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
@@ -288,6 +363,43 @@ export default function AdminOrderDetails() {
               <div className="text-sm font-medium text-gray-600">{formatMoney(order.pricing?.grandTotal)}</div>
             </div>
           </div>
+
+          {/* Revenue Breakdown */}
+          {order.revenue && (
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <h3 className="text-sm font-bold text-gray-500 tracking-wider uppercase mb-4 flex items-center">
+                <TrendingUp className="w-4 h-4 mr-2" /> Revenue Breakdown
+              </h3>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>Customer Paid</span>
+                  <span className="font-bold text-gray-900">{formatMoney(order.revenue.grand_total)}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Vendor Cost</span>
+                  <span className="font-bold text-red-600">-{formatMoney(order.revenue.vendor_payable_total)}</span>
+                </div>
+                {order.revenue.refunds_total > 0 && (
+                  <div className="flex justify-between text-gray-600">
+                    <span>Refunds</span>
+                    <span className="font-bold text-red-600">-{formatMoney(order.revenue.refunds_total)}</span>
+                  </div>
+                )}
+                <div className="pt-3 border-t border-gray-100 flex justify-between items-center">
+                  <span className="font-bold text-gray-900">BLINTZY Gross</span>
+                  <span className="font-black text-green-600 text-lg">{formatMoney(order.revenue.blintzy_gross_earning)}</span>
+                </div>
+                <div className="flex justify-between text-gray-500 text-xs mt-1">
+                  <span>Gateway Fee</span>
+                  <span>-{formatMoney(order.revenue.payment_gateway_fee)}</span>
+                </div>
+                <div className="flex justify-between text-gray-900 text-xs font-bold mt-1">
+                  <span>BLINTZY Net</span>
+                  <span>{formatMoney(order.revenue.blintzy_net_earning)}</span>
+                </div>
+              </div>
+            </div>
+          )}
 
         </div>
       </div>

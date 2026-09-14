@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
-import { AnimatePresence } from 'framer-motion';
+import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession';
 import { useOnboarding } from '@/features/student/providers/OnboardingProvider';
 import { useStudent } from '@/features/student/providers/StudentProvider';
@@ -11,6 +11,7 @@ import { PersonalDetailsStep } from '@/features/student/components/PersonalDetai
 import { AcademicDetailsStep } from '@/features/student/components/AcademicDetailsStep';
 import { ReviewStep } from '@/features/student/components/ReviewStep';
 import { SuccessStep } from '@/features/student/components/SuccessStep';
+import { Loader2 } from 'lucide-react';
 
 export default function OnboardingWizard() {
   const { user } = useAuthSession();
@@ -29,7 +30,7 @@ export default function OnboardingWizard() {
   const STEPS = ['Personal', 'Academic', 'Review'];
 
   return (
-    <div className="h-screen w-full bg-white flex flex-col pt-safe px-4 overflow-hidden">
+    <div className="h-[100dvh] w-full bg-white flex flex-col pt-safe px-4 overflow-y-auto">
       <div className="w-full max-w-md mx-auto flex flex-col h-full pt-4 relative">
         {step > 1 && step < 5 && (
           <div className="shrink-0 mb-6">
@@ -37,15 +38,27 @@ export default function OnboardingWizard() {
           </div>
         )}
 
-        <div className="flex-1 overflow-hidden relative">
+        <div className="flex-1 flex flex-col relative">
           <AnimatePresence mode="wait">
-            {step === 1 && (
-              <WelcomeCard 
-                key="step1" 
-                userName={user?.user_metadata?.full_name || user?.email} 
-                onContinue={() => setStep(2)} 
-              />
-            )}
+            {isStudentLoading ? (
+              <motion.div 
+                key="loading"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="flex-1 flex items-center justify-center"
+              >
+                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
+              </motion.div>
+            ) : (
+              <>
+                {step === 1 && (
+                  <WelcomeCard 
+                    key="step1" 
+                    userName={user?.user_metadata?.full_name || user?.email} 
+                    onContinue={() => setStep(2)} 
+                  />
+                )}
             
             {step === 2 && <PersonalDetailsStep key="step2" />}
             
@@ -54,6 +67,8 @@ export default function OnboardingWizard() {
             {step === 4 && <ReviewStep key="step4" />}
             
             {step === 5 && <SuccessStep key="step5" />}
+              </>
+            )}
           </AnimatePresence>
         </div>
       </div>

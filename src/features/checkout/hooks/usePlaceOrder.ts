@@ -45,7 +45,8 @@ export const usePlaceOrder = () => {
       const itemsPayload = request.cartItems.map(item => ({
         serviceType: item.serviceType === 'xerox' ? 'custom' : item.serviceType,
         manualId: item.serviceType === 'manual' ? (item.referenceId || item.id) : null,
-        documentId: (item.serviceType === 'hall_ticket' || item.serviceType === 'custom' || item.serviceType === 'xerox') ? (item.referenceId || item.id) : null,
+        documentId: ['hall_ticket', 'custom', 'xerox', 'code_tantra_files'].includes(item.serviceType) ? (item.referenceId || item.id) : null,
+        pages: item.printOptions?.pages || (item.printOptions as any)?.totalPages || (item as any).config?.pages || (item as any).meta?.totalPages || 0,
         printOptions: {
           ...item.printOptions,
           copies: item.quantity
@@ -67,12 +68,14 @@ export const usePlaceOrder = () => {
       if (paymentRes.keyId === 'mock_key' && process.env.NODE_ENV === 'development') {
         // Development Mock
         await new Promise(resolve => setTimeout(resolve, 1500));
-        await workerClient.verifyPayment(paymentRes.providerOrderId, 'mock_txn_' + Date.now());
+        const verifyResponse = await workerClient.verifyPayment(paymentRes.providerOrderId, 'mock_txn_' + Date.now());
+        
+        const finalOrderId = verifyResponse.orderId || orderId;
         
         const response: CheckoutResponse = {
           success: true,
-          orderId: orderId,
-          trackingId: orderId,
+          orderId: finalOrderId,
+          trackingId: finalOrderId,
           estimatedDelivery: request.checkoutState.deliveryDetails?.estimatedTime,
           paymentStatus: PaymentStatus.PAID,
         };
@@ -101,16 +104,18 @@ export const usePlaceOrder = () => {
             handler: async function (response: any) {
               try {
                 // Verify signature on backend
-                await workerClient.verifyPayment(
+                const verifyResponse = await workerClient.verifyPayment(
                   paymentRes.providerOrderId,
                   response.razorpay_payment_id,
                   response.razorpay_signature
                 );
                 
+                const finalOrderId = verifyResponse.orderId || orderId;
+                
                 const successRes: CheckoutResponse = {
                   success: true,
-                  orderId: orderId,
-                  trackingId: orderId,
+                  orderId: finalOrderId,
+                  trackingId: finalOrderId,
                   estimatedDelivery: request.checkoutState.deliveryDetails?.estimatedTime,
                   paymentStatus: PaymentStatus.PAID,
                 };

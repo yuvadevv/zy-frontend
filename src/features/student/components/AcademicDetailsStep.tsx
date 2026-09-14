@@ -211,7 +211,7 @@ export const AcademicDetailsStep = () => {
                 }
               })}
               className={inputClass}
-              placeholder="e.g. 25ME1A4244"
+              placeholder="e.g. 25ME1A42XX"
             />
             {errors.rollNumber && <p className="text-xs text-red-500 mt-1">{errors.rollNumber.message}</p>}
           </div>

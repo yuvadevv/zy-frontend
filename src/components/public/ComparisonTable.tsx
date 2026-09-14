@@ -40,7 +40,7 @@ export function ComparisonTable() {
             <h3 className="text-lg font-bold text-gray-500">Traditional Printing</h3>
           </div>
           <div className="p-8 bg-orange-500 border-b border-orange-600 text-center relative overflow-hidden">
-            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] opacity-10" />
+
             <h3 className="text-xl font-extrabold text-white relative z-10">BLINTZY</h3>
           </div>
 

@@ -7,15 +7,21 @@ export interface AuthUser {
 }
 
 export const SessionManager = {
-  setSession: (token: string, user?: AuthUser | null) => {
+  setSession: async (token: string, user?: AuthUser | null) => {
     if (typeof window === 'undefined') return;
     try {
-      localStorage.setItem('bl_session_token', token);
+      if (token) {
+        localStorage.setItem('bl_session_token', token);
+      }
       if (user) {
         localStorage.setItem('bl_session_user', JSON.stringify(user));
       }
-      // Set cookie for Next.js middleware / server components
-      document.cookie = `bl_auth_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+      // Also set HttpOnly cookie via Next.js API for SSR/middleware use
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token })
+      });
     } catch (e) {
       console.warn('Failed to save session to storage', e);
     }
@@ -24,11 +30,7 @@ export const SessionManager = {
   getToken: (): string | null => {
     if (typeof window === 'undefined') return null;
     try {
-      const local = localStorage.getItem('bl_session_token');
-      if (local) return local;
-
-      const match = document.cookie.match(/(?:^|;\s*)bl_auth_token=([^;]+)/);
-      return match ? decodeURIComponent(match[1]) : null;
+      return localStorage.getItem('bl_session_token');
     } catch {
       return null;
     }
@@ -44,18 +46,22 @@ export const SessionManager = {
     }
   },
 
-  clearSession: () => {
+  clearSession: async () => {
     if (typeof window === 'undefined') return;
     try {
       localStorage.removeItem('bl_session_token');
       localStorage.removeItem('bl_session_user');
-      document.cookie = 'bl_auth_token=; path=/; max-age=0; SameSite=Lax';
+      // Clear HttpOnly auth token via server route
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clear: true })
+      });
+      // Also clear profile-completion cookie so next user gets proper onboarding
+      document.cookie = 'bl_profile_completed=; path=/; max-age=0; SameSite=Lax';
+
       window.dispatchEvent(new CustomEvent('auth:logout'));
-      
-      const isAuthPage = window.location.pathname.startsWith('/login') || window.location.pathname.startsWith('/admin/login') || window.location.pathname.startsWith('/vendor/login');
-      if (!isAuthPage) {
-        window.location.href = '/login';
-      }
+      // Do NOT redirect here — let the caller handle navigation to avoid race conditions
     } catch (e) {
       console.warn('Failed to clear session', e);
     }

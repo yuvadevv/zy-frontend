@@ -2,15 +2,16 @@
 
 import { useState, useEffect } from 'react';
 import { adminClient } from '@/lib/api/adminClient';
-import { Loader2, Plus, Image as ImageIcon, Bell, Trash2, Edit2, AlertCircle, Calendar, Upload } from 'lucide-react';
+import { Loader2, Plus, Image as ImageIcon, Bell, Trash2, Edit2, AlertCircle, Calendar, Upload, Sparkles } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import DataTable, { Column } from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
 
 export default function AdminContentPage() {
-  const [activeTab, setActiveTab] = useState<'banners' | 'announcements'>('banners');
+  const [activeTab, setActiveTab] = useState<'banners' | 'highlights' | 'announcements'>('banners');
   
   const [banners, setBanners] = useState<any[]>([]);
+  const [highlights, setHighlights] = useState<any[]>([]);
   const [announcements, setAnnouncements] = useState<any[]>([]);
   
   const [loading, setLoading] = useState(true);
@@ -18,6 +19,7 @@ export default function AdminContentPage() {
 
   // Modals
   const [showBannerModal, setShowBannerModal] = useState(false);
+  const [showHighlightModal, setShowHighlightModal] = useState(false);
   const [showAnnouncementModal, setShowAnnouncementModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -25,6 +27,8 @@ export default function AdminContentPage() {
   // Forms
   const [formId, setFormId] = useState('');
   const [title, setTitle] = useState('');
+  const [label, setLabel] = useState('');
+  const [supportLine, setSupportLine] = useState('');
   const [description, setDescription] = useState('');
   const [linkUrl, setLinkUrl] = useState('');
   const [ctaLabel, setCtaLabel] = useState('');
@@ -46,6 +50,7 @@ export default function AdminContentPage() {
       setError(null);
       const data = await adminClient.getContent();
       setBanners(data.content?.filter((c: any) => c.type === 'banner') || []);
+      setHighlights(data.content?.filter((c: any) => c.type === 'highlight') || []);
       setAnnouncements(data.content?.filter((c: any) => c.type === 'announcement') || []);
     } catch (err: any) {
       setError(err.message || 'Failed to load content data');
@@ -62,6 +67,8 @@ export default function AdminContentPage() {
     setEditMode(false);
     setFormId('');
     setTitle('');
+    setLabel('');
+    setSupportLine('');
     setDescription('');
     setLinkUrl('');
     setCtaLabel('');
@@ -80,6 +87,9 @@ export default function AdminContentPage() {
     setEditMode(true);
     setFormId(b.id);
     setTitle(b.title || '');
+    const meta = typeof b.metadata === 'string' ? JSON.parse(b.metadata || '{}') : (b.metadata || {});
+    setLabel(meta.label || '');
+    setSupportLine(meta.supportLine || '');
     setDescription(b.description || '');
     setLinkUrl(b.link_url || '');
     setCtaLabel(b.cta_label || '');
@@ -106,6 +116,34 @@ export default function AdminContentPage() {
     } catch (err: any) {
       toast.error(err.message || 'Failed to delete');
     }
+  };
+
+  const openAddHighlight = () => {
+    setEditMode(false);
+    setFormId('');
+    setTitle('');
+    setDescription('');
+    setLinkUrl('');
+    setCtaLabel('');
+    setTheme('orange');
+    setIcon('sparkles');
+    setIsActive(true);
+    setPriority(1);
+    setShowHighlightModal(true);
+  };
+
+  const openEditHighlight = (h: any) => {
+    setEditMode(true);
+    setFormId(h.id);
+    setTitle(h.title || '');
+    setDescription(h.description || '');
+    setLinkUrl(h.link_url || '');
+    setCtaLabel(h.cta_label || '');
+    setTheme(h.theme || 'orange');
+    setIcon(h.icon || 'sparkles');
+    setIsActive(h.is_active);
+    setPriority(h.priority || 1);
+    setShowHighlightModal(true);
   };
 
   const openAddAnnouncement = () => {
@@ -186,6 +224,7 @@ export default function AdminContentPage() {
         priority,
         start_time: startTime ? new Date(startTime).getTime() : null,
         end_time: endTime ? new Date(endTime).getTime() : null,
+        metadata: { label, supportLine }
       };
       
       if (editMode && formId) {
@@ -200,6 +239,38 @@ export default function AdminContentPage() {
       toast.success('Banner saved successfully');
     } catch (err: any) {
       toast.error(err.message || 'Failed to save banner');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleHighlightSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      const highlightData = {
+        title,
+        type: 'highlight',
+        description,
+        link_url: linkUrl,
+        cta_label: ctaLabel,
+        theme,
+        icon,
+        is_active: isActive,
+        priority
+      };
+      
+      if (editMode && formId) {
+        await adminClient.updateContent(formId, highlightData);
+      } else {
+        await adminClient.createContent(highlightData);
+      }
+
+      setShowHighlightModal(false);
+      loadData();
+      toast.success('Highlight saved successfully');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to save highlight');
     } finally {
       setIsSubmitting(false);
     }
@@ -328,6 +399,48 @@ export default function AdminContentPage() {
     }
   ];
 
+  const highlightColumns: Column<any>[] = [
+    {
+      header: 'Highlight',
+      cell: (h) => (
+        <div className="flex items-start space-x-3">
+          <div className="mt-1 shrink-0 p-1 bg-orange-100 rounded">
+            <span className="text-[10px] uppercase font-bold text-orange-600">{h.theme || 'orange'}</span>
+          </div>
+          <div>
+            <div className="font-medium text-gray-900">{h.title}</div>
+            <div className="text-xs text-gray-500 line-clamp-1 max-w-sm">{h.description}</div>
+          </div>
+        </div>
+      )
+    },
+    {
+      header: 'CTA',
+      cell: (h) => h.cta_label ? <span className="text-sm font-medium text-blue-600">{h.cta_label}</span> : <span className="text-gray-400">-</span>
+    },
+    {
+      header: 'Priority',
+      cell: (h) => <span className="text-gray-600 font-medium">{h.priority}</span>
+    },
+    {
+      header: 'Status',
+      cell: (h) => <StatusBadge status={h.is_active ? 'Active' : 'Inactive'} variant={h.is_active ? 'success' : 'neutral'} />
+    },
+    {
+      header: 'Action',
+      cell: (h) => (
+        <div className="flex justify-end space-x-2">
+          <button onClick={() => openEditHighlight(h)} className="text-gray-500 hover:text-black transition-colors">
+            <Edit2 className="w-4 h-4" />
+          </button>
+          <button onClick={() => handleDeleteContent(h.id)} className="text-red-400 hover:text-red-600 transition-colors">
+            <Trash2 className="w-4 h-4" />
+          </button>
+        </div>
+      )
+    }
+  ];
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -342,6 +455,13 @@ export default function AdminContentPage() {
           >
             <ImageIcon className="w-4 h-4" />
             <span>Add Banner</span>
+          </button>
+          <button 
+            onClick={openAddHighlight}
+            className="flex items-center space-x-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors"
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Add Highlight</span>
           </button>
           <button 
             onClick={openAddAnnouncement}
@@ -372,6 +492,15 @@ export default function AdminContentPage() {
           Banners
         </button>
         <button
+          onClick={() => setActiveTab('highlights')}
+          className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
+            activeTab === 'highlights' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-gray-500 hover:text-gray-700'
+          }`}
+        >
+          <Sparkles className="w-4 h-4 mr-2" />
+          Highlights
+        </button>
+        <button
           onClick={() => setActiveTab('announcements')}
           className={`flex items-center px-4 py-3 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
             activeTab === 'announcements' ? 'border-[#FF6B00] text-[#FF6B00]' : 'border-transparent text-gray-500 hover:text-gray-700'
@@ -391,6 +520,16 @@ export default function AdminContentPage() {
             keyExtractor={(b) => b.id}
             isLoading={loading}
             emptyMessage="No banners configured."
+          />
+        )}
+
+        {activeTab === 'highlights' && (
+          <DataTable
+            data={highlights}
+            columns={highlightColumns}
+            keyExtractor={(h) => h.id}
+            isLoading={loading}
+            emptyMessage="No highlights configured."
           />
         )}
 
@@ -456,6 +595,27 @@ export default function AdminContentPage() {
                   placeholder="e.g. /app/services/manuals"
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
                 />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Small Label (Optional)</label>
+                  <input 
+                    type="text"
+                    value={label} onChange={e => setLabel(e.target.value)}
+                    placeholder="e.g. SECOND YEAR STUDENTS"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Support Line (Optional)</label>
+                  <input 
+                    type="text"
+                    value={supportLine} onChange={e => setSupportLine(e.target.value)}
+                    placeholder="e.g. Fast • Easy • Campus-Focused"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                  />
+                </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
@@ -620,6 +780,114 @@ export default function AdminContentPage() {
                 <button type="button" onClick={() => setShowAnnouncementModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
                 <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 bg-[#FF6B00] text-white rounded-lg text-sm font-medium hover:bg-[#e66000] disabled:opacity-50 flex justify-center items-center">
                   {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Announcement'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Highlight Modal */}
+      {showHighlightModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl my-8">
+            <h2 className="text-xl font-bold mb-4">{editMode ? 'Edit' : 'Add'} Highlight</h2>
+            <form onSubmit={handleHighlightSubmit} className="space-y-4">
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
+                <input 
+                  type="text" required
+                  value={title} onChange={e => setTitle(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Message</label>
+                <textarea 
+                  required rows={3}
+                  value={description} onChange={e => setDescription(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">CTA Label</label>
+                  <input 
+                    type="text"
+                    value={ctaLabel} onChange={e => setCtaLabel(e.target.value)}
+                    placeholder="e.g. Upload Now"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Link URL</label>
+                  <input 
+                    type="text"
+                    value={linkUrl} onChange={e => setLinkUrl(e.target.value)}
+                    placeholder="e.g. /app/services/upload"
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Theme</label>
+                  <select 
+                    value={theme} onChange={e => setTheme(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                  >
+                    <option value="orange">Orange</option>
+                    <option value="neutral">Neutral (Light)</option>
+                    <option value="purple">Purple</option>
+                    <option value="blue">Blue</option>
+                    <option value="green">Green</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Icon</label>
+                  <select 
+                    value={icon} onChange={e => setIcon(e.target.value)}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                  >
+                    <option value="sparkles">Sparkles</option>
+                    <option value="document">Document</option>
+                    <option value="ticket">Ticket</option>
+                    <option value="clock">Clock</option>
+                    <option value="bell">Bell</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Priority</label>
+                  <input 
+                    type="number" min="1" required
+                    value={Number.isNaN(priority) ? '' : priority} onChange={e => setPriority(parseInt(e.target.value))}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF6B00]"
+                  />
+                </div>
+                <div className="flex flex-col justify-center">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <div className="flex items-center space-x-2">
+                    <input 
+                      type="checkbox" id="highlightActive"
+                      checked={isActive} onChange={e => setIsActive(e.target.checked)}
+                      className="rounded border-gray-300 text-[#FF6B00] focus:ring-[#FF6B00] h-4 w-4"
+                    />
+                    <label htmlFor="highlightActive" className="text-sm font-medium text-gray-700">Active</label>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex space-x-3 pt-4 border-t border-gray-100">
+                <button type="button" onClick={() => setShowHighlightModal(false)} className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm font-medium hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={isSubmitting} className="flex-1 px-4 py-2 bg-[#FF6B00] text-white rounded-lg text-sm font-medium hover:bg-[#e66000] disabled:opacity-50 flex justify-center items-center">
+                  {isSubmitting ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Save Highlight'}
                 </button>
               </div>
             </form>

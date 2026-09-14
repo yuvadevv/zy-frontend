@@ -36,6 +36,8 @@ export interface Manual {
   previewImageUrl?: string;
   uploadedBy?: string;
   hasPreview?: boolean;
+  pdfSource?: string;
+  publicUrl?: string;
 }
 
 export interface PrintConfig {

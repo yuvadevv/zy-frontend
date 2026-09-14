@@ -21,13 +21,36 @@ import { getPublicPlatformStatus } from '@/lib/api/server/platform';
 import { constructMetadata, siteConfig } from '@/lib/seo/metadata';
 import Script from 'next/script';
 
+import { workerClient } from '@/lib/api/workerClient';
+import { publicContent } from '@/config/publicContent';
+
 export const metadata: Metadata = constructMetadata({
   canonicalPath: '',
 });
 
+export const revalidate = 0;
+
 export default async function LandingPage() {
   const status = await getPublicPlatformStatus();
   
+  let statsData = [];
+  let testimonialsData = [];
+  let footerData = null;
+  
+  try {
+    const contentRes = await workerClient.getContent();
+    const allContent = contentRes.content || [];
+    
+    statsData = allContent.filter((c: any) => c.type === 'statistics');
+    testimonialsData = allContent.filter((c: any) => c.type === 'testimonials');
+    const footerItems = allContent.filter((c: any) => c.type === 'footer');
+    if (footerItems.length > 0) {
+      footerData = footerItems[0].metadata;
+    }
+  } catch (e) {
+    console.error("Failed to load dynamic content for landing page", e);
+  }
+
   const jsonLd = {
     "@context": "https://schema.org",
     "@graph": [
@@ -66,20 +89,29 @@ export default async function LandingPage() {
         <Hero />
         <ProblemSection />
         <SolutionFlow />
-        <InteractiveDemo />
+        <div id="interactive-demo">
+          <InteractiveDemo />
+        </div>
         <Features />
         <ProductShowcase />
-        <HowItWorks />
+        <div id="how-it-works">
+          <HowItWorks />
+        </div>
         <ComparisonTable />
         <CampusEcosystem />
         <UseCases />
-        <Statistics />
-        <Testimonials />
+        <Statistics data={statsData.length > 0 ? statsData : undefined} />
+        <Testimonials data={testimonialsData.length > 0 ? testimonialsData : undefined} />
         <FAQ />
         <About />
         <CTA />
       </main>
-      <Footer socialLinks={status?.social_links} />
+      <Footer 
+        socialLinks={status?.social_links} 
+        contactData={footerData} 
+        termsUrl={status?.terms_pdf_url} 
+        privacyUrl={status?.privacy_policy_pdf_url} 
+      />
     </div>
   );
 }

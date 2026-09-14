@@ -30,7 +30,17 @@ const reviews = [
   }
 ];
 
-export function Testimonials() {
+export function Testimonials({ data }: { data?: any[] }) {
+  const displayReviews = data && data.length > 0 
+    ? data.map(d => ({
+        name: d.title,
+        role: d.metadata?.role,
+        image: d.metadata?.image_url ? `${process.env.NEXT_PUBLIC_WORKER_URL || 'http://localhost:8500'}/api/public/${d.metadata.image_url}` : `https://ui-avatars.com/api/?name=${encodeURIComponent(d.title)}&background=random`,
+        rating: 5,
+        text: d.message || d.metadata?.description
+      }))
+    : reviews;
+
   return (
     <SectionContainer className="bg-gray-50/50">
       <SectionHeading 
@@ -46,7 +56,7 @@ export function Testimonials() {
         viewport={{ once: true, margin: "-100px" }}
         className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-6xl mx-auto"
       >
-        {reviews.map((review, i) => (
+        {displayReviews.map((review, i) => (
           <motion.div 
             key={i}
             variants={fadeInUp}

@@ -12,7 +12,7 @@ export interface OAuthHashResult {
  * Parses Supabase OAuth tokens from window.location.hash (Implicit Grant Flow)
  * and initializes the session in SessionManager and cookies.
  */
-export function handleOAuthHashRedirect(): OAuthHashResult {
+export async function handleOAuthHashRedirect(): Promise<OAuthHashResult> {
   if (typeof window === 'undefined') return { handled: false };
   const hash = window.location.hash;
   if (!hash) return { handled: false };
@@ -58,6 +58,14 @@ export function handleOAuthHashRedirect(): OAuthHashResult {
       // Save token and user into SessionManager (localStorage & cookie)
       SessionManager.setSession(token, user);
 
+      // Check if this is a password recovery flow
+      const type = params.get('type');
+      if (type === 'recovery') {
+        window.history.replaceState(null, '', window.location.pathname);
+        window.location.href = '/update-password';
+        return { handled: true, token, user };
+      }
+
       // Determine redirect destination
       const cookieMatch = document.cookie.match(/(?:^|;\s*)portal_next=([^;]+)/);
       const targetNext = cookieMatch ? decodeURIComponent(cookieMatch[1]) : null;
@@ -70,6 +78,20 @@ export function handleOAuthHashRedirect(): OAuthHashResult {
       // Sanity check destination
       if (!finalNext.startsWith('/app') && !finalNext.startsWith('/admin') && !finalNext.startsWith('/vendor')) {
         finalNext = '/app/home';
+      }
+
+      // Check if profile is completed
+      try {
+        const WORKER_URL = (process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787').replace('127.0.0.1', 'localhost');
+        const res = await fetch(`${WORKER_URL}/api/students/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (res.ok && data?.student?.name) {
+          document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
+        }
+      } catch (e) {
+        console.warn('Failed to check profile completion during OAuth hash handling:', e);
       }
 
       // Clean URL hash so the sensitive token doesn't stay in the browser address bar or history

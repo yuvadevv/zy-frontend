@@ -93,9 +93,25 @@ function OptionsSelectionContent() {
   };
 
   const handleOpenPreview = async () => {
+    if (!manual) return;
+    
     setShowPreview(true);
     if (previewUrl) return; // already loaded
     
+    if (manual.pdfSource === 'public_url') {
+      if (!manual.publicUrl) {
+        setPreviewError('Preview URL is not available.');
+        return;
+      }
+      setPreviewUrl(manual.publicUrl);
+      return;
+    }
+
+    if (manual.pdfSource !== 'r2') {
+      setPreviewError('Preview is not supported for this manual.');
+      return;
+    }
+
     setPreviewLoading(true);
     setPreviewError(null);
     try {

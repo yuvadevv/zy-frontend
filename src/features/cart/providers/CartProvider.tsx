@@ -71,8 +71,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const apiItems = items.map((item: any) => ({
         serviceType: item.serviceType || item.type,
         manualId: (item.serviceType === 'manual' || item.type === 'manual') ? (item.referenceId || item.id.split('_')[1] || item.id) : undefined,
-        documentId: ((item.serviceType || item.type) === 'hall_ticket' || (item.serviceType || item.type) === 'custom') ? (item.referenceId || item.id.split('_')[1] || item.id) : undefined,
-        pages: item.printOptions?.pages || item.config?.pages || 0,
+        documentId: ['hall_ticket', 'custom', 'code_tantra_files'].includes(item.serviceType || item.type) ? (item.referenceId || item.id.split('_')[1] || item.id) : undefined,
+        pages: item.printOptions?.pages || item.printOptions?.totalPages || item.config?.pages || item.meta?.totalPages || 0,
         printOptions: {
           copies: item.quantity,
           color: item.printOptions?.color ?? item.config?.color,
@@ -90,7 +90,24 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
         couponCode: finalCoupon
       }));
 
-      // Update cart summary with authoritative backend data
+      // Update cart summary and items with authoritative backend data
+      const updatedItems = items.map((item, index) => {
+        const apiItem = res.items[index];
+        if (apiItem) {
+          return {
+            ...item,
+            priceBreakdown: {
+              base: apiItem.unitPrice || 0,
+              printing: apiItem.printingCost || 0,
+              binding: apiItem.bindingCost || 0,
+              color: 0,
+              total: apiItem.subtotal || 0
+            }
+          };
+        }
+        return item;
+      });
+
       setCart(prev => {
         const newSummary = { 
           subtotal: res.summary.subtotal, 
@@ -100,8 +117,8 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
           total: res.summary.grandTotal 
         };
         return prev 
-          ? { ...prev, items, summary: newSummary }
-          : { cartId: `cart_${Date.now()}`, items, summary: newSummary };
+          ? { ...prev, items: updatedItems, summary: newSummary }
+          : { cartId: `cart_${Date.now()}`, items: updatedItems, summary: newSummary };
       });
 
       if (res.couponError && finalCoupon) {

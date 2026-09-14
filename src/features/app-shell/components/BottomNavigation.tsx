@@ -9,7 +9,7 @@ export function BottomNavigation() {
   const tabs = Object.values(APP_ROUTES);
 
   return (
-    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 flex h-20 w-full max-w-[430px] items-center justify-around border-t border-gray-100 bg-white/95 backdrop-blur-md pb-[calc(env(safe-area-inset-bottom)+8px)] px-2">
+    <nav className="fixed bottom-0 left-1/2 -translate-x-1/2 z-50 flex h-20 w-full max-w-[430px] items-center justify-around border-t border-gray-100 bg-white/95 backdrop-blur-md pb-safe px-2">
       {tabs.map((tab) => {
         const isActive = pathname === tab.path;
         const Icon = tab.icon!;

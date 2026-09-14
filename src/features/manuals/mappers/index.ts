@@ -38,7 +38,9 @@ export const mapManual = (dto: ManualDTO): Manual => ({
   basePrice: dto.base_price,
   previewImageUrl: dto.preview_image_url,
   uploadedBy: dto.uploaded_by,
-  hasPreview: !!dto.preview_object_key,
+  hasPreview: !!dto.pdf_source,
+  pdfSource: dto.pdf_source,
+  publicUrl: dto.public_url,
 });
 
 export const mapPrintConfig = (dto: PrintConfigDTO): PrintConfig => ({

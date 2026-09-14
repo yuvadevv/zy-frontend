@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import { toast } from 'react-hot-toast';
 import { vendorClient } from '@/lib/api/vendorClient';
-import { Loader2, ArrowLeft, Download, FileText, CheckCircle, Clock, MapPin, Package, Printer, Phone, User, Lock, ExternalLink } from 'lucide-react';
+import { Loader2, ArrowLeft, Download, FileText, CheckCircle, Clock, MapPin, Package, Printer, Phone, User, Lock, ExternalLink, FileArchive } from 'lucide-react';
 import Link from 'next/link';
 
 const VALID_VENDOR_TRANSITIONS: Record<string, string[]> = {
@@ -106,6 +106,17 @@ export default function VendorOrderDetails() {
       toast.success('Download started');
     } catch (err) {
       toast.error('Failed to download document');
+    }
+  };
+
+  const handleDownloadCustomFile = async (fileId: string, filename: string) => {
+    try {
+      toast.loading('Generating download link...', { id: 'customFile' });
+      const url = await vendorClient.getCustomFileDownloadUrl(fileId);
+      window.open(url, '_blank');
+      toast.success('Download started', { id: 'customFile' });
+    } catch (err) {
+      toast.error('Failed to generate download link', { id: 'customFile' });
     }
   };
 
@@ -297,6 +308,42 @@ export default function VendorOrderDetails() {
           </p>
         </div>
       </div>
+
+      {/* Custom Files */}
+      {order.customFiles && order.customFiles.length > 0 && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-gray-50 flex items-center">
+            <h2 className="text-sm font-bold text-gray-500 uppercase tracking-wider flex items-center">
+              <FileArchive className="w-4 h-4 mr-2" /> Custom Uploads (Code Tantra Files)
+            </h2>
+          </div>
+          <div className="divide-y divide-gray-100">
+            {order.customFiles.map((file: any, idx: number) => (
+              <div key={idx} className="p-6 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-lg bg-orange-100 flex items-center justify-center">
+                    <FileArchive className="w-5 h-5 text-orange-600" />
+                  </div>
+                  <div>
+                    <h3 className="font-bold text-lg text-gray-900 break-all">{file.fileName}</h3>
+                    <p className="text-sm text-gray-500 mt-0.5">
+                      {(file.fileSize / 1024 / 1024).toFixed(2)} MB • Status: {file.uploadStatus}
+                    </p>
+                  </div>
+                </div>
+                <div>
+                  <button 
+                    onClick={() => handleDownloadCustomFile(file.fileId, file.fileName)}
+                    className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-[#FF6B00] font-semibold rounded-lg hover:bg-orange-100 transition-all text-sm whitespace-nowrap"
+                  >
+                    <Download className="w-4 h-4" /> Download File
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Print Configuration + Document Actions */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">

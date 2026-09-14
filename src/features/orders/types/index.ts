@@ -96,6 +96,12 @@ export interface Order {
   deliveryInfo: DeliveryInformation;
   summary: OrderSummary;
   timeline: TimelineEvent[];
+  customFiles?: {
+    fileId: string;
+    fileName: string;
+    fileSize: number;
+    uploadStatus: string;
+  }[];
 }
 
 export interface TrackingStatus {

@@ -213,6 +213,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
                 config={config} 
                 onChange={setConfig} 
                 allowedBindings={allowedBindings}
+                pageCount={pageCount}
               />
               
               <div className="mt-8">

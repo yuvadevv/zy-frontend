@@ -14,19 +14,36 @@ export default function ForgotPasswordPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [cooldown, setCooldown] = useState(0);
+
+  React.useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (cooldown > 0) {
+      timer = setTimeout(() => setCooldown(c => c - 1), 1000);
+    }
+    return () => clearTimeout(timer);
+  }, [cooldown]);
 
   const { register, handleSubmit, formState: { errors } } = useForm<ForgotPasswordFormData>({
     resolver: zodResolver(forgotPasswordSchema)
   });
 
   const onSubmit = async (data: ForgotPasswordFormData) => {
+    if (cooldown > 0) return;
     setIsLoading(true);
     setError(null);
+    setSuccessMsg(null);
     try {
       await authService.resetPassword(data.email);
-      setSuccessMsg("If an account exists, a password reset link has been sent to your email.");
+      setSuccessMsg("If an account exists with this email address, a password-reset link has been sent. Please check your inbox and spam folder.");
+      setCooldown(60);
     } catch (err: any) {
-      setError(err.message || 'Failed to send reset link');
+      if (err.message?.includes('60 seconds') || err.message?.includes('Too many requests')) {
+        setError('Please wait 60 seconds before requesting another reset link.');
+        setCooldown(60);
+      } else {
+        setError(err.message || 'Failed to send reset link');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -70,10 +87,10 @@ export default function ForgotPasswordPage() {
           
           <button 
             type="submit"
-            disabled={isLoading}
+            disabled={isLoading || cooldown > 0}
             className="w-full bg-primary text-primary-foreground py-3 rounded-xl font-bold shadow-glow mt-2 disabled:opacity-50 transition-all hover:bg-primary/90"
           >
-            {isLoading ? "Sending..." : "Send Reset Link"}
+            {isLoading ? "Sending..." : cooldown > 0 ? `Resend Link (${cooldown}s)` : "Send Reset Link"}
           </button>
         </form>
 

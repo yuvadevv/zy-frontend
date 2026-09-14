@@ -36,7 +36,7 @@ export function Hero() {
           className="absolute bottom-[-10%] left-[-10%] w-[500px] h-[500px] rounded-full bg-orange-300/20 blur-[100px]" 
         />
         {/* Subtle grid pattern */}
-        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-repeat opacity-[0.03]" />
+
       </div>
 
       <div className="container mx-auto px-6 max-w-7xl relative z-10">
@@ -75,7 +75,7 @@ export function Hero() {
                 <ArrowRight className="w-5 h-5" />
               </Link>
               <a
-                href="#demo"
+                href="#interactive-demo"
                 className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border-2 border-gray-200 bg-white px-8 text-base font-bold text-gray-700 shadow-sm transition-all hover:border-gray-300 hover:bg-gray-50 hover:text-gray-900 active:scale-95"
               >
                 <Play className="w-5 h-5 fill-current" />

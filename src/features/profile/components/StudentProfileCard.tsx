@@ -31,7 +31,7 @@ export const StudentProfileCard = () => {
           {profile.name}
           <BadgeCheck className="w-5 h-5 text-blue-500" />
         </h2>
-        <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest">{profile.id}</p>
+
       </div>
 
       <div className="mt-4 flex flex-col gap-2">

@@ -20,14 +20,17 @@ export default function VendorLoginPage() {
   const urlError = searchParams.get('error');
 
   React.useEffect(() => {
-    const oauthRes = handleOAuthHashRedirect();
-    if (oauthRes.handled) {
-      if (oauthRes.error) {
-        setError(oauthRes.error);
-      } else {
-        setIsLoading(true);
+    const checkOAuth = async () => {
+      const oauthRes = await handleOAuthHashRedirect();
+      if (oauthRes.handled) {
+        if (oauthRes.error) {
+          setError(oauthRes.error);
+        } else {
+          setIsLoading(true);
+        }
       }
-    }
+    };
+    checkOAuth();
   }, []);
 
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({

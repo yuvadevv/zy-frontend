@@ -38,7 +38,7 @@ export const authApi = {
     const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
     const user = result.data?.user || result.user;
     if (token) {
-      SessionManager.setSession(token, user);
+      await SessionManager.setSession(token, user);
     }
 
     return {
@@ -73,7 +73,20 @@ export const authApi = {
     const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
     const user = result.data?.user || result.user;
     if (token) {
-      SessionManager.setSession(token, user);
+      await SessionManager.setSession(token, user);
+      
+      // Check if profile is completed to set cookie
+      try {
+        const studentRes = await fetch(`${WORKER_URL}/api/students/me`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const studentData = await studentRes.json();
+        if (studentRes.ok && studentData?.student?.name) {
+          document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
+        }
+      } catch (e) {
+        console.warn('Failed to check profile completion on login', e);
+      }
     }
 
     return {
@@ -84,12 +97,33 @@ export const authApi = {
     };
   },
 
-  resetPassword: async (_email: string) => {
-    return { data: null, error: null };
+  resetPassword: async (email: string) => {
+    const res = await fetch(`${WORKER_URL}/api/auth/reset-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email })
+    });
+    const result = await res.json().catch(() => ({ error: 'Failed to parse response' }));
+    if (!res.ok) {
+      throw new Error(result.error?.message || result.error || 'Failed to request password reset');
+    }
+    return result;
   },
 
-  updatePassword: async (_password: string) => {
-    return { data: null, error: null };
+  updatePassword: async (password: string) => {
+    const token = SessionManager.getToken();
+    if (!token) throw new Error("No active session found for password reset");
+
+    const res = await fetch(`${WORKER_URL}/api/auth/update-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ password, access_token: token })
+    });
+    const result = await res.json().catch(() => ({ error: 'Failed to parse response' }));
+    if (!res.ok) {
+      throw new Error(result.error?.message || result.error || 'Failed to update password');
+    }
+    return result;
   },
 
   signOut: async () => {
@@ -101,7 +135,7 @@ export const authApi = {
     } catch {
       // ignore network errors on logout
     }
-    SessionManager.clearSession();
+    await SessionManager.clearSession();
     return { error: null };
   },
 
