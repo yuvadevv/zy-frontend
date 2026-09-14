@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import { motion } from 'framer-motion';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
@@ -12,7 +12,7 @@ import { PasswordInput } from '@/design-system/components/inputs/PasswordInput/P
 import { Loader2, Printer } from 'lucide-react';
 import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
 
-export default function VendorLoginPage() {
+function VendorLoginContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const searchParams = useSearchParams();
@@ -150,5 +150,17 @@ export default function VendorLoginPage() {
         </p>
       </motion.div>
     </div>
+  );
+}
+
+export default function VendorLoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-[#fafafa] flex items-center justify-center p-4">
+        <Loader2 className="w-8 h-8 animate-spin text-blue-600" />
+      </div>
+    }>
+      <VendorLoginContent />
+    </Suspense>
   );
 }
