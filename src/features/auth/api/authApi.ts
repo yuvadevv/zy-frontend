@@ -16,7 +16,7 @@ export const authApi = {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wpikxgrsinwtvpjjjkhl.supabase.co';
     
     const fullRedirect = `${redirectTo}${redirectTo.includes('?') ? '&' : '?'}next=${encodeURIComponent(next)}`;
-    const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(fullRedirect)}&response_type=token`;
+    const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(fullRedirect)}`;
     window.location.href = authUrl;
     
     // Return a dummy promise that doesn't resolve to keep the UI in a loading state
