@@ -13,11 +13,7 @@ export const authApi = {
     
     // Construct the Supabase URL directly in the frontend to prevent browser
     // tracking protection from blocking cookies during 302 redirect chains.
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    if (!supabaseUrl) {
-      console.error('NEXT_PUBLIC_SUPABASE_URL is missing');
-      return { url: null };
-    }
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wpikxgrsinwtvpjjjkhl.supabase.co';
     
     const fullRedirect = `${redirectTo}${redirectTo.includes('?') ? '&' : '?'}next=${encodeURIComponent(next)}`;
     const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(fullRedirect)}&response_type=token`;
