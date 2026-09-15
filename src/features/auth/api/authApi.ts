@@ -11,9 +11,17 @@ export const authApi = {
     document.cookie = `portal_next=${encodeURIComponent(next)}; path=/; max-age=300; SameSite=Lax`;
     const redirectTo = `${window.location.origin}/auth/confirm`;
     
-    // Direct navigation is required for OAuth to avoid CORS errors with redirects
-    const oauthEndpoint = `${WORKER_URL}/api/auth/oauth/google?redirect_to=${encodeURIComponent(redirectTo)}&next=${encodeURIComponent(next)}`;
-    window.location.href = oauthEndpoint;
+    // Construct the Supabase URL directly in the frontend to prevent browser
+    // tracking protection from blocking cookies during 302 redirect chains.
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    if (!supabaseUrl) {
+      console.error('NEXT_PUBLIC_SUPABASE_URL is missing');
+      return { url: null };
+    }
+    
+    const fullRedirect = `${redirectTo}${redirectTo.includes('?') ? '&' : '?'}next=${encodeURIComponent(next)}`;
+    const authUrl = `${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(fullRedirect)}&response_type=token`;
+    window.location.href = authUrl;
     
     // Return a dummy promise that doesn't resolve to keep the UI in a loading state
     return new Promise<{url: string | null}>(() => {});
