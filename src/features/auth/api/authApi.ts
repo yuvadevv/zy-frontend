@@ -10,9 +10,21 @@ export const authApi = {
     const next = nextUrl || '/app/home';
     document.cookie = `portal_next=${encodeURIComponent(next)}; path=/; max-age=300; SameSite=Lax`;
     const redirectTo = `${window.location.origin}/auth/confirm`;
-    const oauthUrl = `${WORKER_URL}/api/auth/oauth/google?redirect_to=${encodeURIComponent(redirectTo)}&next=${encodeURIComponent(next)}`;
-    window.location.href = oauthUrl;
-    return { url: oauthUrl };
+    
+    try {
+      const res = await fetch(`${WORKER_URL}/api/auth/oauth/google?redirect_to=${encodeURIComponent(redirectTo)}&next=${encodeURIComponent(next)}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      const data = await res.json();
+      const oauthUrl = data.data?.url || data.url;
+      if (oauthUrl) {
+        window.location.href = oauthUrl;
+        return { url: oauthUrl };
+      }
+    } catch (e) {
+      console.error('Failed to get OAuth URL', e);
+    }
+    return { url: null };
   },
 
   signUpWithEmail: async (credentials: SignupFormData) => {
