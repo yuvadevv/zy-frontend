@@ -11,20 +11,12 @@ export const authApi = {
     document.cookie = `portal_next=${encodeURIComponent(next)}; path=/; max-age=300; SameSite=Lax`;
     const redirectTo = `${window.location.origin}/auth/confirm`;
     
-    try {
-      const res = await fetch(`${WORKER_URL}/api/auth/oauth/google?redirect_to=${encodeURIComponent(redirectTo)}&next=${encodeURIComponent(next)}`, {
-        headers: { 'Accept': 'application/json' }
-      });
-      const data = await res.json();
-      const oauthUrl = data.data?.url || data.url;
-      if (oauthUrl) {
-        window.location.href = oauthUrl;
-        return { url: oauthUrl };
-      }
-    } catch (e) {
-      console.error('Failed to get OAuth URL', e);
-    }
-    return { url: null };
+    // Direct navigation is required for OAuth to avoid CORS errors with redirects
+    const oauthEndpoint = `${WORKER_URL}/api/auth/oauth/google?redirect_to=${encodeURIComponent(redirectTo)}&next=${encodeURIComponent(next)}`;
+    window.location.href = oauthEndpoint;
+    
+    // Return a dummy promise that doesn't resolve to keep the UI in a loading state
+    return new Promise<{url: string | null}>(() => {});
   },
 
   signUpWithEmail: async (credentials: SignupFormData) => {
