@@ -32,6 +32,8 @@ export interface StudentAcademicRecord {
   branches?: Branch;
   academic_years?: AcademicYear;
   sections?: Section;
+  blocks?: AcademicEntity;
+  classrooms?: AcademicEntity;
 }
 
 // Master data types for the dropdowns

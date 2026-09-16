@@ -43,7 +43,7 @@ export const AcademicInformationCard = () => {
           </div>
           <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
             <span className="block text-xs text-muted-foreground mb-1">Block</span>
-            <span className="font-bold text-foreground">{academicRecord.block_id || 'N/A'}</span>
+            <span className="font-bold text-foreground">{academicRecord.blocks?.name || academicRecord.block_id || 'N/A'}</span>
           </div>
           <div className="bg-muted/30 p-3 rounded-xl border border-border/50">
             <span className="block text-xs text-muted-foreground mb-1">Roll Number</span>
@@ -52,7 +52,7 @@ export const AcademicInformationCard = () => {
           {academicRecord.classroom_id && (
             <div className="bg-muted/30 p-3 rounded-xl border border-border/50 col-span-2">
               <span className="block text-xs text-muted-foreground mb-1">Classroom Number</span>
-              <span className="font-bold text-foreground">{academicRecord.classroom_id}</span>
+              <span className="font-bold text-foreground">{academicRecord.classrooms?.name || academicRecord.classroom_id}</span>
             </div>
           )}
         </div>

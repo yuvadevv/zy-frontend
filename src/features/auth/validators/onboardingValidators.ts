@@ -13,7 +13,7 @@ export const onboardingStep2Schema = z.object({
   academicYearId: z.string().min(1, 'Please select your academic year'),
   sectionId: z.string().min(1, 'Please select your section'),
   blockId: z.string().min(1, 'Please select a block'),
-  classroomId: z.string().min(1, 'Please select a classroom'),
+  classroomId: z.string().min(1, 'Please enter your classroom number'),
   rollNumber: z.string().regex(/^[a-zA-Z0-9]{10}$/, 'Roll number must be exactly 10 characters.'),
 });
 

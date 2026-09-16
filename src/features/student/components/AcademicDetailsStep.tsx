@@ -47,7 +47,7 @@ export const AcademicDetailsStep = () => {
     const academicYearName = options?.academicYears.find(y => y.id === data.academicYearId)?.name || '';
     const sectionName = options?.sections.find(s => s.id === data.sectionId)?.name || '';
     const blockName = options?.blocks.find(b => b.id === data.blockId)?.name || '';
-    const classroomName = options?.classrooms.find(c => c.id === data.classroomId)?.name || '';
+    const classroomName = data.classroomId || '';
 
     setStep2Data(data);
     setStep2ReadableData({
@@ -184,19 +184,11 @@ export const AcademicDetailsStep = () => {
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Classroom</label>
-            <Controller
-              name="classroomId"
-              control={control}
-              render={({ field }) => (
-                <SearchableDropdown
-                  options={availableClassrooms.map(c => ({ label: c.name, value: c.id }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select Classroom"
-                  searchable={true}
-                  disabled={!selectedBlockId}
-                />
-              )}
+            <input
+              {...register('classroomId')}
+              disabled={!selectedBlockId}
+              className={inputClass}
+              placeholder="e.g. 104, Lab 2"
             />
             {errors.classroomId && <p className="text-xs text-red-500 mt-1">{errors.classroomId.message}</p>}
           </div>

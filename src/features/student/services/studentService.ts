@@ -57,10 +57,14 @@ export const studentService = {
         academic_year_id: s.study_year_id || s.year || '',
         semester_id: s.semester_id || s.semester || '',
         section_id: s.section || '',
+        block_id: s.block_id || '',
+        classroom_id: s.classroom_id || '',
         colleges: s.college_name ? { id: s.college_id, name: s.college_name } : undefined,
         branches: s.branch_name ? { id: s.branch_id, department_id: '', name: s.branch_name } : undefined,
         academic_years: s.year_label ? { id: s.year, name: s.year_label } : undefined,
         sections: s.section ? { id: s.section, semester_id: '', name: s.section_name || s.section } : undefined,
+        blocks: s.block_name ? { id: s.block_id, name: s.block_name } : undefined,
+        classrooms: s.classroom_name ? { id: s.classroom_id, name: s.classroom_name } : undefined,
       };
     } catch (error: any) {
       if (error?.message?.toLowerCase().includes('not found')) {
@@ -93,7 +97,9 @@ export const studentService = {
         branch_id: updates.branch_id,
         study_year_id: updates.academic_year_id,
         semester_id: updates.semester_id,
-        section: updates.section_id
+        section: updates.section_id,
+        block_id: updates.block_id,
+        classroom_id: updates.classroom_id
       })
     });
     return data?.student;

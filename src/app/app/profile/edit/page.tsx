@@ -285,20 +285,11 @@ export default function EditProfilePage() {
 
           <div className="space-y-1.5">
             <label className="text-sm font-semibold text-black">Classroom Number</label>
-            <Controller
-              name="classroomId"
-              control={control}
-              render={({ field }) => (
-                <SearchableDropdown
-                  options={availableClassrooms.map(c => ({ label: c.name, value: c.id }))}
-                  value={field.value}
-                  onChange={field.onChange}
-                  placeholder="Select Classroom"
-                  searchable={true}
-                  isLoading={isLoadingOptions}
-                  disabled={!selectedBlockId || isSaving}
-                />
-              )}
+            <input
+              {...register('classroomId')}
+              disabled={!selectedBlockId || isSaving}
+              className={inputClass}
+              placeholder="e.g. 104, Lab 2"
             />
           </div>
 
