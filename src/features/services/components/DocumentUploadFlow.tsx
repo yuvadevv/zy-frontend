@@ -54,6 +54,12 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
     setDocumentId(serverDocumentId);
     setFinalFile(uploadedFile);
     setIsScanning(false);
+    
+    // Start background upload silently
+    workerClient.uploadDocument(uploadedFile, serviceType, pages.toString(), serverDocumentId).catch(err => {
+      console.error('Background upload failed:', err);
+      // We could set an error state here if needed
+    });
   };
 
   const handleScanFailed = (error?: string) => {

@@ -4,6 +4,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { ChevronLeft } from 'lucide-react';
 import { ManualCard } from '@/features/manuals/components/ManualCard';
+import { EmptyManualsState } from '@/features/manuals/components/EmptyManualsState';
 import { mapManual } from '@/features/manuals/mappers';
 import { APP_ROUTES } from '@/constants/routes';
 import { useQuery } from '@tanstack/react-query';
@@ -89,9 +90,7 @@ function ManualListContent() {
               <ManualCard key={manual.id} manual={manual} onClick={handleSelect} />
             ))}
             {filteredManuals.length === 0 && (
-              <div className="text-center p-8 border border-dashed border-border rounded-2xl">
-                <p className="text-muted-foreground">No matching manuals found.</p>
-              </div>
+              <EmptyManualsState />
             )}
           </div>
         )}

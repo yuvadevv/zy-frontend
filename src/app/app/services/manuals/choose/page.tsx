@@ -3,6 +3,7 @@ import React, { useState, Suspense, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Search, ChevronRight } from 'lucide-react';
 import { ProgressStepper } from '@/features/manuals/components/ProgressStepper';
+import { EmptyManualsState } from '@/features/manuals/components/EmptyManualsState';
 import { APP_ROUTES } from '@/constants/routes';
 import { useQuery } from '@tanstack/react-query';
 import { workerClient } from '@/lib/api/workerClient';
@@ -97,9 +98,7 @@ function ChooseSubjectContent() {
             </button>
           ))}
           {filteredSubjects.length === 0 && (
-            <div className="text-center p-8 border border-dashed border-border rounded-2xl">
-              <p className="text-muted-foreground">No subjects found.</p>
-            </div>
+            <EmptyManualsState />
           )}
         </div>
         </>

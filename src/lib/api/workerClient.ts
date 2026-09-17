@@ -123,11 +123,14 @@ export const workerClient = {
   },
 
   // Document Endpoints (Auth Required)
-  async uploadDocument(file: File, documentType: 'hall_ticket' | 'custom', pageCount: string) {
+  async uploadDocument(file: File, documentType: 'hall_ticket' | 'custom', pageCount: string, documentId?: string) {
     const formData = new FormData();
     formData.append('file', file);
     formData.append('documentType', documentType);
     formData.append('pageCount', pageCount);
+    if (documentId) {
+      formData.append('documentId', documentId);
+    }
 
     return this.fetch('/api/documents', {
       method: 'POST',

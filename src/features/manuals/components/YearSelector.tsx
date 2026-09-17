@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Year } from '../types';
 import { motion } from 'framer-motion';
+import { EmptyManualsState } from './EmptyManualsState';
 
 interface YearSelectorProps {
   years: Year[];
@@ -45,9 +46,7 @@ export const YearSelector = ({ years, onSelect }: YearSelectorProps) => {
           </motion.button>
         ))}
         {filteredYears.length === 0 && (
-          <div className="text-center p-8 text-muted-foreground">
-            No years found for &quot;{searchQuery}&quot;
-          </div>
+          <EmptyManualsState />
         )}
       </div>
     </div>

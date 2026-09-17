@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Branch } from '../types';
 import { motion } from 'framer-motion';
+import { EmptyManualsState } from './EmptyManualsState';
 
 interface BranchSelectorProps {
   branches: Branch[];
@@ -45,9 +46,7 @@ export const BranchSelector = ({ branches, onSelect }: BranchSelectorProps) => {
           </motion.button>
         ))}
         {filteredBranches.length === 0 && (
-          <div className="text-center p-8 text-muted-foreground">
-            No branches found for &quot;{searchQuery}&quot;
-          </div>
+          <EmptyManualsState />
         )}
       </div>
     </div>

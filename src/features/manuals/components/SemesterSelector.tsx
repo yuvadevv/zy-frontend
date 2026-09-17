@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Semester } from '../types';
 import { motion } from 'framer-motion';
+import { EmptyManualsState } from './EmptyManualsState';
 
 interface SemesterSelectorProps {
   semesters: Semester[];
@@ -45,9 +46,7 @@ export const SemesterSelector = ({ semesters, onSelect }: SemesterSelectorProps)
           </motion.button>
         ))}
         {filteredSemesters.length === 0 && (
-          <div className="text-center p-8 text-muted-foreground">
-            No semesters found for &quot;{searchQuery}&quot;
-          </div>
+          <EmptyManualsState />
         )}
       </div>
     </div>

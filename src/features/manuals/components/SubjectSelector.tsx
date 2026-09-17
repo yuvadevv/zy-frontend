@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import { Subject } from '../types';
 import { motion } from 'framer-motion';
+import { EmptyManualsState } from './EmptyManualsState';
 
 interface SubjectSelectorProps {
   subjects: Subject[];
@@ -45,9 +46,7 @@ export const SubjectSelector = ({ subjects, onSelect }: SubjectSelectorProps) =>
           </motion.button>
         ))}
         {filteredSubjects.length === 0 && (
-          <div className="text-center p-8 text-muted-foreground">
-            No subjects found for &quot;{searchQuery}&quot;
-          </div>
+          <EmptyManualsState />
         )}
       </div>
     </div>

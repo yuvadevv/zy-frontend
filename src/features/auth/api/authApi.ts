@@ -106,10 +106,11 @@ export const authApi = {
   },
 
   resetPassword: async (email: string) => {
+    const redirectTo = typeof window !== 'undefined' ? `${window.location.origin}/update-password` : undefined;
     const res = await fetch(`${WORKER_URL}/api/auth/reset-password`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email })
+      body: JSON.stringify({ email, redirectTo })
     });
     const result = await res.json().catch(() => ({ error: 'Failed to parse response' }));
     if (!res.ok) {

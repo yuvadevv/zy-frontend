@@ -77,16 +77,16 @@ export const PdfScanner = ({ files, serviceType, onScanComplete, onScanFailed }:
         if (!mounted) return;
         setStatus('reading');
         
-        // Step 2: Upload and verify pages via Worker API
-        const uploadResult = await workerClient.uploadDocument(fUpload, serviceType, totalPages.toString());
-        if (!mounted) return;
+        // Step 2: Generate local document ID and return immediately
+        // The actual upload will happen in the background handled by the parent
+        const documentId = crypto.randomUUID();
         
         setStatus('success');
-        setPages(uploadResult.pageCount);
+        setPages(totalPages);
         
         // Brief pause before reporting back to parent
         setTimeout(() => {
-          if (mounted) onScanComplete(uploadResult.pageCount, uploadResult.id, fUpload);
+          if (mounted) onScanComplete(totalPages, documentId, fUpload);
         }, 600);
         
       } catch (err: any) {
