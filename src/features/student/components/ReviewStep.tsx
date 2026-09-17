@@ -76,8 +76,19 @@ export const ReviewStep = () => {
         </div>
 
         {error && (
-          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-medium border border-red-100">
-            {error}
+          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-2xl text-sm font-medium border border-red-100 flex flex-col gap-3">
+            <span>{error}</span>
+            <div className="pt-2 border-t border-red-200/50 mt-1 flex flex-col gap-2">
+              <span className="text-xs text-red-500">Need help? Contact support to get this resolved instantly.</span>
+              <a 
+                href="https://wa.me/919581353999?text=Hi%20Blintzy%20Support,%20I%20am%20facing%20an%20issue%20while%20creating%20my%20account."
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center justify-center bg-green-500 text-white px-4 py-2.5 rounded-xl font-bold hover:bg-green-600 transition-colors active:scale-95"
+              >
+                Contact Blintzy Support
+              </a>
+            </div>
           </div>
         )}
 
