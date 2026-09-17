@@ -1,14 +1,11 @@
-import * as pdfjsLib from 'pdfjs-dist';
-
-// Setting up the worker for pdfjs-dist
-pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+import { PDFDocument } from 'pdf-lib';
 
 export const getPdfPageCountFromBuffer = async (data: Uint8Array | ArrayBuffer): Promise<number> => {
   try {
-    const pdf = await pdfjsLib.getDocument({ data: data instanceof Uint8Array ? data : new Uint8Array(data) }).promise;
-    return pdf.numPages;
+    const pdf = await PDFDocument.load(data, { ignoreEncryption: true });
+    return pdf.getPageCount();
   } catch (error) {
-    console.error("Failed to parse PDF:", error);
+    console.error("Failed to parse PDF with pdf-lib:", error);
     throw new Error('Failed to read PDF. Please try again.');
   }
 };
