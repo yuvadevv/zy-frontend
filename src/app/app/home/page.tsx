@@ -95,40 +95,47 @@ export default function HomeDashboard() {
   };
 
   useEffect(() => {
-    async function fetchDashboardData() {
+    async function fetchOrders(retryCount = 0) {
       try {
-        const [ordersRes, contentRes] = await Promise.all([
-          workerClient.getOrders().catch(() => { setHasError(true); return []; }),
-          workerClient.getContent('announcement').catch(() => ({ content: [] }))
-        ]);
-        
+        const ordersRes = await workerClient.getOrders();
         const ordersList = ordersRes.orders || ordersRes;
         if (Array.isArray(ordersList)) {
-          // Sort by updated_at descending so most relevant is first
           const sortedList = [...ordersList].sort((a: any, b: any) => {
             const timeA = new Date(a.updated_at || a.created_at || 0).getTime();
             const timeB = new Date(b.updated_at || b.created_at || 0).getTime();
             return timeB - timeA;
           });
-
           const active = sortedList.filter((o: any) => o.status !== 'delivered' && o.status !== 'cancelled' && o.status !== 'failed');
-          const recent = sortedList; // Include all orders in Recent Orders
-          
           setActiveOrders(active);
-          setRecentOrders(recent);
+          setRecentOrders(sortedList);
         }
+      } catch (err: any) {
+        const isAuthError = err?.message?.toLowerCase().includes('unauthorized') || err?.message?.toLowerCase().includes('401') || err?.message?.toLowerCase().includes('worker api error');
+        if (isAuthError && retryCount < 2) {
+          // New users may have a slight delay before their token is valid — retry once
+          setTimeout(() => fetchOrders(retryCount + 1), 2000);
+        } else if (!isAuthError) {
+          setHasError(true);
+        }
+        // For auth errors after retries, silently do nothing — user just has no orders yet
+      }
+    }
 
+    async function fetchDashboardData() {
+      try {
+        const contentRes = await workerClient.getContent('announcement').catch(() => ({ content: [] }));
         const announcementsList = contentRes.content || contentRes;
         if (Array.isArray(announcementsList)) {
           setAnnouncements(announcementsList);
         }
       } catch (e) {
-        console.error('Failed to fetch dashboard data', e);
-        setHasError(true);
+        console.error('Failed to fetch announcements', e);
       } finally {
         setIsLoading(false);
       }
     }
+
+    fetchOrders();
     fetchDashboardData();
   }, []);
 

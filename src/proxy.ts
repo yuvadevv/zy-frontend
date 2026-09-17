@@ -36,7 +36,7 @@ export async function proxy(request: NextRequest) {
     request.nextUrl.pathname.startsWith('/api/auth') ||
     request.nextUrl.pathname.startsWith('/auth/confirm');
 
-  if (isPublicRoute && user) {
+  if (isPublicRoute && user && !request.nextUrl.pathname.startsWith('/api')) {
     return NextResponse.redirect(new URL('/app/home', request.url));
   }
 

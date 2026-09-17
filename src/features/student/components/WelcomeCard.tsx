@@ -41,7 +41,16 @@ export const WelcomeCard: React.FC<WelcomeCardProps> = ({ onContinue, userName }
         <button 
           onClick={async () => {
             const { authService } = await import('@/features/auth/services/authService');
+            // authService.logout() now also calls supabase.auth.signOut() to clear sb-* cookies
             try { await authService.logout(); } catch (e) {}
+            // Also explicitly clear our custom HttpOnly auth cookie before navigating
+            try {
+              await fetch('/api/auth/session', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ clear: true })
+              });
+            } catch (e) {}
             window.location.href = '/login';
           }}
           className="w-full mt-3 text-gray-500 font-medium py-3 hover:text-gray-800 transition-colors"

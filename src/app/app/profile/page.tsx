@@ -22,15 +22,27 @@ export default function ProfilePage() {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
       await authService.logout();
     } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      // Hard redirect so browser re-reads cleared HttpOnly cookies
-      window.location.href = '/login';
+      console.error('Supabase logout failed:', error);
     }
+    
+    try {
+      // Explicitly clear the HttpOnly session cookie and wait for it to complete
+      // before navigating — otherwise the middleware still sees the old token
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clear: true })
+      });
+    } catch (error) {
+      console.error('Failed to clear session cookie:', error);
+    }
+
+    // Hard redirect so browser re-reads cleared HttpOnly cookies
+    window.location.href = '/login';
   };
 
   return (

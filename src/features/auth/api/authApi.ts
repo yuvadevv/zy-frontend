@@ -143,6 +143,16 @@ export const authApi = {
     } catch {
       // ignore network errors on logout
     }
+    // CRITICAL: Also sign out from Supabase so the middleware (which reads
+    // Supabase's own sb-* session cookies) does not redirect the user back
+    // to /app/home after they navigate to /login.
+    try {
+      const { createClient } = await import('@/lib/supabase/client');
+      const supabase = createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // ignore supabase signout errors
+    }
     await SessionManager.clearSession();
     return { error: null };
   },

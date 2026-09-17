@@ -28,10 +28,6 @@ export const workerClient = {
       headers
     });
 
-    if (response.status === 401) {
-      SessionManager.clearSession();
-    }
-
     const data = await response.json();
 
     if (!response.ok) {

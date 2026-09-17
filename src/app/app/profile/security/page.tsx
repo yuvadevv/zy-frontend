@@ -36,14 +36,24 @@ export default function SecurityPage() {
   }, []);
 
   const handleLogout = async () => {
+    setIsLoggingOut(true);
     try {
-      setIsLoggingOut(true);
       await authService.logout();
     } catch (error) {
-      console.error('Logout failed:', error);
-    } finally {
-      window.location.href = '/login';
+      console.error('Supabase logout failed:', error);
     }
+    
+    try {
+      await fetch('/api/auth/session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ clear: true })
+      });
+    } catch (error) {
+      console.error('Failed to clear session cookie:', error);
+    }
+
+    window.location.href = '/login';
   };
 
   const handleLogoutAll = async () => {

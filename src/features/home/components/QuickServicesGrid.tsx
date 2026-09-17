@@ -25,11 +25,15 @@ export const QuickServicesGrid = ({ services }: QuickServicesProps) => {
         {services.map((service, index) => {
           const bgColors = ['bg-blue-50', 'bg-orange-50', 'bg-purple-50', 'bg-green-50'];
           const iconBg = bgColors[index % bgColors.length];
+          const MotionLink = motion(Link);
+          
           if (service.id === 'srv_bus_tracking' || service.id === 'srv_bus') {
             return (
-              <div
+              <MotionLink
                 key={service.id}
-                className="relative flex flex-col items-center justify-center p-3 rounded-[20px] border border-orange-100/50 shadow-none h-full bg-gray-50/80 overflow-hidden opacity-80 cursor-not-allowed"
+                href={service.route || '/app/services/bus-tracking'}
+                className="relative flex flex-col items-center justify-center p-3 rounded-[20px] border border-orange-100/50 h-full bg-white overflow-hidden hover:border-orange-200 hover:-translate-y-0.5 hover:shadow-[0_4px_14px_rgba(255,107,0,0.08)] transition-all duration-200"
+                whileTap={{ scale: 0.96 }}
               >
                 {/* Background decorative elements */}
                 <div className="absolute inset-0 opacity-10 pointer-events-none">
@@ -83,11 +87,9 @@ export const QuickServicesGrid = ({ services }: QuickServicesProps) => {
                     COMING SOON
                   </span>
                 </div>
-              </div>
+              </MotionLink>
             );
           }
-
-          const MotionLink = motion(Link);
           return (
             <MotionLink
               href={(!service.disabled && !service.comingSoon && service.route) ? service.route : '#'}
