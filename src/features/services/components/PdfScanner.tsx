@@ -4,32 +4,81 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FileText, ScanLine, FileCheck, AlertTriangle } from 'lucide-react';
 import { workerClient } from '@/lib/api/workerClient';
+import JSZip from 'jszip';
+import { getPdfPageCount, getPdfPageCountFromBuffer } from '../utils/pdfParser';
 
 interface PdfScannerProps {
-  file: File;
+  files: File[];
   serviceType: 'hall_ticket' | 'custom';
-  onScanComplete: (pages: number, documentId: string) => void;
-  onScanFailed: () => void;
+  onScanComplete: (pages: number, documentId: string, finalFile: File) => void;
+  onScanFailed: (error?: string) => void;
 }
-import { getPdfPageCount } from '../utils/pdfParser';
 
-export const PdfScanner = ({ file, serviceType, onScanComplete, onScanFailed }: PdfScannerProps) => {
+export const PdfScanner = ({ files, serviceType, onScanComplete, onScanFailed }: PdfScannerProps) => {
   const [status, setStatus] = useState<'scanning' | 'reading' | 'success' | 'error'>('scanning');
   const [pages, setPages] = useState<number | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     let mounted = true;
     
     const scanFile = async () => {
       try {
-        // Step 1: Scanning... read locally to bypass Cloudflare Worker CPU limits
-        const localPageCount = await getPdfPageCount(file);
+        if (!files || files.length === 0) throw new Error('No files provided');
+
+        let fUpload: File;
+        let totalPages = 0;
+        
+        const isSingleZip = files.length === 1 && (files[0].name.toLowerCase().endsWith('.zip') || files[0].type === 'application/zip' || files[0].type === 'application/x-zip-compressed');
+        const isSinglePdf = files.length === 1 && (files[0].name.toLowerCase().endsWith('.pdf') || files[0].type === 'application/pdf');
+
+        if (isSingleZip) {
+          fUpload = files[0];
+          const zip = new JSZip();
+          const loadedZip = await zip.loadAsync(fUpload);
+          const pdfFiles = Object.keys(loadedZip.files).filter(k => k.toLowerCase().endsWith('.pdf') && !loadedZip.files[k].dir);
+          
+          for (const pdfName of pdfFiles) {
+            const pdfData = await loadedZip.files[pdfName].async('arraybuffer');
+            try {
+              const count = await getPdfPageCountFromBuffer(pdfData);
+              totalPages += count;
+            } catch (e) {
+              console.error(`Failed to parse ${pdfName} in ZIP`);
+            }
+          }
+        } else if (isSinglePdf) {
+          fUpload = files[0];
+          totalPages = await getPdfPageCount(fUpload);
+        } else if (files.length > 1) {
+          // Multiple files -> ZIP
+          const zip = new JSZip();
+          for (const file of files) {
+            if (file.name.toLowerCase().endsWith('.zip')) {
+              throw new Error('You cannot upload a ZIP file alongside other files.');
+            }
+            if (!file.name.toLowerCase().endsWith('.pdf')) {
+              throw new Error('Only PDF files can be combined.');
+            }
+            zip.file(file.name, file);
+            const count = await getPdfPageCount(file);
+            totalPages += count;
+          }
+          const zipBlob = await zip.generateAsync({ type: 'blob' });
+          fUpload = new File([zipBlob], 'custom-print-files.zip', { type: 'application/zip' });
+        } else {
+          throw new Error('Unsupported file configuration');
+        }
+
+        if (totalPages === 0) {
+          throw new Error('No valid PDF pages found in the upload.');
+        }
 
         if (!mounted) return;
         setStatus('reading');
         
         // Step 2: Upload and verify pages via Worker API
-        const uploadResult = await workerClient.uploadDocument(file, serviceType, localPageCount.toString());
+        const uploadResult = await workerClient.uploadDocument(fUpload, serviceType, totalPages.toString());
         if (!mounted) return;
         
         setStatus('success');
@@ -37,20 +86,21 @@ export const PdfScanner = ({ file, serviceType, onScanComplete, onScanFailed }: 
         
         // Brief pause before reporting back to parent
         setTimeout(() => {
-          if (mounted) onScanComplete(uploadResult.pageCount, uploadResult.id);
+          if (mounted) onScanComplete(uploadResult.pageCount, uploadResult.id, fUpload);
         }, 600);
         
-      } catch (err) {
+      } catch (err: any) {
         console.error(err);
         if (!mounted) return;
         setStatus('error');
+        setErrorMessage(err.message || 'Error parsing files');
       }
     };
     
     scanFile();
     
     return () => { mounted = false; };
-  }, [file, serviceType, onScanComplete]);
+  }, [files, serviceType, onScanComplete]);
 
   return (
     <div className="flex flex-col items-center justify-center p-8 text-center bg-card rounded-2xl border border-border shadow-sm">
@@ -88,15 +138,15 @@ export const PdfScanner = ({ file, serviceType, onScanComplete, onScanFailed }: 
       </div>
       
       <h3 className="text-lg font-bold text-foreground mb-2">
-        {status === 'scanning' && 'Scanning your document...'}
+        {status === 'scanning' && 'Scanning your documents...'}
         {status === 'reading' && 'Reading pages...'}
         {status === 'success' && 'Preparing print options...'}
-        {status === 'error' && "Couldn't read page count"}
+        {status === 'error' && (errorMessage || "Couldn't read page count")}
       </h3>
       
       {status === 'error' && (
         <button 
-          onClick={onScanFailed}
+          onClick={() => onScanFailed()}
           className="mt-4 px-6 py-2 bg-primary text-primary-foreground font-bold rounded-lg"
         >
           Try Again
@@ -105,3 +155,4 @@ export const PdfScanner = ({ file, serviceType, onScanComplete, onScanFailed }: 
     </div>
   );
 };
+

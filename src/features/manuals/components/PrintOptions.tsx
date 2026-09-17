@@ -17,7 +17,12 @@ export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 10
   const { data: bindingRules } = useBindingPricingRules();
 
   const updateConfig = (updates: Partial<PrintConfig>) => {
-    onChange({ ...config, ...updates });
+    const newConfig = { ...config, ...updates };
+    // Color double-sided is permanently disabled. If color is enabled, force single-sided.
+    if (newConfig.color) {
+      newConfig.singleSided = true;
+    }
+    onChange(newConfig);
   };
 
   // Determine spiral binding availability and price
@@ -74,10 +79,14 @@ export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 10
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => updateConfig({ singleSided: false })}
-            className={`p-4 rounded-xl border text-center transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 ${!config.singleSided ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
+            disabled={config.color}
+            className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 whitespace-nowrap flex-shrink-0 disabled:opacity-50 disabled:cursor-not-allowed ${!config.singleSided ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
           >
-            {!config.singleSided && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
-            Double Sided
+            <div className="flex items-center gap-2">
+              {!config.singleSided && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
+              Double Sided
+            </div>
+            {config.color && <span className="text-[10px] text-destructive leading-tight">N/A for Color</span>}
           </button>
           <button
             onClick={() => updateConfig({ singleSided: true })}
@@ -95,10 +104,13 @@ export const PrintOptions = ({ config, onChange, allowedBindings, maxCopies = 10
         <div className="grid grid-cols-2 gap-3">
           <button
             onClick={() => updateConfig({ color: false })}
-            className={`p-4 rounded-xl border text-center transition-all flex items-center justify-center gap-2 whitespace-nowrap flex-shrink-0 ${!config.color ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
+            className={`p-4 rounded-xl border text-center transition-all flex flex-col items-center justify-center gap-1 whitespace-nowrap flex-shrink-0 ${!config.color ? 'bg-primary border-primary text-primary-foreground font-bold shadow-md' : 'bg-card border-border hover:border-primary/50 text-foreground font-medium'}`}
           >
-            {!config.color && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
-            Black & White
+            <div className="flex items-center gap-2">
+              {!config.color && <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" className="shrink-0"><polyline points="20 6 9 17 4 12"/></svg>}
+              No Color
+            </div>
+            <span className={`text-xs ${!config.color ? 'text-primary-foreground/80' : 'text-muted-foreground'}`}>(₹0)</span>
           </button>
           <button
             onClick={() => updateConfig({ color: true })}

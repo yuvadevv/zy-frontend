@@ -258,6 +258,7 @@ export const CodeTantraUploadFlow = () => {
       // 1. Upload file to R2 temporarily
       const formData = new FormData();
       formData.append('file', fileToUpload);
+      formData.append('pageCount', totalPages.toString());
 
       const uploadRes = await workerClient.request('/api/custom-files/upload', {
         method: 'POST',

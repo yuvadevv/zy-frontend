@@ -28,7 +28,7 @@ export const DeliveryCard = () => {
           {academicRecord?.colleges?.name || 'College'}, {academicRecord?.branches?.name || 'Branch'}
         </span>
         <span className="text-sm text-foreground mt-1">
-          {academicRecord?.block_id || 'Block'}, Section {academicRecord?.sections?.name || 'N/A'}, Room {academicRecord?.classroom_id || 'N/A'}
+          {academicRecord?.blocks?.name || 'Block'}, Section {academicRecord?.sections?.name || 'N/A'}, Room {academicRecord?.classrooms?.name || 'N/A'}
         </span>
         {profile?.delivery_notes && (
           <p className="text-xs text-muted-foreground mt-2 bg-background p-2 rounded-md border border-border/50">

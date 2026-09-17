@@ -20,7 +20,8 @@ interface DocumentUploadFlowProps {
 }
 
 export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindings, basePrice }: DocumentUploadFlowProps) => {
-  const [file, setFile] = useState<File | null>(null);
+  const [files, setFiles] = useState<File[]>([]);
+  const [finalFile, setFinalFile] = useState<File | null>(null);
   const [isScanning, setIsScanning] = useState(false);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
@@ -39,22 +40,25 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
   const router = useRouter();
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      setFiles(Array.from(e.target.files));
+      setFinalFile(null);
       setIsScanning(true);
       setPageCount(null);
       setDocumentId(null);
     }
   };
 
-  const handleScanComplete = (pages: number, serverDocumentId: string) => {
+  const handleScanComplete = (pages: number, serverDocumentId: string, uploadedFile: File) => {
     setPageCount(pages);
     setDocumentId(serverDocumentId);
+    setFinalFile(uploadedFile);
     setIsScanning(false);
   };
 
-  const handleScanFailed = () => {
-    setFile(null);
+  const handleScanFailed = (error?: string) => {
+    setFiles([]);
+    setFinalFile(null);
     setIsScanning(false);
     setPageCount(null);
     setDocumentId(null);
@@ -84,7 +88,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
   };
   
   const handleAddToCart = () => {
-    if (!file || !pageCount || !documentId) return;
+    if (!finalFile || !pageCount || !documentId) return;
     
     setIsAdding(true);
     
@@ -92,7 +96,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
       id: `ci_${Date.now()}`,
       referenceId: documentId,
       serviceType: serviceType,
-      title: file.name,
+      title: finalFile.name,
       subtitle: `${pageCount} Pages • ${config.copies} Copies`,
       quantity: 1,
       printOptions: config as any,
@@ -122,7 +126,8 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
       }
     }
     
-    setFile(null);
+    setFiles([]);
+    setFinalFile(null);
     setIsScanning(false);
     setPageCount(null);
     setDocumentId(null);
@@ -155,12 +160,13 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
           <input 
             type="file" 
             ref={fileInputRef} 
-            accept="application/pdf" 
+            accept=".zip,.pdf,application/pdf,application/zip,application/x-zip-compressed"
+            multiple
             className="hidden" 
             onChange={handleFileSelect}
           />
 
-          {!file && (
+          {files.length === 0 && (
             <div 
               onClick={() => fileInputRef.current?.click()}
               className="border-2 border-dashed border-primary/30 rounded-2xl p-8 flex flex-col items-center justify-center bg-primary/5 cursor-pointer hover:bg-primary/10 transition-colors"
@@ -171,25 +177,25 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
             </div>
           )}
 
-          {file && isScanning && (
+          {files.length > 0 && isScanning && (
             <PdfScanner 
-              file={file} 
+              files={files} 
               serviceType={serviceType}
               onScanComplete={handleScanComplete} 
               onScanFailed={handleScanFailed} 
             />
           )}
 
-          {file && !isScanning && pageCount && (
+          {files.length > 0 && !isScanning && pageCount && finalFile && (
             <>
               <div className="bg-card border border-border rounded-xl p-4 flex items-center gap-4 mb-3 shadow-sm">
                 <div className="w-12 h-12 bg-secondary rounded-lg flex items-center justify-center shrink-0">
                   <FileText className="w-6 h-6 text-foreground opacity-50" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-foreground truncate">{file.name}</p>
+                  <p className="font-bold text-foreground truncate">{finalFile.name}</p>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    {pageCount} Pages • PDF • {serviceType === 'hall_ticket' ? 'Ready to print' : 'Ready to print'}
+                    {pageCount} Pages • {finalFile.name.endsWith('.zip') ? 'ZIP Archive' : 'PDF'} • {serviceType === 'hall_ticket' ? 'Ready to print' : 'Ready to print'}
                   </p>
                 </div>
               </div>
