@@ -105,7 +105,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
       title: finalFile.name,
       subtitle: `${pageCount} Pages • ${config.copies} Copies`,
       quantity: 1,
-      printOptions: config as any,
+      printOptions: { ...config, pages: pageCount } as any,
       priceBreakdown: {
         base: breakdown.subtotal,
         printing: breakdown.printingCost,
@@ -118,9 +118,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
       removable: true
     });
     
-    setTimeout(() => {
-      router.push(APP_ROUTES.CART);
-    }, 500);
+    router.push(APP_ROUTES.CART);
   };
 
   const handleRemoveFile = async () => {

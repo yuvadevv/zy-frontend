@@ -163,18 +163,34 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const addItem = (item: CartItem) => {
+    let newItems: CartItem[] = [];
     if (!cart) {
-      // Create new cart if null
-      recalculateCart([item]);
-      return;
-    }
-    const existingItemIndex = cart.items.findIndex(i => i.id === item.id);
-    let newItems = [...cart.items];
-    if (existingItemIndex > -1) {
-      newItems[existingItemIndex].quantity += item.quantity;
+      newItems = [item];
+      // Optimistically create cart
+      setCart({
+        cartId: `cart_${Date.now()}`,
+        items: newItems,
+        summary: { subtotal: item.priceBreakdown?.total || 0, discount: 0, tax: 0, deliveryFee: 0, total: item.priceBreakdown?.total || 0 }
+      });
     } else {
-      newItems.push(item);
+      const existingItemIndex = cart.items.findIndex(i => i.id === item.id);
+      newItems = [...cart.items];
+      if (existingItemIndex > -1) {
+        newItems[existingItemIndex].quantity += item.quantity;
+      } else {
+        newItems.push(item);
+      }
+      
+      // Optimistically update cart
+      const tempSubtotal = newItems.reduce((acc, curr) => acc + (curr.priceBreakdown?.total || 0) * curr.quantity, 0);
+      setCart(prev => prev ? {
+        ...prev,
+        items: newItems,
+        summary: { ...prev.summary, subtotal: tempSubtotal, total: tempSubtotal + prev.summary.deliveryFee - prev.summary.discount }
+      } : null);
     }
+    
+    // Background recalculate
     recalculateCart(newItems);
   };
 

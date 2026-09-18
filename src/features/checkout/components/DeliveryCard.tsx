@@ -25,7 +25,7 @@ export const DeliveryCard = () => {
 
       <div className="flex flex-col bg-muted/30 p-3 rounded-xl border border-border/50">
         <span className="font-semibold text-sm">
-          {academicRecord?.colleges?.name || 'College'}, {academicRecord?.branches?.name || 'Branch'}
+          {academicRecord?.colleges?.name || 'College'}, {academicRecord?.branches?.name || 'Branch'}, {academicRecord?.academic_years?.name || 'Year'}
         </span>
         <span className="text-sm text-foreground mt-1">
           {academicRecord?.blocks?.name || 'Block'}, Section {academicRecord?.sections?.name || 'N/A'}, Room {academicRecord?.classrooms?.name || 'N/A'}
