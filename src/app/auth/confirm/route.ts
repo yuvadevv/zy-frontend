@@ -16,7 +16,7 @@ export async function GET(request: Request) {
   const safeNext = nextParam && allowedNextPaths.includes(nextParam) ? nextParam : '/app/home';
   
   if (cookieStore.get('portal_next')) {
-    cookieStore.delete('portal_next');
+    cookieStore.delete('portal_next');  
   }
 
   if (code) {
