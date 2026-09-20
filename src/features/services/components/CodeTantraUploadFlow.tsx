@@ -10,6 +10,7 @@ import { workerClient } from '@/lib/api/workerClient';
 import { APP_ROUTES } from '@/constants/routes';
 import toast from 'react-hot-toast';
 import { getPdfPageCount, getPdfPageCountFromBuffer } from '../utils/pdfParser';
+import { useFileUploadStore } from '@/features/services/store/useFileUploadStore';
 
 type FlowState = 'idle' | 'analyzing' | 'analysis_completed' | 'selecting_options' | 'calculating_price' | 'ready_for_cart' | 'uploading' | 'completed' | 'failed' | 'oversized';
 
@@ -21,6 +22,8 @@ export const CodeTantraUploadFlow = () => {
   const [progress, setProgress] = useState(0);
   const [uploadedFileId, setUploadedFileId] = useState<string | null>(null);
   const [finalFileName, setFinalFileName] = useState('');
+  
+  const setPendingFile = useFileUploadStore((state) => state.setPendingFile);
   
   // Analysis state
   const [totalPages, setTotalPages] = useState(0);
@@ -255,23 +258,22 @@ export const CodeTantraUploadFlow = () => {
     setProgress(0);
     
     try {
-      // 1. Upload file to R2 temporarily
-      const formData = new FormData();
-      formData.append('file', fileToUpload);
-      formData.append('pageCount', totalPages.toString());
-
-      const uploadRes = await workerClient.request('/api/custom-files/upload', {
-        method: 'POST',
-        body: formData,
+      const documentId = crypto.randomUUID();
+      
+      setPendingFile(documentId, {
+        documentId,
+        serviceType: 'code_tantra_files',
+        pages: totalPages.toString(),
+        file: fileToUpload,
       });
 
+      setUploadedFileId(documentId);
       setProgress(100);
-      setUploadedFileId(uploadRes.fileId);
       
       // 2. Add to Cart
       addItem({
         id: `ct_${Date.now()}`,
-        referenceId: uploadRes.fileId,
+        referenceId: documentId,
         serviceType: 'code_tantra_files',
         title: 'Code Tantra Files',
         subtitle: finalFileName,

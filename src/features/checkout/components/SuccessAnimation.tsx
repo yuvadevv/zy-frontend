@@ -2,7 +2,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check } from 'lucide-react';
+import { Check, MessageCircle } from 'lucide-react';
 
 import { Cart } from '@/features/cart/types';
 
@@ -46,7 +46,7 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
         transition={{ delay: 0.4 }}
         className="text-xl font-black text-foreground mb-1 shrink-0"
       >
-        Order Placed Successfully!
+        Payment Successful. One Step Left.
       </motion.h1>
 
       <motion.p 
@@ -56,7 +56,7 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
         className="text-sm text-muted-foreground mb-4 shrink-0 w-full max-w-sm"
         style={{ overflowWrap: 'anywhere' }}
       >
-        Your order <span className="font-mono text-foreground font-bold">{orderId}</span> has been confirmed.
+        Your order <span className="font-mono text-foreground font-bold">{orderId}</span> has been created.
       </motion.p>
 
       {cart.items.length > 0 && (
@@ -91,29 +91,47 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.6 }}
-        className="text-xs text-muted-foreground mb-4 max-w-sm bg-secondary/30 px-3 py-2.5 rounded-lg w-full flex items-center justify-center shrink-0"
+        className="text-xs text-amber-900 bg-amber-50 px-4 py-3 rounded-xl w-full max-w-sm flex flex-col items-center justify-center shrink-0 border border-amber-200 mb-4"
       >
-        <span><span className="font-bold text-foreground">Need it urgently?</span> Visit the print shop with your Order ID for assistance.</span>
+        <span className="font-bold mb-1 text-sm text-center">⚠️ ACTION REQUIRED</span>
+        <span className="text-center font-semibold mb-1">Your order is not complete yet.</span>
+        <span className="text-center">Please send your PDF or ZIP document on WhatsApp to complete your order.</span>
       </motion.div>
 
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.7 }}
-        className="flex flex-col w-full gap-2.5 max-w-sm mt-auto shrink-0"
+        className="flex flex-col w-full gap-2.5 max-w-sm mt-auto shrink-0 pb-4"
       >
         <button 
-          onClick={onTrack}
-          className="w-full h-[50px] bg-primary text-primary-foreground font-bold rounded-xl shadow-md"
+          onClick={() => {
+            const waNumber = process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
+            const serviceNames = cart.items.map((i: any) => i.title || 'Custom Upload').join(', ') || 'Custom Upload';
+            const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${orderId}\nService: ${serviceNames}\nAmount: ₹${cart.summary.total}\n\n📎 I am attaching my PDF/ZIP document for this order.\n\nPlease confirm once received.`;
+            window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+          }}
+          className="w-full h-[54px] bg-[#25D366] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 hover:bg-[#20bd5a] transition-colors uppercase tracking-wide"
         >
-          Track Order
+          <MessageCircle className="w-5 h-5" /> SEND DOCUMENT ON WHATSAPP
         </button>
-        <button 
-          onClick={onContinue}
-          className="w-full h-[50px] bg-muted text-foreground font-bold rounded-xl"
-        >
-          Continue Shopping
-        </button>
+        <p className="text-[10px] text-muted-foreground text-center mb-2 px-2">
+          <strong>Important:</strong> Your order will be processed only after BLINTZY receives your document on WhatsApp.
+        </p>
+        <div className="flex gap-2.5 w-full">
+          <button 
+            onClick={onTrack}
+            className="flex-1 h-[50px] bg-primary text-primary-foreground font-bold rounded-xl shadow-md"
+          >
+            Track Order
+          </button>
+          <button 
+            onClick={onContinue}
+            className="flex-1 h-[50px] bg-muted text-foreground font-bold rounded-xl"
+          >
+            Shop More
+          </button>
+        </div>
       </motion.div>
     </div>
   );

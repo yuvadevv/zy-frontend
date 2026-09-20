@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/constants/routes';
 import { workerClient } from '@/lib/api/workerClient';
 import { useQuery } from '@tanstack/react-query';
+import { useFileUploadStore } from '@/features/services/store/useFileUploadStore';
 
 interface DocumentUploadFlowProps {
   title: string;
@@ -25,6 +26,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
   const [isScanning, setIsScanning] = useState(false);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
+  const setPendingFile = useFileUploadStore((state) => state.setPendingFile);
   
   const [config, setConfig] = useState<PrintConfig>({
     copies: 1,
@@ -54,12 +56,6 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
     setDocumentId(serverDocumentId);
     setFinalFile(uploadedFile);
     setIsScanning(false);
-    
-    // Start background upload silently
-    workerClient.uploadDocument(uploadedFile, serviceType, pages.toString(), serverDocumentId).catch(err => {
-      console.error('Background upload failed:', err);
-      // We could set an error state here if needed
-    });
   };
 
   const handleScanFailed = (error?: string) => {
@@ -97,6 +93,14 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
     if (!finalFile || !pageCount || !documentId) return;
     
     setIsAdding(true);
+    
+    // Save to global state so it can be uploaded post-payment
+    setPendingFile(documentId, {
+      documentId,
+      serviceType,
+      pages: pageCount.toString(),
+      file: finalFile,
+    });
     
     addItem({
       id: `ci_${Date.now()}`,
