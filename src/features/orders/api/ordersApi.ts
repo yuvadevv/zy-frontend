@@ -63,13 +63,13 @@ export const ordersApi = {
           printConfig: {
             documentName: i.document_filename || i.manual_title || 'Unknown Document',
             manualName: i.manual_title || '',
-            copies: i.copies,
-            pages: i.page_count,
-            paperSize: 'a4',
-            color: i.color_mode === 1,
-            bindingType: i.binding_type,
-            singleSided: false,
-            studentNotes: ''
+            copies: i.copies || i.quantity || 1,
+            pages: i.page_count || i.pages,
+            paperSize: i.paper_size || 'a4',
+            color: i.color_mode === 1 || i.color === true || i.color_mode === 'color' || i.print_type === 'color',
+            bindingType: i.binding_type || i.binding || 'none',
+            singleSided: i.single_sided === true || i.print_side === 'single' || i.print_side === 'Single Side' || i.single_sided === 'true',
+            studentNotes: i.student_notes || i.notes || ''
           }
         })),
         deliveryInfo: {

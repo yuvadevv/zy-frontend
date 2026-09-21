@@ -380,11 +380,11 @@ export default function VendorOrderDetails() {
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wider">Color</p>
-                        <p className="font-bold text-black">{item.color_mode === 'color' || item.printType === 'color' ? 'Color' : 'B&W'}</p>
+                        <p className="font-bold text-black">{item.color_mode === 1 || item.color === true || item.color_mode === 'color' || item.printType === 'color' ? 'Color' : 'B&W'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-gray-500 uppercase tracking-wider">Sides</p>
-                        <p className="font-bold text-black">{item.print_type === 'double' || item.colorMode === 'double' ? 'Double' : 'Single'}</p>
+                        <p className="font-bold text-black">{item.singleSided === true || item.printSide === 'single' || item.printSide === 'Single Side' || item.print_side === 'single' || item.print_side === 'Single Side' || item.single_sided === true || item.single_sided === 'true' || item.print_type === 'single' || item.colorMode === 'single' ? 'Single' : 'Double'}</p>
                       </div>
                       <div className="col-span-2 sm:col-span-4 border-t border-gray-200 pt-3 mt-1">
                         <p className="text-xs text-gray-500 uppercase tracking-wider mb-1">Binding Requirements</p>

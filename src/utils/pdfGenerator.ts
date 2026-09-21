@@ -225,11 +225,12 @@ class InvoiceGenerator {
       
       // Print specs
       const specs = [];
-      if (item.color_mode === 1) specs.push('Color');
-      else if (item.color_mode === 0) specs.push('B&W');
+      if (item.color_mode === 1 || item.color === true || item.color_mode === 'color' || item.print_type === 'color') specs.push('Color');
+      else specs.push('B&W');
       
-      if (item.binding_type && item.binding_type !== 'none') specs.push(`${item.binding_type} binding`);
-      if (item.page_count) specs.push(`${item.page_count} pages`);
+      const binding = item.binding_type || item.binding;
+      if (binding && binding !== 'none') specs.push(`${binding} binding`);
+      if (item.page_count || item.pages) specs.push(`${item.page_count || item.pages} pages`);
       
       if (specs.length > 0) {
         this.drawText(specs.join(' • '), this.margin + 10, 8, false, COLORS.textMuted);

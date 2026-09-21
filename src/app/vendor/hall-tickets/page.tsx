@@ -157,7 +157,7 @@ export default function HallTicketsPage() {
                               <div className="flex-1">
                                 <p className="font-semibold text-sm text-gray-800">{docFilename}</p>
                                 <p className="text-xs text-gray-500">
-                                  {item.quantity || item.copies}x copies • {item.pages || item.page_count} pages • {item.printType === 'color' || item.color_mode === 'color' ? 'Color' : 'B&W'}
+                                  {item.quantity || item.copies}x copies • {item.pages || item.page_count} pages • {item.color_mode === 1 || item.color === true || item.printType === 'color' || item.color_mode === 'color' ? 'Color' : 'B&W'} • {item.singleSided === true || item.printSide === 'single' || item.printSide === 'Single Side' || item.print_side === 'single' || item.print_side === 'Single Side' || item.single_sided === true || item.single_sided === 'true' || item.print_type === 'single' || item.colorMode === 'single' ? 'Single' : 'Double'}
                                 </p>
                               </div>
                               {docId && (
