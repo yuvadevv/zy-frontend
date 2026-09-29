@@ -40,22 +40,18 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
-  const handleConfirmDocumentSent = async () => {
-    try {
-      setIsConfirming(true);
-      await workerClient.confirmDocument(orderId);
-      setStep('order_placed');
-      toast.success('Document submission confirmed!');
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to confirm document. Please try again.');
-    } finally {
-      setIsConfirming(false);
-    }
+  const handleConfirmDocumentSent = () => {
+    // Immediately show the success screen without waiting for the backend
+    setStep('order_placed');
+    
+    // Make the backend call in the background to update the status silently
+    workerClient.confirmDocument(orderId).catch(err => {
+      console.error('Failed to confirm document in background:', err);
+    });
   };
 
   return (
-    <div className="absolute inset-0 z-50 bg-background flex flex-col items-center justify-start px-4 pt-8 pb-8 text-center w-full min-h-screen overflow-y-auto">
-      
+    <div className="flex-1 flex flex-col w-full bg-background overflow-y-auto pb-32">
       <AnimatePresence mode="wait">
         {step === 'pending_document' ? (
           <motion.div 
@@ -63,7 +59,7 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="flex flex-col items-center w-full max-w-sm"
+            className="flex flex-col items-center w-full max-w-sm mx-auto min-h-full pt-8 pb-8 px-4"
           >
             {/* Step Indicator */}
             <div className="flex items-center gap-2 mb-8 w-full justify-center text-xs font-bold uppercase tracking-wider">
@@ -128,7 +124,7 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
             key="placed"
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
-            className="flex flex-col items-center w-full max-w-sm"
+            className="flex flex-col items-center text-center w-full max-w-sm mx-auto min-h-full pt-8 pb-8 px-4"
           >
             {/* Step Indicator */}
             <div className="flex items-center gap-2 mb-8 w-full justify-center text-xs font-bold uppercase tracking-wider">
