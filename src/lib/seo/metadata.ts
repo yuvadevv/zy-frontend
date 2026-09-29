@@ -56,10 +56,10 @@ export function constructMetadata({
       images: [image],
       creator: "@blintzy", // Only use if appropriate
     },
-    icons: {
-      icon: "/icon.png",
-      apple: "/icon-192x192.png", // Safari likes 180x180 or 192x192
-    },
+    icons: typeof icons === 'string' ? {
+      icon: icons,
+      apple: "/icon-192x192.png", 
+    } : icons,
     manifest: "/manifest.json",
     appleWebApp: {
       capable: true,
