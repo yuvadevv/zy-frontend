@@ -178,6 +178,12 @@ export const workerClient = {
     return this.fetch(`/api/orders/${id}`);
   },
 
+  async confirmDocument(id: string) {
+    return this.fetch(`/api/orders/${id}/confirm-document`, {
+      method: 'POST'
+    });
+  },
+
   // Payments Endpoints (Auth Required)
   async createPayment(orderId: string) {
     return this.fetch('/api/payments/create', {

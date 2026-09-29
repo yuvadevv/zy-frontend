@@ -1,10 +1,12 @@
 // src/features/checkout/components/SuccessAnimation.tsx
 "use client";
 import React, { useEffect, useState } from 'react';
-import { motion } from 'framer-motion';
-import { Check, MessageCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Check, MessageCircle, AlertTriangle, Loader2 } from 'lucide-react';
 
 import { Cart } from '@/features/cart/types';
+import { workerClient } from '@/lib/api/workerClient';
+import { toast } from 'react-hot-toast';
 
 interface SuccessAnimationProps {
   orderId: string;
@@ -16,6 +18,12 @@ interface SuccessAnimationProps {
 export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: SuccessAnimationProps) => {
   const [mounted, setMounted] = useState(false);
   
+  // 'pending_document': Payment is successful, but document needs to be sent
+  // 'order_placed': Document sent, order officially placed
+  const [step, setStep] = useState<'pending_document' | 'order_placed'>('pending_document');
+  const [hasOpenedWhatsApp, setHasOpenedWhatsApp] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
+  
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
@@ -23,116 +31,171 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
 
   if (!mounted) return null;
 
+  const handleOpenWhatsApp = () => {
+    const waNumber = process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
+    const serviceNames = cart.items.map((i: any) => i.title || 'Custom Upload').join(', ') || 'Custom Upload';
+    const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${orderId}\nService: ${serviceNames}\nAmount: ₹${cart.summary.total}\n\n📎 I am attaching my PDF/ZIP document for this order.\n\nPlease confirm once received.`;
+    
+    setHasOpenedWhatsApp(true);
+    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  const handleConfirmDocumentSent = async () => {
+    try {
+      setIsConfirming(true);
+      await workerClient.confirmDocument(orderId);
+      setStep('order_placed');
+      toast.success('Document submission confirmed!');
+    } catch (err: any) {
+      toast.error(err.message || 'Failed to confirm document. Please try again.');
+    } finally {
+      setIsConfirming(false);
+    }
+  };
+
   return (
-    <div className="absolute inset-0 z-50 bg-background flex flex-col items-center justify-start px-4 pt-10 pb-8 text-center w-full">
-      <motion.div
-        initial={{ scale: 0 }}
-        animate={{ scale: 1 }}
-        transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center shadow-md shadow-green-500/30 mb-4 shrink-0"
-      >
-        <motion.div
-          initial={{ opacity: 0, scale: 0.5 }}
-          animate={{ opacity: 1, scale: 1 }}
-          transition={{ delay: 0.2, duration: 0.3 }}
-        >
-          <Check className="w-8 h-8 text-white" strokeWidth={3} />
-        </motion.div>
-      </motion.div>
-
-      <motion.h1 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.4 }}
-        className="text-xl font-black text-foreground mb-1 shrink-0"
-      >
-        Payment Successful. One Step Left.
-      </motion.h1>
-
-      <motion.p 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.5 }}
-        className="text-sm text-muted-foreground mb-4 shrink-0 w-full max-w-sm"
-        style={{ overflowWrap: 'anywhere' }}
-      >
-        Your order <span className="font-mono text-foreground font-bold">{orderId}</span> has been created.
-      </motion.p>
-
-      {cart.items.length > 0 && (
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.55 }}
-          className="bg-card rounded-2xl border border-border p-3.5 shadow-sm w-full max-w-sm mb-4 text-left flex flex-col gap-2.5 text-sm shrink-0"
-        >
-          <div className="flex justify-between items-start gap-3">
-            <span className="text-muted-foreground whitespace-nowrap">Document</span>
-            <span className="font-bold text-right" style={{ overflowWrap: 'anywhere' }}>
-              {cart.items[0].title}
-            </span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">Total</span>
-            <span className="font-bold text-primary">₹{cart.summary.total}</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">Delivery</span>
-            <span className="font-bold text-green-600">FREE</span>
-          </div>
-          <div className="flex justify-between items-center">
-            <span className="text-muted-foreground">Estimated</span>
-            <span className="font-bold">Tomorrow, 9:15 AM</span>
-          </div>
-        </motion.div>
-      )}
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.6 }}
-        className="text-xs text-amber-900 bg-amber-50 px-4 py-3 rounded-xl w-full max-w-sm flex flex-col items-center justify-center shrink-0 border border-amber-200 mb-4"
-      >
-        <span className="font-bold mb-1 text-sm text-center">⚠️ ACTION REQUIRED</span>
-        <span className="text-center font-semibold mb-1">Your order is not complete yet.</span>
-        <span className="text-center">Please send your PDF or ZIP document on WhatsApp to complete your order.</span>
-      </motion.div>
-
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7 }}
-        className="flex flex-col w-full gap-2.5 max-w-sm mt-auto shrink-0 pb-4"
-      >
-        <button 
-          onClick={() => {
-            const waNumber = process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
-            const serviceNames = cart.items.map((i: any) => i.title || 'Custom Upload').join(', ') || 'Custom Upload';
-            const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${orderId}\nService: ${serviceNames}\nAmount: ₹${cart.summary.total}\n\n📎 I am attaching my PDF/ZIP document for this order.\n\nPlease confirm once received.`;
-            window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
-          }}
-          className="w-full h-[54px] bg-[#25D366] text-white font-bold rounded-xl shadow-md flex items-center justify-center gap-2 hover:bg-[#20bd5a] transition-colors uppercase tracking-wide"
-        >
-          <MessageCircle className="w-5 h-5" /> SEND DOCUMENT ON WHATSAPP
-        </button>
-        <p className="text-[10px] text-muted-foreground text-center mb-2 px-2">
-          <strong>Important:</strong> Your order will be processed only after BLINTZY receives your document on WhatsApp.
-        </p>
-        <div className="flex gap-2.5 w-full">
-          <button 
-            onClick={onTrack}
-            className="flex-1 h-[50px] bg-primary text-primary-foreground font-bold rounded-xl shadow-md"
+    <div className="absolute inset-0 z-50 bg-background flex flex-col items-center justify-start px-4 pt-8 pb-8 text-center w-full min-h-screen overflow-y-auto">
+      
+      <AnimatePresence mode="wait">
+        {step === 'pending_document' ? (
+          <motion.div 
+            key="pending"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            className="flex flex-col items-center w-full max-w-sm"
           >
-            Track Order
-          </button>
-          <button 
-            onClick={onContinue}
-            className="flex-1 h-[50px] bg-muted text-foreground font-bold rounded-xl"
+            {/* Step Indicator */}
+            <div className="flex items-center gap-2 mb-8 w-full justify-center text-xs font-bold uppercase tracking-wider">
+               <div className="flex items-center text-green-600">
+                 <Check className="w-4 h-4 mr-1" strokeWidth={3} /> Paid
+               </div>
+               <div className="w-8 h-px bg-border"></div>
+               <div className="flex items-center text-primary">
+                 <div className="w-5 h-5 rounded-full bg-primary text-primary-foreground flex items-center justify-center mr-1">2</div> Send
+               </div>
+               <div className="w-8 h-px bg-border"></div>
+               <div className="flex items-center text-muted-foreground">
+                 <div className="w-5 h-5 rounded-full bg-muted text-muted-foreground flex items-center justify-center mr-1">3</div> Placed
+               </div>
+            </div>
+
+            <h1 className="text-2xl font-black text-foreground mb-1 uppercase tracking-tight">
+              Payment Successful
+            </h1>
+            <h2 className="text-xl font-bold text-primary mb-4">
+              One Step Left
+            </h2>
+
+            <p className="text-sm text-muted-foreground mb-6 font-medium px-4">
+              Your payment has been received, but your order is <span className="font-bold text-foreground">NOT</span> placed yet. Please send your PDF/ZIP document on WhatsApp to complete your order.
+            </p>
+
+            <div className="text-xs text-amber-900 bg-amber-50 p-4 rounded-xl w-full border border-amber-200 mb-8 shadow-sm flex flex-col items-center gap-2">
+              <div className="flex items-center gap-2 font-black text-amber-950 uppercase tracking-wide">
+                <AlertTriangle className="w-5 h-5 text-amber-600" />
+                Action Required
+              </div>
+              <p className="font-semibold text-center leading-relaxed">
+                Your order will be placed only after we receive your document on WhatsApp.
+              </p>
+            </div>
+
+            <div className="w-full flex flex-col gap-3 mt-auto">
+              <button 
+                onClick={handleOpenWhatsApp}
+                className="w-full h-14 bg-[#25D366] text-white font-black rounded-xl shadow-md flex items-center justify-center gap-2 hover:bg-[#20bd5a] transition-all uppercase tracking-wide text-sm"
+              >
+                <MessageCircle className="w-5 h-5" /> SEND DOCUMENT ON WHATSAPP
+              </button>
+
+              {hasOpenedWhatsApp && (
+                <motion.button 
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: 56 }}
+                  onClick={handleConfirmDocumentSent}
+                  disabled={isConfirming}
+                  className="w-full bg-primary text-primary-foreground font-black rounded-xl shadow-md flex items-center justify-center gap-2 transition-all uppercase tracking-wide text-sm disabled:opacity-70"
+                >
+                  {isConfirming ? <Loader2 className="w-5 h-5 animate-spin" /> : "I'VE SENT THE DOCUMENT"}
+                </motion.button>
+              )}
+            </div>
+            
+          </motion.div>
+        ) : (
+          <motion.div 
+            key="placed"
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="flex flex-col items-center w-full max-w-sm"
           >
-            Shop More
-          </button>
-        </div>
-      </motion.div>
+            {/* Step Indicator */}
+            <div className="flex items-center gap-2 mb-8 w-full justify-center text-xs font-bold uppercase tracking-wider">
+               <div className="flex items-center text-green-600">
+                 <Check className="w-4 h-4 mr-1" strokeWidth={3} /> Paid
+               </div>
+               <div className="w-8 h-px bg-green-500"></div>
+               <div className="flex items-center text-green-600">
+                 <Check className="w-4 h-4 mr-1" strokeWidth={3} /> Sent
+               </div>
+               <div className="w-8 h-px bg-green-500"></div>
+               <div className="flex items-center text-green-600">
+                 <Check className="w-4 h-4 mr-1" strokeWidth={3} /> Placed
+               </div>
+            </div>
+
+            <div className="w-20 h-20 bg-green-500 rounded-full flex items-center justify-center shadow-lg shadow-green-500/30 mb-6 shrink-0">
+              <Check className="w-10 h-10 text-white" strokeWidth={4} />
+            </div>
+
+            <h1 className="text-2xl font-black text-foreground mb-6 uppercase tracking-tight">
+              Order Placed Successfully
+            </h1>
+
+            {cart.items.length > 0 && (
+              <div className="bg-card rounded-2xl border border-border p-4 shadow-sm w-full text-left flex flex-col gap-3 text-sm shrink-0 mb-8">
+                <div className="flex justify-between items-start gap-3">
+                  <span className="text-muted-foreground whitespace-nowrap font-medium">Order ID</span>
+                  <span className="font-mono text-foreground font-bold text-right break-all">
+                    {orderId}
+                  </span>
+                </div>
+                <div className="w-full h-px bg-border/50"></div>
+                <div className="flex justify-between items-start gap-3">
+                  <span className="text-muted-foreground whitespace-nowrap font-medium">Document</span>
+                  <span className="font-bold text-right" style={{ overflowWrap: 'anywhere' }}>
+                    {cart.items[0].title || 'Custom Upload'}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Total</span>
+                  <span className="font-bold text-primary text-base">₹{cart.summary.total}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-muted-foreground font-medium">Delivery</span>
+                  <span className="font-bold text-green-600">FREE</span>
+                </div>
+              </div>
+            )}
+
+            <div className="flex gap-3 w-full mt-auto">
+              <button 
+                onClick={onTrack}
+                className="flex-1 h-14 bg-primary text-primary-foreground font-black rounded-xl shadow-md uppercase tracking-wide text-sm"
+              >
+                Track Order
+              </button>
+              <button 
+                onClick={onContinue}
+                className="flex-1 h-14 bg-secondary text-secondary-foreground font-black rounded-xl uppercase tracking-wide text-sm"
+              >
+                Shop More
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
