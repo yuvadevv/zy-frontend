@@ -21,9 +21,9 @@ function OptionsSelectionContent() {
 
   const [config, setConfig] = useState<PrintConfig>({
     copies: 1,
-    singleSided: false,
+    singleSided: true,
     color: false,
-    bindingType: 'spiral',
+    bindingType: 'none',
     paperSize: 'a4'
   });
 

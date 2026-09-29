@@ -30,7 +30,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
   
   const [config, setConfig] = useState<PrintConfig>({
     copies: 1,
-    singleSided: false,
+    singleSided: true,
     color: false,
     bindingType: allowedBindings && allowedBindings.length > 0 ? allowedBindings[0] : 'none',
     paperSize: 'a4'
@@ -141,7 +141,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
     setDocumentId(null);
     setConfig({
       copies: 1,
-      singleSided: false,
+      singleSided: true,
       color: false,
       bindingType: allowedBindings && allowedBindings.length > 0 ? allowedBindings[0] : 'none',
       paperSize: 'a4'
