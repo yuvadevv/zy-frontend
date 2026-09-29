@@ -97,6 +97,13 @@ export async function handleOAuthHashRedirect(): Promise<OAuthHashResult> {
       // Clean URL hash so the sensitive token doesn't stay in the browser address bar or history
       window.history.replaceState(null, '', window.location.pathname);
 
+      // 🔑 MOBILE FIX: Set the auth cookie directly via document.cookie RIGHT BEFORE
+      // navigating. This is critical for Safari on iOS (ITP) and Android Chrome where
+      // the cookie set by the server during redirect chains can be silently dropped.
+      // Setting it here via JS ensures the middleware (proxy.ts) sees bl_auth_token
+      // and does NOT redirect back to /login.
+      document.cookie = `bl_auth_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+
       // Navigate to destination
       window.location.href = finalNext;
       return { handled: true, token, user };

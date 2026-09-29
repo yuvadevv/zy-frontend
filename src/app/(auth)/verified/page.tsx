@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, Suspense } from 'react';
+import React, { useEffect, Suspense, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { CheckCircle2 } from 'lucide-react';
@@ -10,14 +10,46 @@ function VerifiedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextUrl = searchParams.get('next') || '/app/onboarding';
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
-    // Automatically redirect after 3 seconds
+    // Ensure the auth cookie is set from localStorage token before navigating.
+    // This is critical on mobile (Safari ITP) where cookies set during
+    // cross-origin redirect chains can get dropped.
+    async function ensureCookieAndRedirect() {
+      try {
+        const token = localStorage.getItem('bl_session_token');
+        if (token) {
+          // Re-set the cookie client-side as a fallback for mobile browsers
+          document.cookie = `bl_auth_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+          // Also persist via server route (best-effort)
+          try {
+            await fetch('/api/auth/session', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ token })
+            });
+          } catch {
+            // Ignore — client-side cookie above is the important fallback
+          }
+        }
+      } catch {
+        // localStorage may be unavailable in some private browsers
+      }
+      setReady(true);
+    }
+
+    ensureCookieAndRedirect();
+  }, []);
+
+  useEffect(() => {
+    if (!ready) return;
+    // Automatically redirect after a short delay
     const timer = setTimeout(() => {
       router.push(nextUrl);
-    }, 3000);
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [router, nextUrl]);
+  }, [router, nextUrl, ready]);
 
   return (
     <motion.div 
