@@ -21,7 +21,7 @@ export default function CustomUploadPage() {
           title="Standard Custom Print"
           subtitle="Upload a single PDF for custom printing."
           serviceType="custom"
-          allowedBindings={['spiral']}
+          allowedBindings={['none', 'spiral']}
           basePrice={10}
         />
       </div>
