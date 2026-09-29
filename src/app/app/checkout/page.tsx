@@ -148,6 +148,15 @@ const CheckoutPageContent = () => {
         </>
       )}
 
+      {/* Processing Overlay */}
+      {isPlacingOrder && !successOrderId && (
+        <div className="fixed inset-0 z-[100] bg-background/80 backdrop-blur-sm flex flex-col items-center justify-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
+          <h2 className="text-xl font-bold text-foreground">Processing Payment...</h2>
+          <p className="text-muted-foreground text-sm mt-2">Please do not close or refresh this page.</p>
+        </div>
+      )}
+
       {/* Error Bottom Sheet */}
       {orderError && (
         <div className="fixed inset-0 z-50 bg-background/50 flex items-end">

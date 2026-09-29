@@ -56,7 +56,7 @@ export async function handleOAuthHashRedirect(): Promise<OAuthHashResult> {
       }
 
       // Save token and user into SessionManager (localStorage & cookie)
-      SessionManager.setSession(token, user);
+      await SessionManager.setSession(token, user);
 
       // Check if this is a password recovery flow
       const type = params.get('type');

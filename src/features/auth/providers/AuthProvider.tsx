@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { SessionManager, AuthUser } from '@/utils/SessionManager';
+import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
 
 export interface AuthSession {
   access_token: string;
@@ -28,6 +29,15 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash.includes('access_token=')) {
+      handleOAuthHashRedirect().then((res) => {
+        if (!res.handled) {
+          initAuth();
+        }
+      }).catch(() => initAuth());
+      return;
+    }
+
     const initAuth = () => {
       const token = SessionManager.getToken();
       const currentUser = SessionManager.getUser();
