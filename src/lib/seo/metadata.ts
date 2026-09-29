@@ -56,7 +56,16 @@ export function constructMetadata({
       images: [image],
       creator: "@blintzy", // Only use if appropriate
     },
-    icons,
+    icons: {
+      icon: "/icon.png",
+      apple: "/icon-192x192.png", // Safari likes 180x180 or 192x192
+    },
+    manifest: "/manifest.json",
+    appleWebApp: {
+      capable: true,
+      statusBarStyle: "default",
+      title: siteConfig.name,
+    },
     metadataBase: new URL(siteConfig.url),
     alternates: {
       canonical: `${siteConfig.url}${canonicalPath}`,
