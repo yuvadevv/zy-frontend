@@ -241,7 +241,10 @@ function LoginContent() {
 
       <p className="text-center text-sm text-gray-500 mt-8">
         Don't have an account?{' '}
-        <Link href="/signup" className="text-orange-500 font-bold hover:text-orange-600 transition-colors">
+        <Link 
+          href={searchParams.get('ref') ? `/signup?ref=${encodeURIComponent(searchParams.get('ref')!)}` : "/signup"} 
+          className="text-orange-500 font-bold hover:text-orange-600 transition-colors"
+        >
           Sign up
         </Link>
       </p>

@@ -56,8 +56,8 @@ export default function ReferAndEarnPage() {
       if (res) {
         setReferralCode(res.referral_code || '');
         // Determine canonical base URL
-        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://blintzy.in';
-        const cleanBase = origin.includes('localhost') ? origin : 'https://blintzy.in';
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://blintzy.com';
+        const cleanBase = origin.includes('localhost') ? origin : 'https://blintzy.com';
         setReferralLink(`${cleanBase}/signup?ref=${res.referral_code}`);
         if (res.stats) {
           setStats(res.stats);

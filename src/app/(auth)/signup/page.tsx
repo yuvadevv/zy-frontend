@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -11,8 +11,9 @@ import { authService } from '@/features/auth/services/authService';
 import { AuthLayout } from '@/features/auth/components/AuthLayout';
 import { TextInput } from '@/design-system/components/inputs/TextInput/TextInput';
 import { PasswordInput } from '@/design-system/components/inputs/PasswordInput/PasswordInput';
-import { Loader2, Mail } from 'lucide-react';
+import { Loader2, Mail, Gift, Check, AlertCircle } from 'lucide-react';
 import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
+import { workerClient } from '@/lib/api/workerClient';
 
 export default function SignupPage() {
   const router = useRouter();
@@ -23,15 +24,76 @@ export default function SignupPage() {
   const [resendCooldown, setResendCooldown] = useState(0);
   const [resendSuccess, setResendSuccess] = useState(false);
 
+  // Referral code state & validation feedback
+  const [referralInput, setReferralInput] = useState<string>('');
+  const [isValidatingRef, setIsValidatingRef] = useState(false);
+  const [refValidationState, setRefValidationState] = useState<'idle' | 'valid' | 'invalid'>('idle');
+  const [refFeedbackMessage, setRefFeedbackMessage] = useState<string>('');
+
+  const { register, handleSubmit, setValue, formState: { errors } } = useForm<SignupFormData>({
+    resolver: zodResolver(signupSchema)
+  });
+
+  // Validate referral code helper
+  const validateCode = useCallback(async (codeToTest: string) => {
+    const clean = codeToTest.trim().toUpperCase();
+    if (!clean) {
+      setRefValidationState('idle');
+      setRefFeedbackMessage('');
+      localStorage.removeItem('bl_referral_code');
+      document.cookie = 'bl_referral_code=; path=/; max-age=0; SameSite=Lax';
+      return;
+    }
+
+    setIsValidatingRef(true);
+    try {
+      const res = await workerClient.validateReferralCode(clean);
+      if (res && res.valid) {
+        setRefValidationState('valid');
+        setRefFeedbackMessage(`✓ Valid referral code (${res.referral_code})`);
+        localStorage.setItem('bl_referral_code', res.referral_code);
+        document.cookie = `bl_referral_code=${res.referral_code}; path=/; max-age=2592000; SameSite=Lax`;
+      } else {
+        setRefValidationState('invalid');
+        setRefFeedbackMessage('Invalid referral code. Please check and try again.');
+        localStorage.removeItem('bl_referral_code');
+        document.cookie = 'bl_referral_code=; path=/; max-age=0; SameSite=Lax';
+      }
+    } catch (e) {
+      // If validation endpoint has temporary issue, keep entered code gracefully
+      setRefValidationState('idle');
+      setRefFeedbackMessage('');
+    } finally {
+      setIsValidatingRef(false);
+    }
+  }, []);
+
   useEffect(() => {
-    // Capture referral code if present in URL
+    // 1. Capture referral code from URL or stored session/cookie
     if (typeof window !== 'undefined') {
       const urlParams = new URLSearchParams(window.location.search);
-      const refCode = urlParams.get('ref');
-      if (refCode) {
-        const cleanRef = refCode.trim().toUpperCase();
-        localStorage.setItem('bl_referral_code', cleanRef);
-        document.cookie = `bl_referral_code=${cleanRef}; path=/; max-age=2592000; SameSite=Lax`;
+      const urlRef = urlParams.get('ref');
+      
+      let initialRef = urlRef ? urlRef.trim().toUpperCase() : '';
+      if (!initialRef) {
+        // Fallback to localStorage or cookie
+        const stored = localStorage.getItem('bl_referral_code');
+        if (stored) {
+          initialRef = stored.trim().toUpperCase();
+        } else {
+          const cookieMatch = document.cookie.match(/(?:^|;\s*)bl_referral_code=([^;]+)/);
+          if (cookieMatch) {
+            initialRef = decodeURIComponent(cookieMatch[1]).trim().toUpperCase();
+          }
+        }
+      }
+
+      if (initialRef) {
+        setReferralInput(initialRef);
+        setValue('referralCode', initialRef);
+        localStorage.setItem('bl_referral_code', initialRef);
+        document.cookie = `bl_referral_code=${initialRef}; path=/; max-age=2592000; SameSite=Lax`;
+        validateCode(initialRef);
       }
     }
 
@@ -66,16 +128,46 @@ export default function SignupPage() {
       clearTimeout(timer);
       clearInterval(pollInterval);
     };
-  }, [resendCooldown, verificationEmail, router]);
+  }, [resendCooldown, verificationEmail, router, setValue, validateCode]);
 
-  const { register, handleSubmit, formState: { errors } } = useForm<SignupFormData>({
-    resolver: zodResolver(signupSchema)
-  });
+  const handleReferralChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const rawVal = e.target.value.toUpperCase();
+    setReferralInput(rawVal);
+    setValue('referralCode', rawVal);
+    
+    // Clear validation state while typing
+    setRefValidationState('idle');
+    setRefFeedbackMessage('');
+  };
+
+  const handleReferralBlur = () => {
+    if (referralInput.trim()) {
+      validateCode(referralInput.trim());
+    } else {
+      setRefValidationState('idle');
+      setRefFeedbackMessage('');
+      localStorage.removeItem('bl_referral_code');
+      document.cookie = 'bl_referral_code=; path=/; max-age=0; SameSite=Lax';
+    }
+  };
 
   const onSubmit = async (data: SignupFormData) => {
     if (isLoading) return;
     setIsLoading(true);
     setError(null);
+
+    // Save final selected referral code in storage so it persists through email verification & onboarding
+    const finalCode = (data.referralCode || referralInput || '').trim().toUpperCase();
+    if (finalCode) {
+      if (refValidationState === 'invalid') {
+        setIsLoading(false);
+        setError('Please remove or correct the invalid referral code before continuing.');
+        return;
+      }
+      localStorage.setItem('bl_referral_code', finalCode);
+      document.cookie = `bl_referral_code=${finalCode}; path=/; max-age=2592000; SameSite=Lax`;
+    }
+
     try {
       const response = await authService.signUpWithEmail(data);
       if (!response?.session) {
@@ -92,6 +184,12 @@ export default function SignupPage() {
 
   const onGoogleLogin = async () => {
     if (isLoading) return;
+    // Ensure current referral code is preserved in cookie across OAuth redirect
+    const finalCode = referralInput.trim().toUpperCase();
+    if (finalCode && refValidationState !== 'invalid') {
+      localStorage.setItem('bl_referral_code', finalCode);
+      document.cookie = `bl_referral_code=${finalCode}; path=/; max-age=2592000; SameSite=Lax`;
+    }
     try {
       await authService.loginWithGoogle();
     } catch (err: any) {
@@ -257,9 +355,56 @@ export default function SignupPage() {
               {errors.confirmPassword && <p className="text-xs text-red-500 mt-1.5 ml-1">{errors.confirmPassword.message}</p>}
             </div>
 
+            {/* Referral Code (Optional) Input */}
+            <div className="pt-1">
+              <div className="relative">
+                <div className="relative flex items-center">
+                  <input
+                    id="referral-code-input"
+                    type="text"
+                    value={referralInput}
+                    onChange={handleReferralChange}
+                    onBlur={handleReferralBlur}
+                    placeholder="Enter referral code"
+                    className={`block w-full px-4 py-3.5 pr-10 text-sm font-semibold rounded-xl border bg-white outline-none transition-all placeholder:text-gray-400 placeholder:font-normal ${
+                      refValidationState === 'valid' 
+                        ? 'border-green-500 text-green-700 bg-green-50/20 focus:border-green-600' 
+                        : refValidationState === 'invalid'
+                        ? 'border-red-400 text-red-700 bg-red-50/20 focus:border-red-500'
+                        : 'border-gray-300 text-gray-900 focus:border-orange-500 focus:ring-1 focus:ring-orange-500'
+                    }`}
+                  />
+                  <div className="absolute right-3.5 flex items-center pointer-events-none">
+                    {isValidatingRef ? (
+                      <Loader2 className="w-4 h-4 animate-spin text-orange-500" />
+                    ) : refValidationState === 'valid' ? (
+                      <Check className="w-4 h-4 text-green-600 stroke-[3]" />
+                    ) : refValidationState === 'invalid' ? (
+                      <AlertCircle className="w-4 h-4 text-red-500" />
+                    ) : (
+                      <Gift className="w-4 h-4 text-gray-400" />
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Helper text & validation feedback */}
+              <div className="mt-1.5 px-1 flex flex-col gap-0.5">
+                {refFeedbackMessage ? (
+                  <p className={`text-xs font-semibold ${refValidationState === 'valid' ? 'text-green-600' : 'text-red-500'}`}>
+                    {refFeedbackMessage}
+                  </p>
+                ) : (
+                  <p className="text-[11px] text-gray-500 font-medium">
+                    Have a friend's BLINTZY code? Enter it to support them.
+                  </p>
+                )}
+              </div>
+            </div>
+
             <button 
               type="submit"
-              disabled={isLoading}
+              disabled={isLoading || isValidatingRef}
               className="w-full h-12 bg-orange-500 text-white rounded-xl font-bold shadow-sm mt-4 disabled:opacity-70 transition-all hover:bg-orange-600 active:scale-[0.98] flex items-center justify-center"
             >
               {isLoading ? <Loader2 className="w-5 h-5 animate-spin" /> : "Create Account"}
@@ -277,3 +422,4 @@ export default function SignupPage() {
     </AuthLayout>
   );
 }
+
