@@ -98,7 +98,7 @@ export default function CampusFoodPage() {
         {/* Hero Visual Image Banner */}
         <div className="relative w-full h-44 sm:h-52 rounded-2xl overflow-hidden bg-orange-100 shadow-inner">
           <img
-            src="/images/banners/banner_campus_food.jpg"
+            src="/images/banners/banner_campus_food.webp"
             alt="Campus Food Preview"
             className="w-full h-full object-cover"
           />

@@ -387,7 +387,7 @@ export default function CampusFestHubPage() {
             {/* Food Thumbnail Visual */}
             <div className="relative w-full h-32 rounded-xl overflow-hidden bg-orange-50">
               <img
-                src="/images/banners/banner_campus_food.jpg"
+                src="/images/banners/banner_campus_food.webp"
                 alt="BLINTZY Campus Food Spread"
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
               />

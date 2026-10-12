@@ -21,7 +21,7 @@ export const CampusFoodPromoBanner = () => {
         <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
           <div className="relative w-12 h-12 sm:w-14 sm:h-14 rounded-2xl overflow-hidden shrink-0 bg-orange-50 border border-orange-100">
             <img
-              src="/images/banners/banner_campus_food.jpg"
+              src="/images/banners/banner_campus_food.webp"
               alt="Campus Food"
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
             />
