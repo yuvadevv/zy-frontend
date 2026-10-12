@@ -13,7 +13,7 @@ import { HelpSupportCard } from '@/features/orders/components/HelpSupportCard';
 import { OrderSkeleton } from '@/features/orders/components/OrderSkeleton';
 import { OrderErrorState } from '@/features/orders/components/OrderErrorState';
 import { OrderEmptyState } from '@/features/orders/components/OrderEmptyState';
-import { FileArchive, Download, Loader2, UploadCloud, AlertTriangle, MessageCircle } from 'lucide-react';
+import { FileArchive, Download, Loader2, UploadCloud, AlertTriangle, MessageCircle, Check } from 'lucide-react';
 import { useFileUploadStore } from '@/features/services/store/useFileUploadStore';
 import { workerClient } from '@/lib/api/workerClient';
 import { toast } from 'react-hot-toast';
@@ -78,15 +78,45 @@ export default function OrderTrackingPage() {
     }
   };
 
+  const [isConfirmingDoc, setIsConfirmingDoc] = React.useState(false);
+
   const handleWhatsAppUpload = () => {
     const waNumber = process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
     
-    let serviceNames = order.items.map((i: any) => i.title || 'Custom Upload').join(', ');
-    if (!serviceNames) serviceNames = 'Custom Upload';
+    const firstItem = order.items?.[0];
+    const docName = firstItem?.printConfig?.documentName || 'Custom Upload Document';
+    const pages = firstItem?.printConfig?.pages || 'N/A';
+    const color = firstItem?.printConfig?.color ? 'Colour' : 'B&W';
+    const sides = firstItem?.printConfig?.singleSided ? 'Single Sided' : 'Double Sided';
+    const binding = firstItem?.printConfig?.bindingType && firstItem?.printConfig?.bindingType !== 'none' ? 'Spiral Binding' : 'No Binding';
+    const copies = firstItem?.printConfig?.copies || 1;
 
-    const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${order.id}\nService: ${serviceNames}\nAmount: ₹${order.summary.grandTotal}\n\n📎 I am attaching my PDF/ZIP document for this order.\n\nPlease confirm once received.`;
+    const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${order.id}\nDocument: ${docName} (${pages} pages)\nPrint Options: ${color} • ${sides} • ${binding} • ${copies} copies\nAmount: ₹${order.summary.grandTotal}\n\n📎 I am attaching my original document (${docName}) for this order.\n\nPlease confirm once received.`;
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
   };
+
+  const handleConfirmDocSentFromTracking = async () => {
+    try {
+      setIsConfirmingDoc(true);
+      await workerClient.confirmDocument(order.id);
+      toast.success("Document submission confirmed! BLINTZY is verifying.");
+      refreshOrder(orderId);
+    } catch (e) {
+      toast.error("Could not update document status.");
+    } finally {
+      setIsConfirmingDoc(false);
+    }
+  };
+
+  const isAwaitingWhatsApp = 
+    order.internalStatus !== 'document_submitted' &&
+    (
+      order.customFiles?.some(f => f.uploadStatus === 'awaiting_whatsapp' || f.fileName === 'awaiting_whatsapp' || f.uploadStatus === 'pending' || f.fileName === 'pending_upload') ||
+      order.items?.some(i => !i.printConfig?.manualName || i.printConfig?.documentName === 'awaiting_whatsapp')
+    ) &&
+    order.status === 'received';
+
+  const isDocumentSubmitted = order.internalStatus === 'document_submitted';
 
   return (
     <>
@@ -107,28 +137,65 @@ export default function OrderTrackingPage() {
       <OrderHeader orderId={order.id} order={order} />
       
       <main className="flex-1 p-4 flex flex-col gap-5 max-w-lg mx-auto w-full">
-        {order.customFiles?.some(f => f.uploadStatus === 'awaiting_whatsapp' || f.fileName === 'awaiting_whatsapp' || f.uploadStatus === 'pending' || f.fileName === 'pending_upload') && (
+        {isDocumentSubmitted && (
+          <div className="bg-green-50 border border-green-200 rounded-xl p-4 text-center">
+            <div className="flex items-center justify-center gap-1.5 text-green-800 font-black text-sm mb-1">
+              <Check className="w-4 h-4 text-green-600" strokeWidth={3} /> DOCUMENT SUBMITTED VIA WHATSAPP
+            </div>
+            <p className="text-xs text-green-700 font-medium">
+              We received your submission confirmation. Your print job will be verified and prepared shortly!
+            </p>
+          </div>
+        )}
+
+        {isAwaitingWhatsApp && (
           <div className="bg-amber-50 border-2 border-amber-300 rounded-xl shadow-sm overflow-hidden p-6 text-center">
             <h3 className="text-xl font-black text-amber-900 mb-2">✓ Payment Successful</h3>
-            <p className="text-sm font-bold text-amber-900 mb-6">Your order {order.id} has been created.</p>
+            <p className="text-sm font-bold text-amber-900 mb-4">Your order {order.id} has been created.</p>
             
+            <div className="bg-white/80 p-4 rounded-xl mb-4 border border-amber-200 text-left flex flex-col gap-2 text-xs">
+              <div className="flex justify-between items-center text-muted-foreground font-semibold">
+                <span>Document:</span>
+                <span className="text-foreground font-bold truncate max-w-[200px]">
+                  {order.items?.[0]?.printConfig?.documentName || 'Custom Upload Document'}
+                </span>
+              </div>
+              <div className="flex justify-between items-center text-muted-foreground font-semibold">
+                <span>Pages & Copies:</span>
+                <span className="text-foreground font-bold">
+                  {order.items?.[0]?.printConfig?.pages || 'N/A'} pages • {order.items?.[0]?.printConfig?.copies || 1} copies
+                </span>
+              </div>
+            </div>
+
             <div className="bg-white/60 p-4 rounded-lg mb-6 border border-amber-100">
               <p className="text-sm font-bold text-amber-900 mb-1 flex items-center justify-center gap-1.5">
-                <span>⚠️ ACTION REQUIRED</span>
+                <AlertTriangle className="w-4 h-4 text-amber-600" /> ACTION REQUIRED
               </p>
-              <p className="text-sm text-amber-950 font-bold mb-2">Your order is not complete yet.</p>
-              <p className="text-sm text-amber-800 font-medium">
-                Please send your PDF or ZIP document on WhatsApp to complete your order.
+              <p className="text-sm text-amber-950 font-bold mb-1">Your order is not complete yet.</p>
+              <p className="text-xs text-amber-800 font-medium">
+                Please send your original document on WhatsApp to begin printing.
               </p>
             </div>
             
-            <button 
-              onClick={handleWhatsAppUpload}
-              className="flex items-center justify-center gap-2 px-6 py-4 bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors rounded-xl font-black text-base w-full shadow-md uppercase tracking-wide mb-3"
-            >
-              <MessageCircle className="w-5 h-5" /> SEND DOCUMENT ON WHATSAPP
-            </button>
-            <p className="text-xs text-amber-800 font-medium leading-tight px-2">
+            <div className="flex flex-col gap-2.5">
+              <button 
+                onClick={handleWhatsAppUpload}
+                className="flex items-center justify-center gap-2 px-6 py-4 bg-[#25D366] text-white hover:bg-[#20bd5a] transition-colors rounded-xl font-black text-base w-full shadow-md uppercase tracking-wide"
+              >
+                <MessageCircle className="w-5 h-5" /> SEND DOCUMENT ON WHATSAPP
+              </button>
+
+              <button 
+                onClick={handleConfirmDocSentFromTracking}
+                disabled={isConfirmingDoc}
+                className="flex items-center justify-center gap-2 px-6 py-3.5 bg-primary text-primary-foreground hover:bg-primary/90 transition-colors rounded-xl font-black text-sm w-full shadow-sm uppercase tracking-wide disabled:opacity-70"
+              >
+                {isConfirmingDoc ? <Loader2 className="w-4 h-4 animate-spin" /> : "I'VE SENT THE DOCUMENT"}
+              </button>
+            </div>
+            
+            <p className="text-xs text-amber-800 font-medium leading-tight px-2 mt-3">
               <strong>Important:</strong> Your order will be processed only after BLINTZY receives your document on WhatsApp.
             </p>
           </div>

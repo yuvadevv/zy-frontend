@@ -54,6 +54,7 @@ export const ordersApi = {
         id: ro.public_id,
         userId: ro.student_id,
         status: ro.status,
+        internalStatus: ro.internal_status,
         createdAt: new Date(ro.created_at).toISOString(),
         updatedAt: new Date(ro.updated_at).toISOString(),
         items: items.map((i: any) => ({

@@ -9,8 +9,11 @@ import { useCart } from '@/features/cart/providers/CartProvider';
 import { useRouter } from 'next/navigation';
 import { APP_ROUTES } from '@/constants/routes';
 import { workerClient } from '@/lib/api/workerClient';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useFileUploadStore } from '@/features/services/store/useFileUploadStore';
+import { PriceBreakdown } from '@/features/cart/components/PriceBreakdown';
+import { useSupport } from '@/hooks/useSupport';
+import { MessageCircle, Check, ArrowRight } from 'lucide-react';
 
 interface DocumentUploadFlowProps {
   title: string;
@@ -26,7 +29,11 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
   const [isScanning, setIsScanning] = useState(false);
   const [pageCount, setPageCount] = useState<number | null>(null);
   const [documentId, setDocumentId] = useState<string | null>(null);
+  const [flowStep, setFlowStep] = useState<'configure' | 'send_whatsapp' | 'confirm_whatsapp'>('configure');
+  const [hasOpenedDocWhatsApp, setHasOpenedDocWhatsApp] = useState(false);
+  const { supportWhatsapp } = useSupport();
   const setPendingFile = useFileUploadStore((state) => state.setPendingFile);
+  const setConfirmedDocument = useFileUploadStore((state) => state.setConfirmedDocument);
   
   const [config, setConfig] = useState<PrintConfig>({
     copies: 1,
@@ -66,8 +73,11 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
     setDocumentId(null);
   };
   
-  const { data: pricingResponse } = useQuery({
-    queryKey: ['pricing', documentId, pageCount, config],
+  const [appliedOffer, setAppliedOffer] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: pricingResponse, isFetching: isPricingFetching } = useQuery({
+    queryKey: ['pricing', documentId, pageCount, config, appliedOffer],
     queryFn: () => workerClient.calculatePricing({
       items: [{
         id: 'preview',
@@ -76,7 +86,8 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
         pages: pageCount,
         printOptions: config
       }],
-      deliveryMethod: 'delivery'
+      deliveryMethod: 'delivery',
+      offerCode: appliedOffer || undefined
     }),
     enabled: !!documentId && !!pageCount,
     staleTime: 1000 * 60, // 1 minute
@@ -231,25 +242,30 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
               />
               
               <div className="mt-8">
-                <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3 mb-6">
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Printing</span>
-                    <span className="font-medium">₹{breakdown.printingCost !== undefined ? breakdown.printingCost : '...'}</span>
-                  </div>
-                  {config.bindingType !== 'none' && (
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Binding</span>
-                      <span className="font-medium">₹{breakdown.bindingCost !== undefined ? breakdown.bindingCost : '...'}</span>
-                    </div>
-                  )}
-                  <div className="flex justify-between text-sm">
-                    <span className="text-muted-foreground">Delivery</span>
-                    <span className="font-bold text-green-600">FREE</span>
-                  </div>
-                  <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-1">
-                    <span className="font-bold text-foreground">Total Price</span>
-                    <span className="text-2xl font-black text-primary">₹{breakdown.subtotal !== undefined ? breakdown.subtotal : '...'}</span>
-                  </div>
+                <div className="mb-6">
+                  <PriceBreakdown 
+                    summary={{
+                      subtotal: breakdown.subtotal || 0,
+                      originalSubtotal: breakdown.originalSubtotal || breakdown.subtotal || 0,
+                      printingCost: breakdown.printingCost || 0,
+                      originalPrintingCost: breakdown.originalPrintingCost || breakdown.printingCost || 0,
+                      bindingCost: breakdown.bindingCost || 0,
+                      originalBindingCost: breakdown.originalBindingCost || breakdown.bindingCost || 0,
+                      discount: pricingResponse?.summary?.discount || 0,
+                      offerDiscount: pricingResponse?.summary?.offerDiscount || 0,
+                      deliveryFee: pricingResponse?.summary?.deliveryFee || 0,
+                      platformFee: pricingResponse?.summary?.platformFee || 0,
+                      isLaunchActive: pricingResponse?.summary?.isLaunchActive ?? true,
+                      appliedOffer: appliedOffer || pricingResponse?.summary?.appliedOffer || null,
+                      total: pricingResponse?.summary?.grandTotal || breakdown.subtotal || 0
+                    }}
+                    onApplyOffer={async (code) => {
+                      setAppliedOffer(code);
+                      await queryClient.invalidateQueries({ queryKey: ['pricing', documentId] });
+                      return { success: true };
+                    }}
+                    isApplyingOffer={isPricingFetching}
+                  />
                 </div>
                 
                 <div className="bg-secondary/20 rounded-xl p-4 flex flex-col items-center justify-center border border-secondary/30 mb-6">
@@ -257,13 +273,92 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
                   <span className="text-sm font-bold text-foreground">{pricingResponse?.estimatedDelivery || 'Tomorrow, 9:15 AM'}</span>
                 </div>
 
-                <button
-                  onClick={handleAddToCart}
-                  disabled={isAdding || breakdown.subtotal === undefined}
-                  className="w-full bg-primary text-primary-foreground font-bold py-6 text-lg rounded-xl shadow-lg shadow-primary/20 hover:scale-[1.02] transition-transform disabled:opacity-70 disabled:hover:scale-100"
-                >
-                  {isAdding ? 'Adding to Cart...' : breakdown.subtotal === undefined ? 'Calculating Price...' : 'Add to Cart'}
-                </button>
+                {/* STEP 2 & STEP 3: Directly open WhatsApp on clicking Send Document on WhatsApp */}
+                {flowStep === 'configure' && (
+                  <button
+                    onClick={() => {
+                      const waNumber = supportWhatsapp || process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
+                      const refCode = documentId ? documentId.slice(0, 8).toUpperCase() : 'UPLOAD';
+                      const msg = `Hi BLINTZY 👋\n\nI am sending my document for printing.\n\nUpload Ref: ${refCode}\nDocument: ${finalFile.name}\nPages: ${pageCount}\nCopies: ${config.copies}\nOptions: ${config.color ? 'Colour' : 'B&W'} • ${config.singleSided ? 'Single Sided' : 'Double Sided'} • ${config.bindingType || 'None'}\nEstimated Amount: ₹${pricingResponse?.summary?.grandTotal || breakdown.subtotal || 0}\n\n📎 Please upload your documents here on WhatsApp.\nI am attaching my original PDF file here.`;
+                      
+                      setHasOpenedDocWhatsApp(true);
+                      window.open(`https://wa.me/${waNumber.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+                      setFlowStep('confirm_whatsapp');
+                    }}
+                    disabled={isAdding || breakdown.subtotal === undefined}
+                    className="w-full bg-[#FF6B00] hover:bg-[#e66000] text-white font-bold py-5 text-base rounded-xl shadow-lg shadow-orange-500/20 hover:scale-[1.01] active:scale-[0.99] transition-all disabled:opacity-70 disabled:hover:scale-100 flex items-center justify-center gap-2"
+                  >
+                    {breakdown.subtotal === undefined ? 'Calculating Price...' : 'Send Document on WhatsApp →'}
+                  </button>
+                )}
+
+                {flowStep === 'confirm_whatsapp' && (
+                  <div className="bg-card border border-border rounded-2xl p-5 shadow-sm space-y-4">
+                    <div className="text-center space-y-1">
+                      <h3 className="text-lg font-bold text-foreground">
+                        Have You Sent Your Document?
+                      </h3>
+                      <p className="text-xs text-muted-foreground">
+                        Return to BLINTZY after attaching and sending your original document on WhatsApp.
+                      </p>
+                    </div>
+
+                    <div className="bg-muted/40 rounded-xl p-3 text-xs space-y-1.5 border border-border/60">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Document:</span>
+                        <span className="font-semibold text-foreground truncate max-w-[200px]">{finalFile.name}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Pages:</span>
+                        <span className="font-semibold text-foreground">{pageCount} pages ({config.copies} {config.copies > 1 ? 'copies' : 'copy'})</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Upload Reference:</span>
+                        <span className="font-mono text-primary font-bold">{documentId ? documentId.slice(0, 8).toUpperCase() : 'UPLOAD'}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Estimated Amount:</span>
+                        <span className="font-bold text-foreground">₹{pricingResponse?.summary?.grandTotal || breakdown.subtotal || 0}</span>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2">
+                      <button
+                        onClick={() => {
+                          if (documentId) {
+                            setConfirmedDocument(documentId, true);
+                          }
+                          handleAddToCart();
+                        }}
+                        disabled={isAdding}
+                        className="w-full bg-primary text-primary-foreground font-black py-4 rounded-xl shadow-md transition-all flex items-center justify-center gap-2 text-sm uppercase tracking-wide disabled:opacity-70"
+                      >
+                        <Check className="w-5 h-5 stroke-[3]" /> I've Sent the Document ✓
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const waNumber = supportWhatsapp || process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
+                          const refCode = documentId ? documentId.slice(0, 8).toUpperCase() : 'UPLOAD';
+                          const msg = `Hi BLINTZY 👋\n\nI am sending my document for printing.\n\nUpload Ref: ${refCode}\nDocument: ${finalFile.name}\nPages: ${pageCount}\nCopies: ${config.copies}\nOptions: ${config.color ? 'Colour' : 'B&W'} • ${config.singleSided ? 'Single Sided' : 'Double Sided'} • ${config.bindingType || 'None'}\nEstimated Amount: ₹${pricingResponse?.summary?.grandTotal || breakdown.subtotal || 0}\n\n📎 Please upload your documents here on WhatsApp.\nI am attaching my original PDF file here.`;
+                          window.open(`https://wa.me/${waNumber.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="w-full text-xs text-primary hover:underline font-semibold py-2 text-center"
+                      >
+                        Didn't send yet? Reopen WhatsApp
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setFlowStep('configure')}
+                        className="w-full text-xs text-muted-foreground hover:text-foreground py-1 text-center"
+                      >
+                        ← Edit document configuration
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             </>
           )}

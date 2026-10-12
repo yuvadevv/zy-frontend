@@ -15,6 +15,12 @@ export const APP_ROUTES = {
     REVIEW: '/app/services/manuals/review',
   },
   CART: '/app/cart',
+  OFFERS: '/app/offers',
+  CAMPUS_FEST: '/app/campus-fest',
+  REFER: '/app/refer',
+  LEADERBOARD: '/app/leaderboard',
+  AMBASSADOR: '/app/campus-fest/ambassador',
+  CAMPUS_FOOD: '/app/campus-food',
   CHECKOUT: '/app/checkout',
   ORDERS: {
     LIST: '/app/orders',

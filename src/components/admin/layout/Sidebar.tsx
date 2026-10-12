@@ -18,7 +18,8 @@ import {
   FileSignature, 
   Settings, 
   X,
-  Bell
+  Bell,
+  Tag
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -60,6 +61,7 @@ const navGroups = [
     label: 'CONTENT',
     items: [
       { href: '/admin/content', icon: ImageIcon, label: 'Banners & Announcements' },
+      { href: '/admin/offers', icon: Tag, label: 'Offers & Campaigns' },
     ],
   },
   {

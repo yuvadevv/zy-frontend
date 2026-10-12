@@ -1,19 +1,35 @@
 import React from 'react';
-import { Manual, PrintConfig, PriceBreakdown } from '../types';
+import { Manual, PrintConfig, PriceBreakdown as ManualPriceBreakdown } from '../types';
 import { Button } from '@/design-system/components/buttons/Button/Button';
-import { motion } from 'framer-motion';
-import { Eye } from 'lucide-react';
+import { PriceBreakdown } from '@/features/cart/components/PriceBreakdown';
 
 interface ReviewCardProps {
   manual: Manual;
   config: PrintConfig;
-  priceBreakdown: PriceBreakdown;
+  priceBreakdown: ManualPriceBreakdown;
   estimatedDelivery: string;
   onAddToCart: () => void;
   isAddingToCart?: boolean;
+  offerDiscount?: number;
+  isLaunchActive?: boolean;
+  appliedOffer?: string | null;
+  onApplyOffer?: (code: string | null) => Promise<{ success: boolean; error?: string }>;
+  isApplyingOffer?: boolean;
 }
 
-export const ReviewCard = ({ manual, config, priceBreakdown, estimatedDelivery, onAddToCart, isAddingToCart }: ReviewCardProps) => {
+export const ReviewCard = ({ 
+  manual, 
+  config, 
+  priceBreakdown, 
+  estimatedDelivery, 
+  onAddToCart, 
+  isAddingToCart,
+  offerDiscount = 0,
+  isLaunchActive = true,
+  appliedOffer,
+  onApplyOffer,
+  isApplyingOffer
+}: ReviewCardProps) => {
   return (
     <div className="flex flex-col gap-6 p-4">
       <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-4">
@@ -48,24 +64,25 @@ export const ReviewCard = ({ manual, config, priceBreakdown, estimatedDelivery, 
         </div>
       </div>
 
-      <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3">
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Printing</span>
-          <span className="font-medium">₹{priceBreakdown.printingCost}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Binding</span>
-          <span className="font-medium">₹{priceBreakdown.bindingCost}</span>
-        </div>
-        <div className="flex justify-between text-sm">
-          <span className="text-muted-foreground">Delivery</span>
-          <span className="font-bold text-green-600">FREE</span>
-        </div>
-        <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-1">
-          <span className="font-bold text-foreground">Total Price</span>
-          <span className="text-2xl font-black text-primary">₹{priceBreakdown.total}</span>
-        </div>
-      </div>
+      <PriceBreakdown 
+        summary={{
+          subtotal: priceBreakdown.total || 0,
+          originalSubtotal: (priceBreakdown.originalPrintingCost || 0) + (priceBreakdown.originalBindingCost || 0) || priceBreakdown.total,
+          printingCost: priceBreakdown.printingCost || 0,
+          originalPrintingCost: priceBreakdown.originalPrintingCost || priceBreakdown.printingCost || 0,
+          bindingCost: priceBreakdown.bindingCost || 0,
+          originalBindingCost: priceBreakdown.originalBindingCost || priceBreakdown.bindingCost || 0,
+          discount: offerDiscount,
+          offerDiscount: offerDiscount,
+          deliveryFee: 0,
+          platformFee: 0,
+          isLaunchActive: isLaunchActive,
+          appliedOffer: appliedOffer,
+          total: priceBreakdown.total
+        }}
+        onApplyOffer={onApplyOffer}
+        isApplyingOffer={isApplyingOffer}
+      />
       
       <div className="bg-secondary/20 rounded-xl p-4 flex flex-col items-center justify-center border border-secondary/30">
         <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estimated Delivery</span>

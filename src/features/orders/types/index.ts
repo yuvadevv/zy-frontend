@@ -90,6 +90,7 @@ export interface Order {
   id: string;
   userId: string;
   status: OrderStatus;
+  internalStatus?: string;
   createdAt: string;
   updatedAt: string;
   items: OrderItem[];

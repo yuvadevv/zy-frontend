@@ -20,7 +20,7 @@ import { workerClient } from '@/lib/api/workerClient';
 
 const CheckoutPageContent = () => {
   const router = useRouter();
-  const { cart, coupon, deliveryDetails } = useCart();
+  const { cart, coupon, offer, deliveryDetails, applyOffer } = useCart();
   const { state, setDeliveryDetails, setPaymentMethodId, setCouponCode, setStudentNotes, setTermsAccepted, isValid, clearSession } = useCheckout();
   const { placeOrder, isPlacingOrder, error: orderError } = usePlaceOrder();
   
@@ -37,7 +37,7 @@ const CheckoutPageContent = () => {
   }, [cart, router, successOrderId]);
 
   const { data: pricingResponse } = useQuery({
-    queryKey: ['checkout_pricing', cart?.items, state.deliveryDetails?.mode],
+    queryKey: ['checkout_pricing', cart?.items, state.deliveryDetails?.mode, coupon, offer],
     queryFn: () => workerClient.calculatePricing({
       items: cart?.items.map(i => ({
         id: i.id,
@@ -51,7 +51,8 @@ const CheckoutPageContent = () => {
         }
       })) || [],
       deliveryMethod: state.deliveryDetails?.mode || 'delivery',
-      couponCode: state.couponCode || coupon
+      couponCode: state.couponCode || coupon || undefined,
+      offerCode: (state.couponCode || coupon) ? 'NONE' : (offer || undefined)
     }),
     enabled: !!cart && cart.items.length > 0
   });
@@ -63,10 +64,11 @@ const CheckoutPageContent = () => {
   const handlePlaceOrder = async () => {
     if (!cart) return;
     
-    // Merge checkout state with cart provider state for delivery and coupon
+    // Merge checkout state with cart provider state for delivery, coupon, and offer
     const finalCheckoutState = {
       ...state,
       couponCode: state.couponCode || coupon || null,
+      offerCode: (state.couponCode || coupon) ? null : (offer || null),
       deliveryDetails: state.deliveryDetails || {
         mode: 'CLASSROOM',
         locationName: deliveryDetails ? `College Campus - ${deliveryDetails.building} Room ${deliveryDetails.roomNumber}` : 'College Campus',
@@ -98,9 +100,18 @@ const CheckoutPageContent = () => {
     ...displayCart,
     summary: backendSummary ? {
       subtotal: backendSummary.subtotal,
-      discount: backendSummary.discount,
-      tax: backendSummary.platformFee,
-      deliveryFee: backendSummary.deliveryFee,
+      originalSubtotal: backendSummary.originalSubtotal || backendSummary.subtotal,
+      originalPrintingCost: backendSummary.originalPrintingCost || backendSummary.printingCost || 0,
+      printingCost: backendSummary.printingCost || backendSummary.subtotal || 0,
+      originalBindingCost: backendSummary.originalBindingCost || 0,
+      bindingCost: backendSummary.bindingCost || 0,
+      discount: backendSummary.discount || 0,
+      offerDiscount: backendSummary.offerDiscount || 0,
+      tax: backendSummary.platformFee || 0,
+      deliveryFee: backendSummary.deliveryFee || 0,
+      platformFee: backendSummary.platformFee || 0,
+      launchSavings: backendSummary.launchSavings || 0,
+      isLaunchActive: backendSummary.isLaunchActive ?? true,
       total: backendSummary.grandTotal
     } : displayCart.summary
   };
@@ -129,7 +140,7 @@ const CheckoutPageContent = () => {
               onChange={setStudentNotes}
             />
             
-            <OrderSummaryCard cart={cartWithBackendPricing} />
+            <OrderSummaryCard cart={cartWithBackendPricing} onApplyOffer={applyOffer} />
             
             <OrderPolicyCard />
 

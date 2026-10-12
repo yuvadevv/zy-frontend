@@ -46,6 +46,7 @@ export const usePlaceOrder = () => {
         serviceType: item.serviceType === 'xerox' ? 'custom' : item.serviceType,
         manualId: item.serviceType === 'manual' ? (item.referenceId || item.id) : null,
         documentId: ['hall_ticket', 'custom', 'xerox', 'code_tantra_files'].includes(item.serviceType) ? (item.referenceId || item.id) : null,
+        fileName: item.title,
         pages: item.printOptions?.pages || (item.printOptions as any)?.totalPages || (item as any).config?.pages || (item as any).meta?.totalPages || 0,
         printOptions: {
           ...item.printOptions,
@@ -57,17 +58,18 @@ export const usePlaceOrder = () => {
       const apiResponse = await workerClient.createOrder(
         itemsPayload, 
         request.checkoutState.deliveryDetails, 
-        request.checkoutState.couponCode
+        request.checkoutState.couponCode,
+        (request.checkoutState as any).offerCode
       );
       const orderId = apiResponse.orderId;
 
       // 2. Initialize Payment
       const paymentRes = await workerClient.createPayment(orderId);
 
-      // 3. Handle Development Mock OR Real Razorpay
-      if (paymentRes.keyId === 'mock_key' && process.env.NODE_ENV === 'development') {
-        // Development Mock
-        await new Promise(resolve => setTimeout(resolve, 1500));
+      // 3. Handle Mock / Testing Mode OR Real Razorpay
+      if (paymentRes.keyId === 'mock_key') {
+        // Testing / Mock Mode: Auto-verify payment
+        await new Promise(resolve => setTimeout(resolve, 800));
         const verifyResponse = await workerClient.verifyPayment(paymentRes.providerOrderId, 'mock_txn_' + Date.now());
         
         const finalOrderId = verifyResponse.orderId || orderId;

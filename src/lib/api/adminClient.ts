@@ -457,5 +457,25 @@ export const adminClient = {
     return this.fetch('/api/admin/payment-gateway/test', {
       method: 'POST'
     });
+  },
+
+  // Offers & Campaign Management
+  async getOffers() {
+    return this.fetch('/api/admin/offers');
+  },
+
+  async createOffer(data: any) {
+    return this.fetch('/api/admin/offers', {
+      method: 'POST',
+      body: JSON.stringify(data)
+    });
+  },
+
+  async updateOffer(id: string, data: any) {
+    return this.fetch(`/api/admin/offers/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data)
+    });
   }
 };
+

@@ -17,7 +17,7 @@ export const PrintDetailsCard = ({ item }: PrintDetailsCardProps) => {
       </h3>
 
       <div className="bg-muted/30 p-4 rounded-xl border border-border/50">
-        <h4 className="font-semibold text-foreground text-sm mb-1">
+        <h4 className="font-semibold text-foreground text-sm mb-1 break-words [overflow-wrap:anywhere]">
           {printConfig.manualName || printConfig.documentName || 'Document'}
         </h4>
         <span className="text-xs text-muted-foreground">

@@ -11,6 +11,10 @@ import { WidgetSkeleton, CurrentOrderSkeleton } from '@/features/home/components
 import { DashboardEntry } from '@/features/home/components/DashboardEntry';
 import { PromoBanners } from '@/features/home/components/PromoBanners';
 import { BusTrackingCard } from '@/features/home/components/BusTrackingCard';
+import { CampusFestHero } from '@/features/home/components/CampusFestHero';
+import { CampaignCarousel } from '@/features/home/components/CampaignCarousel';
+import { CampusFoodPromoBanner } from '@/features/home/components/CampusFoodPromoBanner';
+import { CampusFestSpecials } from '@/features/home/components/CampusFestSpecials';
 
 import { workerClient } from '@/lib/api/workerClient';
 import { mapCurrentOrder, mapQuickService, mapAnnouncement, mapSupportAction } from '@/features/home/mappers';
@@ -145,6 +149,14 @@ export default function HomeDashboard() {
     if (widgetId === 'current_order' && !isLoading && activeOrders.length === 0) return null;
     if (widgetId === 'recent_orders' && !isLoading && recentOrders.length === 0) return null;
     switch (widgetId) {
+      case 'campus_fest_hero':
+        return <section><CampusFestHero /></section>;
+      case 'campaign_carousel':
+        return <section><CampaignCarousel /></section>;
+      case 'campus_food_promo':
+        return <section><CampusFoodPromoBanner /></section>;
+      case 'campus_fest_specials':
+        return <CampusFestSpecials />;
       case 'promo_banners':
         return <section><PromoBanners hasActiveOrders={activeOrders.length > 0} /></section>;
       case 'bus_tracking':

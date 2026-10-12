@@ -1,14 +1,15 @@
 "use client";
 import React, { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { ArrowLeft, Loader2, AlertCircle, Eye } from 'lucide-react';
+import { ArrowLeft, Loader2, AlertCircle, Eye, Tag } from 'lucide-react';
 import { PrintOptions } from '@/features/manuals/components/PrintOptions';
 import { PrintConfig } from '@/features/manuals/types';
 import { Button } from '@/design-system/components/buttons/Button/Button';
 import { APP_ROUTES } from '@/constants/routes';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { workerClient } from '@/lib/api/workerClient';
 import { mapManual } from '@/features/manuals/mappers';
+import { PriceBreakdown } from '@/features/cart/components/PriceBreakdown';
 
 function OptionsSelectionContent() {
   const router = useRouter();
@@ -55,8 +56,11 @@ function OptionsSelectionContent() {
     uploaded_by: 'Admin'
   }) : null;
   
-  const { data: pricingResponse, isLoading: pricingLoading } = useQuery({
-    queryKey: ['pricing', manualId, config],
+  const [appliedOffer, setAppliedOffer] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+
+  const { data: pricingResponse, isLoading: pricingLoading, isFetching: isPricingFetching } = useQuery({
+    queryKey: ['pricing', manualId, config, appliedOffer],
     queryFn: () => workerClient.calculatePricing({
       items: [{
         serviceType: 'manual',
@@ -68,7 +72,8 @@ function OptionsSelectionContent() {
           copies: config.copies
         }
       }],
-      deliveryMethod: 'delivery'
+      deliveryMethod: 'delivery',
+      offerCode: appliedOffer || undefined
     }),
     enabled: !!manualId
   });
@@ -194,26 +199,38 @@ function OptionsSelectionContent() {
 
         {/* Price Breakdown */}
         <div className="px-4 mt-2 mb-6">
-          <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3">
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Printing</span>
-              <span className="font-medium">₹{priceBreakdown.printingCost}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Binding</span>
-              <span className="font-medium">₹{priceBreakdown.bindingCost}</span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Delivery</span>
-              <span className="font-bold text-green-600">{orderSummary?.deliveryFee === 0 ? 'FREE' : `₹${orderSummary?.deliveryFee || 0}`}</span>
-            </div>
-            <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-1">
-              <span className="font-semibold text-foreground">Total (1 item)</span>
-              <div className="text-right">
-                <span className="text-xl font-bold text-[#FF6B00]">₹{orderSummary?.grandTotal || priceBreakdown.subtotal}</span>
-              </div>
-            </div>
-          </div>
+          {(() => {
+            const hasPrintingComparison = (priceBreakdown.originalPrintingCost || 0) > (priceBreakdown.printingCost || 0);
+            const hasBindingComparison = (priceBreakdown.originalBindingCost || 0) > (priceBreakdown.bindingCost || 0);
+            const offerDiscount = orderSummary?.offerDiscount || 0;
+            const isOfferApplicable = (pricingResponse?.summary?.isLaunchActive ?? true) || offerDiscount > 0;
+
+            return (
+              <PriceBreakdown 
+                summary={{
+                  subtotal: priceBreakdown.subtotal || 0,
+                  originalSubtotal: priceBreakdown.originalSubtotal || priceBreakdown.subtotal || 0,
+                  printingCost: priceBreakdown.printingCost || 0,
+                  originalPrintingCost: priceBreakdown.originalPrintingCost || priceBreakdown.printingCost || 0,
+                  bindingCost: priceBreakdown.bindingCost || 0,
+                  originalBindingCost: priceBreakdown.originalBindingCost || priceBreakdown.bindingCost || 0,
+                  discount: orderSummary?.discount || 0,
+                  offerDiscount: orderSummary?.offerDiscount || 0,
+                  deliveryFee: orderSummary?.deliveryFee || 0,
+                  platformFee: orderSummary?.platformFee || 0,
+                  isLaunchActive: pricingResponse?.summary?.isLaunchActive ?? true,
+                  appliedOffer: appliedOffer || orderSummary?.appliedOffer || null,
+                  total: orderSummary?.grandTotal || priceBreakdown.subtotal || 0
+                }}
+                onApplyOffer={async (code) => {
+                  setAppliedOffer(code);
+                  await queryClient.invalidateQueries({ queryKey: ['pricing', manualId] });
+                  return { success: true };
+                }}
+                isApplyingOffer={isPricingFetching}
+              />
+            );
+          })()}
           
           <div className="mt-4 bg-secondary/20 rounded-xl p-4 flex flex-col items-center justify-center border border-secondary/30">
             <span className="text-xs text-muted-foreground uppercase tracking-wider mb-1">Estimated Delivery</span>

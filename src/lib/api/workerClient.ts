@@ -91,6 +91,10 @@ export const workerClient = {
     return this.fetch('/api/public/settings/pricing', {}, false);
   },
 
+  async getBindingPricingRules() {
+    return this.fetch('/api/pricing/binding', {}, false);
+  },
+
   async getCodeTantraSettings() {
     return this.fetch('/api/public/settings/code-tantra', {}, false);
   },
@@ -156,15 +160,19 @@ export const workerClient = {
   },
 
   // Orders Endpoints (Auth Required)
-  async createOrder(items: unknown[], deliveryDetails: unknown, couponCode?: string | null) {
+  async createOrder(items: unknown[], deliveryDetails: unknown, couponCode?: string | null, offerCode?: string | null) {
     return this.fetch('/api/orders', {
       method: 'POST',
-      body: JSON.stringify({ items, deliveryDetails, couponCode })
+      body: JSON.stringify({ items, deliveryDetails, couponCode, offerCode })
     });
   },
 
   async getOrders() {
     return this.fetch('/api/orders');
+  },
+
+  async getOffers() {
+    return this.fetch('/api/offers');
   },
 
   async calculatePricing(payload: any) {
@@ -180,6 +188,12 @@ export const workerClient = {
 
   async confirmDocument(id: string) {
     return this.fetch(`/api/orders/${id}/confirm-document`, {
+      method: 'POST'
+    });
+  },
+
+  async finalConfirmOrder(id: string) {
+    return this.fetch(`/api/orders/${id}/final-confirm`, {
       method: 'POST'
     });
   },
@@ -213,5 +227,37 @@ export const workerClient = {
     return this.fetch(`/api/notifications/${id}/read`, {
       method: 'POST'
     });
+  },
+
+  // Referrals
+  async getReferralDetails() {
+    return this.fetch('/api/referrals/me');
+  },
+
+  async attributeReferral(referralCode: string) {
+    return this.fetch('/api/referrals/attribute', {
+      method: 'POST',
+      body: JSON.stringify({ referral_code: referralCode })
+    });
+  },
+
+  async getReferralLeaderboard(type: 'connectors' | 'qualified' = 'connectors', limit = 50) {
+    return this.fetch(`/api/referrals/leaderboard?type=${type}&limit=${limit}`, {}, false);
+  },
+
+  async getAmbassadorStatus() {
+    return this.fetch('/api/referrals/ambassador-status', {}, false);
+  },
+
+  async subscribeAmbassadorNotification(email?: string) {
+    return this.fetch('/api/referrals/ambassador-notify', {
+      method: 'POST',
+      body: JSON.stringify(email ? { email } : {})
+    });
+  },
+
+  async validateReferralCode(code: string) {
+    return this.fetch(`/api/referrals/validate/${encodeURIComponent(code)}`, {}, false);
   }
 };
+

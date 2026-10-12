@@ -9,17 +9,19 @@ import { APP_ROUTES } from '@/constants/routes';
 import { useCart } from '@/features/cart/providers/CartProvider';
 import { CartItem } from '@/features/cart/types';
 import { workerClient } from '@/lib/api/workerClient';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 
 function ReviewSelectionContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const queryClient = useQueryClient();
   const manualId = searchParams.get('manualId') || '';
   const { addItem } = useCart();
 
   const [isAdding, setIsAdding] = useState(false);
   const [manual, setManual] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [appliedOffer, setAppliedOffer] = useState<string | null>(null);
 
   const config: PrintConfig = {
     copies: parseInt(searchParams.get('copies') || '1', 10),
@@ -44,8 +46,8 @@ function ReviewSelectionContent() {
     }
   }, [manualId]);
 
-  const { data: pricingResponse, isLoading: pricingLoading } = useQuery({
-    queryKey: ['pricing', manualId, config],
+  const { data: pricingResponse, isLoading: pricingLoading, isFetching: isPricingFetching } = useQuery({
+    queryKey: ['pricing', manualId, config, appliedOffer],
     queryFn: () => workerClient.calculatePricing({
       items: [{
         serviceType: 'manual',
@@ -57,7 +59,8 @@ function ReviewSelectionContent() {
           copies: config.copies
         }
       }],
-      deliveryMethod: 'delivery'
+      deliveryMethod: 'delivery',
+      offerCode: appliedOffer === 'NONE' ? 'NONE' : (appliedOffer || undefined)
     }),
     enabled: !!manualId
   });
@@ -122,10 +125,20 @@ function ReviewSelectionContent() {
           priceBreakdown={{
             basePrice: priceBreakdown.unitPrice,
             printingCost: priceBreakdown.printingCost,
+            originalPrintingCost: priceBreakdown.originalPrintingCost,
             bindingCost: priceBreakdown.bindingCost,
-            
+            originalBindingCost: priceBreakdown.originalBindingCost,
             total: priceBreakdown.subtotal
           }} 
+          offerDiscount={orderSummary?.offerDiscount || 0}
+          isLaunchActive={pricingResponse?.summary?.isLaunchActive ?? true}
+          appliedOffer={appliedOffer || orderSummary?.appliedOffer || null}
+          onApplyOffer={async (code) => {
+            setAppliedOffer(code);
+            await queryClient.invalidateQueries({ queryKey: ['pricing', manualId] });
+            return { success: true };
+          }}
+          isApplyingOffer={isPricingFetching}
           estimatedDelivery={estimatedDelivery}
           onAddToCart={handleAddToCart}
           isAddingToCart={isAdding}

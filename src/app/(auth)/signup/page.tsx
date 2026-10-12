@@ -24,6 +24,17 @@ export default function SignupPage() {
   const [resendSuccess, setResendSuccess] = useState(false);
 
   useEffect(() => {
+    // Capture referral code if present in URL
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const refCode = urlParams.get('ref');
+      if (refCode) {
+        const cleanRef = refCode.trim().toUpperCase();
+        localStorage.setItem('bl_referral_code', cleanRef);
+        document.cookie = `bl_referral_code=${cleanRef}; path=/; max-age=2592000; SameSite=Lax`;
+      }
+    }
+
     // Check if redirected with OAuth hash tokens
     const checkOAuth = async () => {
       const oauthRes = await handleOAuthHashRedirect();

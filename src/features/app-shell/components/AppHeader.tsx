@@ -25,7 +25,7 @@ export function AppHeader({ title }: { title: string }) {
           )}
         </div>
         
-        <h1 className="text-[19px] font-extrabold absolute left-0 right-0 text-center pointer-events-none truncate px-[5.5rem] tracking-wide">
+        <h1 className="text-[17px] sm:text-[19px] font-extrabold absolute left-0 right-0 text-center pointer-events-none truncate px-12 tracking-wide">
           {title}
         </h1>
         

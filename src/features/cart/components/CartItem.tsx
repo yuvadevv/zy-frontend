@@ -18,12 +18,17 @@ export const CartItem = ({ item, onUpdateQuantity, onRemove, onEdit }: CartItemP
         </div>
         
         <div className="flex flex-col flex-1 min-w-0">
-          <div className="flex justify-between items-start mb-1.5">
-            <div className="pr-2">
-              <h4 className="text-[15px] font-black text-gray-900 leading-tight line-clamp-2">{item.title}</h4>
-              <p className="text-[11px] font-semibold text-gray-400 mt-1 leading-snug line-clamp-2">{item.subtitle}</p>
+          <div className="flex justify-between items-start mb-1.5 gap-2">
+            <div className="min-w-0 flex-1 pr-2">
+              <h4 className="text-[15px] font-black text-gray-900 leading-tight line-clamp-2 break-words [overflow-wrap:anywhere]">{item.title}</h4>
+              <p className="text-[11px] font-semibold text-gray-400 mt-1 leading-snug line-clamp-2 break-words [overflow-wrap:anywhere]">{item.subtitle}</p>
             </div>
-            <div className="text-right shrink-0 mt-0.5">
+            <div className="text-right shrink-0 mt-0.5 whitespace-nowrap pl-1 flex items-baseline justify-end gap-1.5">
+              {item.priceBreakdown.originalTotal && item.priceBreakdown.originalTotal > item.priceBreakdown.total && (
+                <span className="text-xs text-gray-400 line-through font-semibold">
+                  ₹{item.priceBreakdown.originalTotal}
+                </span>
+              )}
               <span className="font-black text-[16px] text-gray-900">₹{item.priceBreakdown.total}</span>
             </div>
           </div>

@@ -13,7 +13,7 @@ import { APP_ROUTES } from '@/constants/routes';
 
 const CartPageContent = () => {
     const router = useRouter();
-  const { cart, status, updateQuantity, removeItem, applyCoupon, refreshCart } = useCart();
+  const { cart, status, updateQuantity, removeItem, applyCoupon, applyOffer, refreshCart } = useCart();
 
   const handleCheckout = () => {
     // Analytics: track Checkout Clicked
@@ -58,7 +58,7 @@ const CartPageContent = () => {
             
             <CouponSection />
             
-            <PriceBreakdown summary={cart.summary} />
+            <PriceBreakdown summary={cart.summary} onApplyOffer={applyOffer} />
             
             <div className="text-center px-8 mt-4">
               <p className="text-xs text-muted-foreground leading-relaxed">

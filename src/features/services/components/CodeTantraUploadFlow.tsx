@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useRef, useEffect } from 'react';
-import { UploadCloud, FileArchive, FileText, CheckCircle, AlertTriangle, Loader2, Info, ChevronRight, Calculator, File as FileIcon } from 'lucide-react';
+import { UploadCloud, FileArchive, FileText, CheckCircle, AlertTriangle, Loader2, Info, ChevronRight, Calculator, File as FileIcon, Tag } from 'lucide-react';
 import JSZip from 'jszip';
 import { useCart } from '@/features/cart/providers/CartProvider';
 import { PrintOptions } from '@/features/manuals/components/PrintOptions';
@@ -11,6 +11,7 @@ import { APP_ROUTES } from '@/constants/routes';
 import toast from 'react-hot-toast';
 import { getPdfPageCount, getPdfPageCountFromBuffer } from '../utils/pdfParser';
 import { useFileUploadStore } from '@/features/services/store/useFileUploadStore';
+import { PriceBreakdown } from '@/features/cart/components/PriceBreakdown';
 
 type FlowState = 'idle' | 'analyzing' | 'analysis_completed' | 'selecting_options' | 'calculating_price' | 'ready_for_cart' | 'uploading' | 'completed' | 'failed' | 'oversized';
 
@@ -47,6 +48,9 @@ export const CodeTantraUploadFlow = () => {
   
   // Price Breakdown
   const [priceData, setPriceData] = useState<any>(null);
+  const [pricingResponse, setPricingResponse] = useState<any>(null);
+  const [appliedOffer, setAppliedOffer] = useState<string | null>(null);
+  const [isApplyingOffer, setIsApplyingOffer] = useState(false);
 
   // Settings state
   const [settings, setSettings] = useState<any>(null);
@@ -68,11 +72,12 @@ export const CodeTantraUploadFlow = () => {
     }
   }, [printConfig]);
 
-  const fetchPrice = async () => {
+  const fetchPrice = async (overrideOffer?: string | null) => {
     try {
       setUploadState('calculating_price');
       setError(null);
       
+      const activeOffer = overrideOffer !== undefined ? overrideOffer : appliedOffer;
       const payload = {
         items: [
           {
@@ -86,11 +91,13 @@ export const CodeTantraUploadFlow = () => {
             }
           }
         ],
-        deliveryMethod: 'pickup'
+        deliveryMethod: 'pickup',
+        offerCode: activeOffer === 'NONE' ? 'NONE' : (activeOffer || undefined)
       };
       
       const res = await workerClient.calculatePricing(payload);
       if (res.items && res.items.length > 0) {
+        setPricingResponse(res);
         setPriceData(res.items[0]);
         setUploadState('ready_for_cart');
       } else {
@@ -100,6 +107,7 @@ export const CodeTantraUploadFlow = () => {
       console.error(err);
       setError('Pricing error: ' + (err.message || 'Could not reach server'));
       setPriceData(null);
+      setPricingResponse(null);
       setUploadState('selecting_options');
     }
   };
@@ -290,10 +298,14 @@ export const CodeTantraUploadFlow = () => {
         },
         priceBreakdown: {
           base: priceData.unitPrice,
+          originalBase: priceData.originalUnitPrice || priceData.unitPrice,
           printing: priceData.printingCost,
+          originalPrinting: priceData.originalPrintingCost || priceData.printingCost,
           binding: priceData.bindingCost,
+          originalBinding: priceData.originalBindingCost || priceData.bindingCost,
           color: 0,
-          total: priceData.subtotal
+          total: priceData.subtotal,
+          originalTotal: priceData.originalSubtotal || priceData.subtotal
         },
         status: 'in_cart',
         editable: false,
@@ -536,30 +548,35 @@ export const CodeTantraUploadFlow = () => {
               ) : error || !priceData ? (
                 <div className="bg-card rounded-2xl border border-red-200 p-5 shadow-sm flex flex-col gap-3 justify-center items-center py-6">
                   <p className="text-sm text-red-500 font-medium">Failed to load pricing: {error || 'Unknown error'}</p>
-                  <button onClick={fetchPrice} className="text-xs text-[#FF6B00] hover:underline mt-2">Try Again</button>
+                  <button onClick={() => fetchPrice()} className="text-xs text-[#FF6B00] hover:underline mt-2">Try Again</button>
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <div className="bg-card rounded-2xl border border-border p-5 shadow-sm flex flex-col gap-3">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Printing</span>
-                      <span className="font-medium text-foreground">₹{priceData.printingCost?.toFixed(0)}</span>
-                    </div>
-                    {priceData.bindingCost > 0 && (
-                      <div className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">Binding</span>
-                        <span className="font-medium text-foreground">₹{priceData.bindingCost?.toFixed(0)}</span>
-                      </div>
-                    )}
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Delivery</span>
-                      <span className="font-bold text-green-600">FREE</span>
-                    </div>
-                    <div className="border-t border-border/50 pt-3 flex justify-between items-center mt-1">
-                      <span className="font-bold text-foreground">Total ({printConfig.copies} item{printConfig.copies > 1 ? 's' : ''})</span>
-                      <span className="text-2xl font-black text-[#FF6B00]">₹{priceData.subtotal?.toFixed(0)}</span>
-                    </div>
-                  </div>
+                  <PriceBreakdown 
+                    summary={{
+                      subtotal: priceData.subtotal || 0,
+                      originalSubtotal: priceData.originalSubtotal || priceData.subtotal || 0,
+                      printingCost: priceData.printingCost || 0,
+                      originalPrintingCost: priceData.originalPrintingCost || priceData.printingCost || 0,
+                      bindingCost: priceData.bindingCost || 0,
+                      originalBindingCost: priceData.originalBindingCost || priceData.bindingCost || 0,
+                      discount: pricingResponse?.summary?.discount || 0,
+                      offerDiscount: pricingResponse?.summary?.offerDiscount || 0,
+                      deliveryFee: pricingResponse?.summary?.deliveryFee || 0,
+                      platformFee: pricingResponse?.summary?.platformFee || 0,
+                      isLaunchActive: pricingResponse?.summary?.isLaunchActive ?? true,
+                      appliedOffer: appliedOffer || pricingResponse?.summary?.appliedOffer || null,
+                      total: pricingResponse?.summary?.grandTotal ?? priceData.subtotal ?? 0
+                    }}
+                    onApplyOffer={async (code) => {
+                      setIsApplyingOffer(true);
+                      setAppliedOffer(code);
+                      await fetchPrice(code);
+                      setIsApplyingOffer(false);
+                      return { success: true };
+                    }}
+                    isApplyingOffer={isApplyingOffer}
+                  />
 
                   <div className="bg-secondary/20 rounded-xl p-4 flex flex-col items-center justify-center border border-secondary/30">
                     <span className="text-[11px] text-muted-foreground uppercase tracking-widest mb-1 font-medium">Estimated Delivery</span>

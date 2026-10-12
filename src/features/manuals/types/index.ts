@@ -49,8 +49,12 @@ export interface PrintConfig {
 }
 export interface PriceBreakdown {
   basePrice: number;
+  originalBasePrice?: number;
   printingCost: number;
+  originalPrintingCost?: number;
   bindingCost: number;
+  originalBindingCost?: number;
   colorCost?: number;
   total: number;
+  originalTotal?: number;
 }

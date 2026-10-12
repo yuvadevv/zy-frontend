@@ -42,6 +42,25 @@ export const ReviewStep = () => {
           "" // Empty string or omit, since classroom_id is gone.
         );
         await refreshProfile();
+
+        // Process referral attribution if signed up via a referral link
+        try {
+          if (typeof window !== 'undefined') {
+            let pendingRefCode = localStorage.getItem('bl_referral_code');
+            if (!pendingRefCode) {
+              const match = document.cookie.match(/(?:^|;\s*)bl_referral_code=([^;]+)/);
+              if (match) pendingRefCode = decodeURIComponent(match[1]);
+            }
+            if (pendingRefCode) {
+              const { workerClient } = await import('@/lib/api/workerClient');
+              await workerClient.attributeReferral(pendingRefCode);
+              localStorage.removeItem('bl_referral_code');
+              document.cookie = 'bl_referral_code=; path=/; max-age=0; SameSite=Lax';
+            }
+          }
+        } catch (refErr) {
+          console.warn('Referral attribution notice (non-fatal):', refErr);
+        }
       } else {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }

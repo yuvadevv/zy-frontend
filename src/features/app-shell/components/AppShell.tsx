@@ -22,6 +22,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     if (path.includes('/checkout')) return 'Secure Checkout';
     if (path.includes('/settings')) return 'Settings';
     if (path.includes('/support')) return 'Support';
+    if (path.includes('/offers')) return 'Offers & Discounts';
+    if (path.includes('/campus-fest')) return 'Campus Fest';
+    if (path.includes('/refer')) return 'Refer & Earn';
+    if (path.includes('/leaderboard')) return 'Leaderboards';
     return 'BLINTZY';
   };
 

@@ -7,7 +7,7 @@ import { toast } from 'react-hot-toast';
 export const CouponSection = () => {
   const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
-  const { applyCoupon, coupon } = useCart();
+  const { applyCoupon, coupon, offer, offerDetails, applyOffer } = useCart();
 
   const handleApply = async () => {
     if (code.trim().length > 0) {
@@ -32,7 +32,34 @@ export const CouponSection = () => {
 
   return (
     <div className="flex flex-col gap-2.5 bg-white p-4 rounded-2xl border border-gray-100 shadow-[0_4px_20px_rgba(0,0,0,0.03)] mb-3">
-      <h3 className="font-extrabold text-[15px] text-gray-900 mb-1">Have a Coupon?</h3>
+      <div className="flex justify-between items-center mb-1">
+        <h3 className="font-extrabold text-[15px] text-gray-900">Have a Coupon or Offer?</h3>
+        {offer && !coupon && (
+          <span className="text-[11px] font-bold text-[#FF6B00] bg-orange-50 px-2 py-0.5 rounded-full">
+            Active Campaign
+          </span>
+        )}
+      </div>
+
+      {/* Active Offer Banner */}
+      {offer && !coupon && offerDetails && (
+        <div className="flex justify-between items-center bg-orange-50/80 border border-orange-200 p-3 rounded-xl mb-1">
+          <div className="flex flex-col">
+            <span className="text-orange-900 font-bold text-[13px]">
+              🎉 {offerDetails.title} {offerDetails.discountValue ? `(${offerDetails.discountValue}% OFF)` : ''}
+            </span>
+            <span className="text-orange-700 text-[11px]">
+              Applied to eligible printing. Applying a coupon code will replace this offer.
+            </span>
+          </div>
+          <button
+            onClick={() => applyOffer(null)}
+            className="text-[12px] font-bold text-orange-600 hover:text-orange-800 transition-colors p-1"
+          >
+            Remove
+          </button>
+        </div>
+      )}
       
       {coupon ? (
         <div className="flex justify-between items-center bg-green-50 border border-green-200 p-3.5 rounded-xl">

@@ -7,7 +7,9 @@ export interface PendingUpload {
   file: File;
 }
 
-interface FileUploadStore {
+export interface FileUploadStore {
+  confirmedDocuments: Record<string, boolean>;
+  setConfirmedDocument: (documentId: string, confirmed: boolean) => void;
   pendingFiles: Record<string, PendingUpload>;
   setPendingFile: (documentId: string, upload: PendingUpload) => void;
   removePendingFile: (documentId: string) => void;
@@ -15,6 +17,11 @@ interface FileUploadStore {
 }
 
 export const useFileUploadStore = create<FileUploadStore>((set) => ({
+  confirmedDocuments: {},
+  setConfirmedDocument: (documentId, confirmed) =>
+    set((state) => ({
+      confirmedDocuments: { ...state.confirmedDocuments, [documentId]: confirmed }
+    })),
   pendingFiles: {},
   setPendingFile: (documentId, upload) => 
     set((state) => ({
@@ -26,5 +33,5 @@ export const useFileUploadStore = create<FileUploadStore>((set) => ({
       delete newFiles[documentId];
       return { pendingFiles: newFiles };
     }),
-  clearPendingFiles: () => set({ pendingFiles: {} })
+  clearPendingFiles: () => set({ pendingFiles: {}, confirmedDocuments: {} })
 }));

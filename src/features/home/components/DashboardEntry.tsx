@@ -15,7 +15,10 @@ export const DashboardEntry: React.FC<DashboardEntryProps> = ({ children }) => {
   
   const { profile, academicRecord } = useStudent();
   
-  const studentName = profile?.full_name || "Student";
+  // Robust greeting name sanitization: never expose raw error messages (e.g. "error 404", "undefined", "null")
+  const rawName = profile?.full_name?.trim();
+  const isInvalidName = !rawName || /^(error|404|not found|undefined|null|failed)/i.test(rawName);
+  const studentName = isInvalidName ? "Student" : rawName;
   const branch = academicRecord?.branches?.name || "Branch";
   const yearName = academicRecord?.academic_years?.name || "";
   const yearNumber = parseInt(yearName.replace(/[^0-9]/g, '') || '1') || 1;
@@ -84,10 +87,13 @@ export const DashboardEntry: React.FC<DashboardEntryProps> = ({ children }) => {
         transition={{ delay: 0.2, duration: 0.5 }}
       >
         {!showWelcomeCard && (
-          <section className="px-5 pt-8">
-            <h1 className="text-xl font-bold text-gray-900 leading-tight">{greeting} 👋</h1>
-            <p className="text-lg font-bold text-gray-900 leading-tight">{studentName}</p>
-            <p className="mt-1 text-sm text-gray-500">Welcome back.</p>
+          <section className="px-1.5 pt-1 pb-1">
+            <h1 className="text-[20px] font-black text-gray-900 tracking-tight leading-tight flex items-center gap-1.5">
+              <span>{greeting}</span>
+              <span className="text-lg">👋</span>
+            </h1>
+            <p className="text-[17px] font-bold text-gray-800 leading-tight">{studentName}</p>
+            <p className="mt-0.5 text-[12px] font-medium text-gray-500">Welcome back.</p>
           </section>
         )}
 

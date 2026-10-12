@@ -13,6 +13,7 @@ import { PrivacySecurityCard } from '@/features/profile/components/PrivacySecuri
 import { HelpSupportCard } from '@/features/profile/components/HelpSupportCard';
 import { AboutAppCard } from '@/features/profile/components/AboutAppCard';
 import { ProfileSkeleton } from '@/features/profile/components/ProfileSkeleton';
+import { ProfileReferralCard } from '@/features/profile/components/ProfileReferralCard';
 import { useProfile } from '@/features/profile/hooks/useProfile';
 
 export default function ProfilePage() {
@@ -55,6 +56,7 @@ export default function ProfilePage() {
         <div className="p-4 flex flex-col pb-24 overflow-y-auto">
           <StudentProfileCard />
           <div className="mt-4" />
+          <ProfileReferralCard />
           <AcademicInformationCard />
           <DeliveryPreferencesCard />
           <NotificationSettingsCard />

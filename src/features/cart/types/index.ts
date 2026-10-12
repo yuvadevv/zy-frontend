@@ -6,15 +6,20 @@ export interface CartItemPrintOptions {
   singleSided: boolean;
   bindingType: 'none' | 'spiral' | 'softbound' | 'hardbound';
   paperSize: 'a4' | 'letter' | 'legal';
+  pages?: number;
   [key: string]: unknown; // Open for future extensions
 }
 
 export interface PriceBreakdown {
   base: number;
+  originalBase?: number;
   printing: number;
+  originalPrinting?: number;
   binding: number;
+  originalBinding?: number;
   color: number;
   total: number;
+  originalTotal?: number;
 }
 
 export type CartItemStatus = 'in_cart' | 'processing' | 'saved_for_later';
@@ -44,9 +49,21 @@ export interface DeliveryInfo {
 
 export interface CartSummary {
   subtotal: number;
+  originalSubtotal?: number;
+  originalPrintingCost?: number;
+  printingCost?: number;
+  originalBindingCost?: number;
+  bindingCost?: number;
+  offerDiscount?: number;
   discount: number;
-  tax: number;
+  tax?: number;
   deliveryFee: number;
+  platformFee?: number;
+  launchSavings?: number;
+  isLaunchActive?: boolean;
+  appliedOffer?: string | null;
+  appliedCoupon?: string | null;
+  previousTotal?: number;
   total: number;
 }
 

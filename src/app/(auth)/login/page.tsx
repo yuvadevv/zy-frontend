@@ -40,6 +40,13 @@ function LoginContent() {
       if (urlError) {
         setError(decodeURIComponent(urlError));
       }
+
+      const refCode = searchParams.get('ref');
+      if (refCode && typeof window !== 'undefined') {
+        const cleanRef = refCode.trim().toUpperCase();
+        localStorage.setItem('bl_referral_code', cleanRef);
+        document.cookie = `bl_referral_code=${cleanRef}; path=/; max-age=2592000; SameSite=Lax`;
+      }
     });
   }, [searchParams]);
 
