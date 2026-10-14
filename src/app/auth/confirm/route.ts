@@ -29,6 +29,7 @@ export async function GET(request: Request) {
       
       const result = await res.json();
       const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
+      const refreshToken = result.data?.session?.refresh_token || result.session?.refresh_token || result.data?.refresh_token || result.refresh_token;
       
       if (token) {
         const verifiedUrl = `${origin}/verified?next=${encodeURIComponent(safeNext)}`;
@@ -39,6 +40,14 @@ export async function GET(request: Request) {
           sameSite: 'lax',
           httpOnly: false
         });
+        if (refreshToken) {
+          response.cookies.set('bl_refresh_token', refreshToken, {
+            path: '/',
+            maxAge: 60 * 60 * 24 * 30,
+            sameSite: 'lax',
+            httpOnly: false
+          });
+        }
         return response;
       }
     } catch (err) {
@@ -46,6 +55,7 @@ export async function GET(request: Request) {
     }
     const errorResponse = NextResponse.redirect(`${origin}/login?message=Email+verified+successfully.+Please+log+in.`);
     errorResponse.cookies.delete('bl_auth_token');
+    errorResponse.cookies.delete('bl_refresh_token');
     return errorResponse;
   }
 
@@ -77,6 +87,7 @@ export async function GET(request: Request) {
         if (hash && hash.includes('access_token=')) {
           var params = new URLSearchParams(hash.replace(/^#/, ''));
           var token = params.get('access_token');
+          var refreshToken = params.get('refresh_token');
           if (token) {
             var parts = token.split('.');
             var user = null;
@@ -85,8 +96,14 @@ export async function GET(request: Request) {
               user = { id: payload.sub, email: payload.email, role: payload.role, user_metadata: payload.user_metadata || {} };
             }
             localStorage.setItem('bl_session_token', token);
+            if (refreshToken) {
+              localStorage.setItem('bl_session_refresh_token', refreshToken);
+            }
             if (user) localStorage.setItem('bl_session_user', JSON.stringify(user));
             document.cookie = 'bl_auth_token=' + encodeURIComponent(token) + '; path=/; max-age=2592000; SameSite=Lax';
+            if (refreshToken) {
+              document.cookie = 'bl_refresh_token=' + encodeURIComponent(refreshToken) + '; path=/; max-age=2592000; SameSite=Lax';
+            }
             window.location.replace('/verified?next=' + encodeURIComponent('${safeNext}'));
             return;
           }

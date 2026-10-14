@@ -18,11 +18,13 @@ export default function ResetPasswordPage() {
   useEffect(() => {
     // Supabase client automatically processes the recovery hash in the URL.
     const supabase = createClient();
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(({ data }: any) => {
+      const session = data?.session;
       if (!session) {
         // We delay the error slightly so if the hash is still processing we don't flash it immediately
         setTimeout(() => {
-          supabase.auth.getSession().then(({ data: { session: checkSession } }) => {
+          supabase.auth.getSession().then(({ data: checkData }: any) => {
+            const checkSession = checkData?.session;
             if (!checkSession) {
               setError('This reset link is invalid or has expired. Please request a new link.');
             }

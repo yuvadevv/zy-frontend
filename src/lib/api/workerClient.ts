@@ -15,18 +15,31 @@ export const workerClient = {
     }
 
     if (requireAuth) {
-      const token = SessionManager.getToken();
+      const token = await SessionManager.getValidToken();
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
     }
 
-    const response = await fetch(`${WORKER_URL}${endpoint}`, {
+    let response = await fetch(`${WORKER_URL}${endpoint}`, {
       cache: 'no-store',
       credentials: 'include',
       ...options,
       headers
     });
+
+    if (response.status === 401 && requireAuth) {
+      const refreshed = await SessionManager.refreshSession();
+      if (refreshed.token) {
+        headers.set('Authorization', `Bearer ${refreshed.token}`);
+        response = await fetch(`${WORKER_URL}${endpoint}`, {
+          cache: 'no-store',
+          credentials: 'include',
+          ...options,
+          headers
+        });
+      }
+    }
 
     const data = await response.json();
 
@@ -51,21 +64,32 @@ export const workerClient = {
     const headers = new Headers(options.headers || {});
 
     if (requireAuth) {
-      const token = SessionManager.getToken();
+      const token = await SessionManager.getValidToken();
       if (token) {
         headers.set('Authorization', `Bearer ${token}`);
       }
     }
 
-    const response = await fetch(`${WORKER_URL}${endpoint}`, {
+    let response = await fetch(`${WORKER_URL}${endpoint}`, {
       cache: 'no-store',
       credentials: 'include',
       ...options,
       headers
     });
 
-    if (response.status === 401) {
-      SessionManager.clearSession();
+    if (response.status === 401 && requireAuth) {
+      const refreshed = await SessionManager.refreshSession();
+      if (refreshed.token) {
+        headers.set('Authorization', `Bearer ${refreshed.token}`);
+        response = await fetch(`${WORKER_URL}${endpoint}`, {
+          cache: 'no-store',
+          credentials: 'include',
+          ...options,
+          headers
+        });
+      } else {
+        SessionManager.clearSession();
+      }
     }
 
     if (!response.ok) {

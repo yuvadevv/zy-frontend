@@ -13,6 +13,7 @@ import { TextInput } from '@/design-system/components/inputs/TextInput/TextInput
 import { PasswordInput } from '@/design-system/components/inputs/PasswordInput/PasswordInput';
 import { Loader2, MailWarning } from 'lucide-react';
 import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
+import { SessionManager } from '@/utils/SessionManager';
 
 function LoginContent() {
   const router = useRouter();
@@ -26,7 +27,7 @@ function LoginContent() {
 
   useEffect(() => {
     // Check if redirected with OAuth hash tokens
-    handleOAuthHashRedirect().then(oauthRes => {
+    handleOAuthHashRedirect().then(async (oauthRes) => {
       if (oauthRes.handled) {
         if (oauthRes.error) {
           setError(oauthRes.error);
@@ -34,6 +35,18 @@ function LoginContent() {
           setIsLoading(true);
         }
         return;
+      }
+
+      // If user already has an active or refreshable session, restore it and redirect
+      try {
+        const validToken = await SessionManager.getValidToken();
+        if (validToken) {
+          const nextUrl = searchParams.get('next') || '/app/home';
+          router.replace(nextUrl);
+          return;
+        }
+      } catch (e) {
+        console.warn('Error checking existing session on login:', e);
       }
 
       const urlError = searchParams.get('error');
@@ -48,7 +61,7 @@ function LoginContent() {
         document.cookie = `bl_referral_code=${cleanRef}; path=/; max-age=2592000; SameSite=Lax`;
       }
     });
-  }, [searchParams]);
+  }, [searchParams, router]);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;

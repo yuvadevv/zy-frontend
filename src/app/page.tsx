@@ -20,6 +20,7 @@ import { getPublicPlatformStatus } from '@/lib/api/server/platform';
 
 import { constructMetadata, siteConfig } from '@/lib/seo/metadata';
 import Script from 'next/script';
+import { RootAuthRedirect } from '@/components/auth/RootAuthRedirect';
 
 import { workerClient } from '@/lib/api/workerClient';
 import { publicContent } from '@/config/publicContent';
@@ -79,6 +80,7 @@ export default async function LandingPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white overflow-hidden selection:bg-orange-500 selection:text-white">
+      <RootAuthRedirect />
       <Script
         id="json-ld-homepage"
         type="application/ld+json"

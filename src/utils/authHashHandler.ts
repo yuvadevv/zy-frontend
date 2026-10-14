@@ -30,6 +30,7 @@ export async function handleOAuthHashRedirect(): Promise<OAuthHashResult> {
     try {
       const params = new URLSearchParams(hash.replace(/^#/, ''));
       const token = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
       if (!token) return { handled: false };
 
       // Decode JWT payload to get user details
@@ -56,7 +57,7 @@ export async function handleOAuthHashRedirect(): Promise<OAuthHashResult> {
       }
 
       // Save token and user into SessionManager (localStorage & cookie)
-      await SessionManager.setSession(token, user);
+      await SessionManager.setSession(token, user, refreshToken || undefined);
 
       // Check if this is a password recovery flow
       const type = params.get('type');
@@ -103,6 +104,9 @@ export async function handleOAuthHashRedirect(): Promise<OAuthHashResult> {
       // Setting it here via JS ensures the middleware (proxy.ts) sees bl_auth_token
       // and does NOT redirect back to /login.
       document.cookie = `bl_auth_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+      if (refreshToken) {
+        document.cookie = `bl_refresh_token=${encodeURIComponent(refreshToken)}; path=/; max-age=2592000; SameSite=Lax`;
+      }
 
       // Navigate to destination
       window.location.href = finalNext;

@@ -44,9 +44,10 @@ export const authApi = {
     }
 
     const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
+    const refreshToken = result.data?.session?.refresh_token || result.session?.refresh_token;
     const user = result.data?.user || result.user;
     if (token) {
-      await SessionManager.setSession(token, user);
+      await SessionManager.setSession(token, user, refreshToken);
     }
 
     return {
@@ -79,9 +80,10 @@ export const authApi = {
     }
 
     const token = result.data?.session?.access_token || result.session?.access_token || result.data?.access_token || result.access_token;
+    const refreshToken = result.data?.session?.refresh_token || result.session?.refresh_token;
     const user = result.data?.user || result.user;
     if (token) {
-      await SessionManager.setSession(token, user);
+      await SessionManager.setSession(token, user, refreshToken);
       
       // Check if profile is completed to set cookie
       try {

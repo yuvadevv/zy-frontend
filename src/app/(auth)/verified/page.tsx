@@ -19,15 +19,19 @@ function VerifiedContent() {
     async function ensureCookieAndRedirect() {
       try {
         const token = localStorage.getItem('bl_session_token');
+        const refreshToken = localStorage.getItem('bl_session_refresh_token');
         if (token) {
           // Re-set the cookie client-side as a fallback for mobile browsers
           document.cookie = `bl_auth_token=${encodeURIComponent(token)}; path=/; max-age=2592000; SameSite=Lax`;
+          if (refreshToken) {
+            document.cookie = `bl_refresh_token=${encodeURIComponent(refreshToken)}; path=/; max-age=2592000; SameSite=Lax`;
+          }
           // Also persist via server route (best-effort)
           try {
             await fetch('/api/auth/session', {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ token })
+              body: JSON.stringify({ token, refreshToken })
             });
           } catch {
             // Ignore — client-side cookie above is the important fallback

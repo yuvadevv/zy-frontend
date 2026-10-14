@@ -4,13 +4,15 @@ import { getSupabaseConfig } from '@/lib/utils/envValidator';
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { token, clear } = body;
+    const { token, refreshToken, clear } = body;
 
     const response = NextResponse.json({ success: true });
 
     if (clear) {
       response.cookies.delete('bl_auth_token');
-      // Also forcefully set the header just in case
+      response.cookies.delete('bl_refresh_token');
+
+      // Forcefully clear cookies
       response.cookies.set({
         name: 'bl_auth_token',
         value: '',
@@ -20,6 +22,16 @@ export async function POST(request: NextRequest) {
         maxAge: 0,
         expires: new Date(0)
       });
+      response.cookies.set({
+        name: 'bl_refresh_token',
+        value: '',
+        path: '/',
+        httpOnly: true,
+        sameSite: 'lax',
+        maxAge: 0,
+        expires: new Date(0)
+      });
+
       // Forcefully clear Supabase cookies in case the client failed to do it
       const config = getSupabaseConfig();
       const projectId = config.url.match(/https:\/\/([^\.]+)\.supabase\.co/)?.[1] || '';
@@ -36,6 +48,18 @@ export async function POST(request: NextRequest) {
         path: '/',
         maxAge: 2592000 // 30 days
       });
+
+      if (refreshToken) {
+        response.cookies.set({
+          name: 'bl_refresh_token',
+          value: refreshToken,
+          httpOnly: true,
+          secure: process.env.NODE_ENV === 'production',
+          sameSite: 'lax',
+          path: '/',
+          maxAge: 2592000 // 30 days
+        });
+      }
     }
 
     return response;
@@ -43,4 +67,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Failed to set session' }, { status: 500 });
   }
 }
-
