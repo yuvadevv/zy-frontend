@@ -28,6 +28,7 @@ export default function OrderTrackingPage() {
   const { pendingFiles, removePendingFile } = useFileUploadStore();
   const [isUploading, setIsUploading] = React.useState(false);
   const [uploadProgress, setUploadProgress] = React.useState(0);
+  const [isConfirmingDoc, setIsConfirmingDoc] = React.useState(false);
 
   useEffect(() => {
     // Disabled automated R2 file uploads since physical document delivery is now via WhatsApp
@@ -78,8 +79,6 @@ export default function OrderTrackingPage() {
     }
   };
 
-  const [isConfirmingDoc, setIsConfirmingDoc] = React.useState(false);
-
   const handleWhatsAppUpload = () => {
     const waNumber = process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
     
@@ -91,7 +90,8 @@ export default function OrderTrackingPage() {
     const binding = firstItem?.printConfig?.bindingType && firstItem?.printConfig?.bindingType !== 'none' ? 'Spiral Binding' : 'No Binding';
     const copies = firstItem?.printConfig?.copies || 1;
 
-    const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${order.id}\nDocument: ${docName} (${pages} pages)\nPrint Options: ${color} • ${sides} • ${binding} • ${copies} copies\nAmount: ₹${order.summary.grandTotal}\n\n📎 I am attaching my original document (${docName}) for this order.\n\nPlease confirm once received.`;
+    const grandTotal = order.summary?.grandTotal ?? 0;
+    const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${order.id}\nDocument: ${docName} (${pages} pages)\nPrint Options: ${color} • ${sides} • ${binding} • ${copies} copies\nAmount: ₹${grandTotal}\n\n📎 I am attaching my original document (${docName}) for this order.\n\nPlease confirm once received.`;
     window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
   };
 
@@ -209,7 +209,7 @@ export default function OrderTrackingPage() {
           <EstimatedDeliveryCard deliveryInfo={order.deliveryInfo} />
         )}
         
-        {order.items.map(item => (
+        {order.items?.map(item => (
           <PrintDetailsCard key={item.id} item={item} />
         ))}
         
