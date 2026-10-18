@@ -39,6 +39,10 @@ export const adminClient = {
     return this.fetch('/api/admin/dashboard');
   },
 
+  async getDatabaseUsage() {
+    return this.fetch('/api/admin/database-usage');
+  },
+
   async getOrders(params: {
     status?: string, search?: string, page?: number, limit?: number | 'all',
     branch?: string, year?: string, semester?: string, manual_id?: string,

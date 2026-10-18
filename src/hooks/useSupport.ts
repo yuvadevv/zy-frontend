@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { workerClient } from '@/lib/api/workerClient';
+import { formatWhatsAppNumber, openWhatsAppChat } from '@/utils/whatsapp';
 
 export function useSupport() {
   const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(null);
@@ -17,7 +18,7 @@ export function useSupport() {
         const data = response.content || response;
         if (data) {
           if (data.support_whatsapp) {
-            setSupportWhatsapp(String(data.support_whatsapp).replace(/\D/g, ''));
+            setSupportWhatsapp(formatWhatsAppNumber(data.support_whatsapp));
           }
           if (data.support_phone) {
             setSupportPhone(String(data.support_phone).replace(/\D/g, ''));
@@ -40,16 +41,12 @@ export function useSupport() {
   }, []);
 
   const openWhatsAppSupport = (orderId?: string) => {
-    if (!supportWhatsapp) return;
-
     let text = 'Hi BLINTZY Support, I need help with BLINTZY.';
     if (orderId) {
       text = `Hi BLINTZY Support, I need help with Order #${orderId}.`;
     }
 
-    const encodedText = encodeURIComponent(text);
-    const url = `https://wa.me/${supportWhatsapp}?text=${encodedText}`;
-    window.open(url, '_blank', 'noopener,noreferrer');
+    openWhatsAppChat(supportWhatsapp, text);
   };
 
   const callSupport = () => {

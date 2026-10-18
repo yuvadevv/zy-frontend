@@ -14,6 +14,7 @@ import { useFileUploadStore } from '@/features/services/store/useFileUploadStore
 import { PriceBreakdown } from '@/features/cart/components/PriceBreakdown';
 import { useSupport } from '@/hooks/useSupport';
 import { MessageCircle, Check, ArrowRight } from 'lucide-react';
+import { openWhatsAppChat } from '@/utils/whatsapp';
 
 interface DocumentUploadFlowProps {
   title: string;
@@ -282,7 +283,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
                       const msg = `Hi BLINTZY 👋\n\nI am sending my document for printing.\n\nUpload Ref: ${refCode}\nDocument: ${finalFile.name}\nPages: ${pageCount}\nCopies: ${config.copies}\nOptions: ${config.color ? 'Colour' : 'B&W'} • ${config.singleSided ? 'Single Sided' : 'Double Sided'} • ${config.bindingType || 'None'}\nEstimated Amount: ₹${pricingResponse?.summary?.grandTotal || breakdown.subtotal || 0}\n\n📎 Please upload your documents here on WhatsApp.\nI am attaching my original PDF file here.`;
                       
                       setHasOpenedDocWhatsApp(true);
-                      window.open(`https://wa.me/${waNumber.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+                      openWhatsAppChat(waNumber, msg);
                       setFlowStep('confirm_whatsapp');
                     }}
                     disabled={isAdding || breakdown.subtotal === undefined}
@@ -342,7 +343,7 @@ export const DocumentUploadFlow = ({ title, subtitle, serviceType, allowedBindin
                           const waNumber = supportWhatsapp || process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
                           const refCode = documentId ? documentId.slice(0, 8).toUpperCase() : 'UPLOAD';
                           const msg = `Hi BLINTZY 👋\n\nI am sending my document for printing.\n\nUpload Ref: ${refCode}\nDocument: ${finalFile.name}\nPages: ${pageCount}\nCopies: ${config.copies}\nOptions: ${config.color ? 'Colour' : 'B&W'} • ${config.singleSided ? 'Single Sided' : 'Double Sided'} • ${config.bindingType || 'None'}\nEstimated Amount: ₹${pricingResponse?.summary?.grandTotal || breakdown.subtotal || 0}\n\n📎 Please upload your documents here on WhatsApp.\nI am attaching my original PDF file here.`;
-                          window.open(`https://wa.me/${waNumber.replace(/\D/g, '')}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+                          openWhatsAppChat(waNumber, msg);
                         }}
                         className="w-full text-xs text-primary hover:underline font-semibold py-2 text-center"
                       >

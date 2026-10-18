@@ -8,6 +8,7 @@ interface OrderErrorStateProps {
 }
 
 import { useRouter } from 'next/navigation';
+import { openWhatsAppChat } from '@/utils/whatsapp';
 
 export const OrderErrorState = ({ error, onRetry }: OrderErrorStateProps) => {
   const router = useRouter();
@@ -41,7 +42,7 @@ export const OrderErrorState = ({ error, onRetry }: OrderErrorStateProps) => {
           Refresh Orders
         </Button>
         <Button 
-          onClick={() => window.open('https://wa.me/1234567890', '_blank')}
+          onClick={() => openWhatsAppChat(null, 'Hi BLINTZY Support, I am experiencing an issue loading my order.')}
           className="w-full bg-transparent text-gray-500 font-bold h-[48px] hover:text-gray-900 transition-colors mt-2"
         >
           Contact Support

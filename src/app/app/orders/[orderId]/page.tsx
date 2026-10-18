@@ -17,6 +17,7 @@ import { FileArchive, Download, Loader2, UploadCloud, AlertTriangle, MessageCirc
 import { useFileUploadStore } from '@/features/services/store/useFileUploadStore';
 import { workerClient } from '@/lib/api/workerClient';
 import { toast } from 'react-hot-toast';
+import { openWhatsAppChat } from '@/utils/whatsapp';
 
 export default function OrderTrackingPage() {
   const params = useParams();
@@ -92,7 +93,7 @@ export default function OrderTrackingPage() {
 
     const grandTotal = order.summary?.grandTotal ?? 0;
     const msg = `Hi BLINTZY 👋\n\nI'm sending my document to complete my order.\n\nOrder ID: ${order.id}\nDocument: ${docName} (${pages} pages)\nPrint Options: ${color} • ${sides} • ${binding} • ${copies} copies\nAmount: ₹${grandTotal}\n\n📎 I am attaching my original document (${docName}) for this order.\n\nPlease confirm once received.`;
-    window.open(`https://wa.me/${waNumber}?text=${encodeURIComponent(msg)}`, '_blank');
+    openWhatsAppChat(waNumber, msg);
   };
 
   const handleConfirmDocSentFromTracking = async () => {

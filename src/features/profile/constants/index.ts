@@ -1,9 +1,9 @@
 // src/features/profile/constants/index.ts
 
 export const SUPPORT_LINKS = {
-  WHATSAPP: 'https://wa.me/message/YOUR_BUSINESS_NUMBER',
+  WHATSAPP: 'https://wa.me/919652929243',
   EMAIL: 'mailto:support@blintzy.com',
-  PHONE: 'tel:+919876543210'
+  PHONE: 'tel:+919652929243'
 };
 
 export const APP_INFO = {

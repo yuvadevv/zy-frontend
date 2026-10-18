@@ -8,6 +8,7 @@ import { Cart } from '@/features/cart/types';
 import { workerClient } from '@/lib/api/workerClient';
 import { useSupport } from '@/hooks/useSupport';
 import { toast } from 'react-hot-toast';
+import { openWhatsAppChat } from '@/utils/whatsapp';
 
 interface SuccessAnimationProps {
   orderId: string;
@@ -47,13 +48,12 @@ export const SuccessAnimation = ({ orderId, cart, onContinue, onTrack }: Success
 
   const handleOpenWhatsApp = () => {
     const waNumber = supportWhatsapp || process.env.NEXT_PUBLIC_BLINTZY_WHATSAPP_NUMBER || '919652929243';
-    const cleanWa = waNumber.replace(/\D/g, '');
     
     // Real, backend-generated details appropriate to share
     const msg = `Hi BLINTZY 🎉\n\nI have completed my payment and I am confirming my order.\n\nOrder ID: ${orderId}\nService: ${serviceType}\nDocument Ref: ${uploadRef}\nDocument: ${docName} (${pages} pages)\nPrint Options: ${color} • ${sides} • ${binding} • ${copies} copies\nConfirmed Amount: ₹${cart.summary.total}\nPayment Status: Confirmed (Paid)\n\nPlease verify and process my order.`;
     
     setHasOpenedWhatsApp(true);
-    window.open(`https://wa.me/${cleanWa}?text=${encodeURIComponent(msg)}`, '_blank', 'noopener,noreferrer');
+    openWhatsAppChat(waNumber, msg);
     setStep('awaiting_final_confirmation');
   };
 

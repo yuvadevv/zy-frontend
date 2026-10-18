@@ -5,6 +5,7 @@ import { adminClient } from '@/lib/api/adminClient';
 import { Loader2, Save, AlertCircle, Settings2, Globe, Truck, CreditCard, Calendar, Info } from 'lucide-react';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
+import { formatWhatsAppNumber } from '@/utils/whatsapp';
 
 export default function AdminSettingsPage() {
   const [loading, setLoading] = useState(true);
@@ -94,7 +95,7 @@ export default function AdminSettingsPage() {
         { key: 'global_banner', value: JSON.stringify(globalBanner) },
         { key: 'support_email', value: supportEmail },
         { key: 'support_phone', value: supportPhone },
-        { key: 'support_whatsapp', value: supportWhatsapp },
+        { key: 'support_whatsapp', value: supportWhatsapp ? formatWhatsAppNumber(supportWhatsapp) : '' },
         { key: 'pricing_settings', value: JSON.stringify(pricingSettings) },
         { key: 'delivery_settings', value: JSON.stringify(deliverySettings) }
       ];

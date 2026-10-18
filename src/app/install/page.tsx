@@ -283,10 +283,10 @@ export default function InstallPage() {
         ) : installState === "installed" || installState === "already_installed" ? (
           <>
             <h1 className="text-2xl sm:text-3xl font-black text-foreground mb-2 tracking-tight">
-              BLINTZY is Installed 🎉
+              BLINTZY is Installed! 🎉
             </h1>
             <p className="text-muted-foreground mb-8 text-sm sm:text-base font-medium max-w-xs">
-              Please check your home screen near your apps, and check your notifications.
+              Please check your phone’s home screen or app drawer to find BLINTZY.
             </p>
           </>
         ) : (
@@ -305,48 +305,50 @@ export default function InstallPage() {
           
           {/* STATE: Installed / Already Installed */}
           {(installState === "installed" || installState === "already_installed") && (
-            <div className="bg-emerald-50/90 border border-emerald-200/90 rounded-2xl p-6 flex flex-col items-center shadow-xs">
-              <div className="w-14 h-14 rounded-2xl bg-emerald-100 flex items-center justify-center text-emerald-600 mb-3">
-                <CheckCircle2 className="w-8 h-8" />
+            <div className="bg-white border border-border/80 rounded-3xl p-6 sm:p-7 flex flex-col items-center shadow-sm w-full text-center">
+              {/* Premium Success Icon with BLINTZY Orange Accent */}
+              <div className="w-14 h-14 rounded-2xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#FF6B00] mb-4 shadow-2xs">
+                <CheckCircle2 className="w-8 h-8 text-[#FF6B00]" strokeWidth={2.5} />
               </div>
-              <h2 className="text-lg font-bold text-emerald-950 mb-1">
-                {installState === "already_installed" ? "BLINTZY is already installed" : "Installation Confirmed"}
+
+              {/* Card Title */}
+              <h2 className="text-xl font-bold text-gray-900 mb-2 flex items-center justify-center gap-1.5">
+                <span>Installation Confirmed</span>
+                <span className="text-[#FF6B00] font-extrabold">✓</span>
               </h2>
-              <p className="text-emerald-900 text-xs sm:text-sm font-semibold mb-4 max-w-xs text-center">
-                Please check your home screen near your apps, and check your notifications.
+
+              {/* Subtitle */}
+              <p className="text-gray-600 text-xs sm:text-sm font-medium mb-5 max-w-xs leading-relaxed">
+                Your installation is complete. Please check your notifications and home screen to find the BLINTZY app.
               </p>
 
-              {/* Clear visual guidance */}
-              <div className="w-full bg-white/80 border border-emerald-200/80 rounded-xl p-3.5 mb-5 text-left text-xs space-y-2.5">
-                <div className="flex items-start gap-2.5 text-emerald-950 font-medium">
-                  <Smartphone className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Home Screen:</strong> Look for the BLINTZY app icon on your home screen or in your app drawer.</span>
+              {/* Instructions Box */}
+              <div className="w-full bg-gray-50/90 border border-gray-200/80 rounded-2xl p-4 text-left text-xs sm:text-sm space-y-3 mb-4">
+                <div className="flex items-start gap-3 text-gray-900">
+                  <Smartphone className="w-4 h-4 text-[#FF6B00] shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    <strong className="font-semibold text-gray-950">Home Screen:</strong> Look for the BLINTZY app icon on your home screen or in your app drawer.
+                  </span>
                 </div>
-                <div className="flex items-start gap-2.5 text-emerald-950 font-medium">
-                  <Bell className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                  <span><strong>Notifications:</strong> Check your notification tray if you recently confirmed the installation.</span>
+                <div className="flex items-start gap-3 text-gray-900">
+                  <Bell className="w-4 h-4 text-[#FF6B00] shrink-0 mt-0.5" />
+                  <span className="leading-relaxed">
+                    <strong className="font-semibold text-gray-950">Notifications:</strong> If you don&apos;t see the app yet, please check your notification panel.
+                  </span>
                 </div>
               </div>
 
-              {/* Primary action: Open BLINTZY */}
-              <Link
-                href={APP_ROUTES.HOME}
-                id="open-blintzy-button"
-                className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3.5 px-4 rounded-xl flex items-center justify-center gap-2 shadow-md transition-all active:scale-[0.98] text-sm uppercase tracking-wide"
-              >
-                <span>Open BLINTZY</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
+              {/* Brief Waiting Instruction */}
+              <div className="w-full p-3.5 bg-orange-50/70 border border-orange-200/60 rounded-xl text-center mb-1">
+                <p className="text-xs sm:text-[13px] text-gray-800 font-medium leading-relaxed">
+                  Please wait a few seconds and check your notifications. You can also find BLINTZY on your home screen or in your app drawer.
+                </p>
+              </div>
 
-              {/* Secondary guidance */}
-              <p className="text-emerald-800/80 text-[11px] font-medium mt-3 text-center">
-                If it doesn&apos;t open, find BLINTZY directly on your home screen or in your app list.
-              </p>
-
-              {/* Link to manual guide if user actually uninstalled */}
+              {/* Link to manual guide if user needs help */}
               <button
                 onClick={() => setInstallState("manual_guide")}
-                className="mt-4 text-[11px] font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-950 cursor-pointer"
+                className="mt-4 text-[11px] sm:text-xs font-semibold text-gray-400 hover:text-gray-700 underline underline-offset-4 cursor-pointer transition-colors"
               >
                 Not seeing BLINTZY? View manual install steps
               </button>
@@ -567,19 +569,11 @@ export default function InstallPage() {
                   Please check your <strong>home screen near your apps</strong> or in your app drawer, and check your <strong>notifications</strong>.
                 </p>
                 <div className="mt-3 flex items-center gap-2.5">
-                  <Link
-                    href={APP_ROUTES.HOME}
-                    id="manual-open-blintzy-btn"
-                    className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-primary text-white text-xs font-bold rounded-xl shadow-xs hover:bg-[#E56000] transition-all active:scale-95"
-                  >
-                    <span>Open BLINTZY</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </Link>
                   <button
                     onClick={() => setInstallState("already_installed")}
                     className="text-xs font-bold text-primary underline underline-offset-2 hover:text-orange-700 cursor-pointer"
                   >
-                    View installed status
+                    View installed confirmation →
                   </button>
                 </div>
               </div>

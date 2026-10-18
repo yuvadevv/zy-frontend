@@ -16,8 +16,8 @@ export const STATIC_QUICK_SERVICES: BaseResponseDTO<QuickServiceDTO[]> = {
 
 export const STATIC_SUPPORT_ACTIONS: BaseResponseDTO<SupportActionDTO[]> = {
   data: [
-    { type: 'WHATSAPP', enabled: true, label: 'WhatsApp', action_url: 'https://wa.me/1234567890' },
-    { type: 'PHONE', enabled: true, label: 'Call Us', action_url: 'tel:+1234567890', support_hours: '9 AM - 6 PM' },
+    { type: 'WHATSAPP', enabled: true, label: 'WhatsApp', action_url: 'https://wa.me/919652929243' },
+    { type: 'PHONE', enabled: true, label: 'Call Us', action_url: 'tel:+919652929243', support_hours: '9 AM - 6 PM' },
     { type: 'EMAIL', enabled: true, label: 'Email', action_url: 'mailto:support@blintzy.com' }
   ],
   meta: { timestamp: new Date().toISOString(), version: '1.0' }

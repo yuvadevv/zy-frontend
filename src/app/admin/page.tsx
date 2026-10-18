@@ -21,6 +21,7 @@ import {
 import KpiCard from '@/components/ui/KpiCard';
 import DataTable, { Column } from '@/components/ui/DataTable';
 import StatusBadge from '@/components/ui/StatusBadge';
+import DatabaseStorageCard from '@/components/admin/DatabaseStorageCard';
 
 export default function AdminDashboard() {
   const [stats, setStats] = useState<any>(null);
@@ -197,6 +198,12 @@ export default function AdminDashboard() {
             icon={Clock}
           />
         </div>
+      </div>
+
+      {/* Database Storage & Remaining Capacity */}
+      <div>
+        <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">Infrastructure & Cloud Database</h2>
+        <DatabaseStorageCard initialData={stats?.databaseUsage} />
       </div>
 
       {/* Secondary KPIs (Operations) */}
