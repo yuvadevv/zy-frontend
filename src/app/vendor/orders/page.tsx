@@ -12,6 +12,8 @@ import CommonManualBatches from '@/features/operations/CommonManualBatches';
 import ImportWizard from '@/features/operations/ImportWizard';
 import { generateExcelExport } from '@/features/operations/ExportGenerator';
 import { MobileOrderCard } from '@/features/operations/MobileOrderCard';
+import { formatStudentPhone, openCustomerWhatsApp } from '@/utils/whatsapp';
+import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon';
 
 export default function VendorOrdersPage() {
   const [orders, setOrders] = useState<any[]>([]);
@@ -418,7 +420,12 @@ export default function VendorOrdersPage() {
                         <td className="px-5 py-4">
                           <div className="font-semibold text-gray-900">{order.student?.name || 'Not provided'}</div>
                           <div className="text-xs text-gray-500 mt-0.5">{order.student?.rollNumber || '-'}</div>
-                          <div className="text-xs text-gray-500 mt-0.5">{order.student?.phone || order.studentPhone || '-'}</div>
+                          <div className="text-xs font-medium text-gray-600 mt-0.5">
+                            <span className="text-gray-400">Mobile: </span>
+                            <span className={formatStudentPhone(order.student?.phone || order.studentPhone) === 'Phone not available' ? 'text-gray-400 italic' : 'text-gray-800 font-mono'}>
+                              {formatStudentPhone(order.student?.phone || order.studentPhone)}
+                            </span>
+                          </div>
                           <div className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider">
                             {order.academic?.branchCode || '-'} {order.academic?.yearLabel ? `• ${order.academic.yearLabel}` : ''} {order.academic?.semesterLabel ? `• ${order.academic.semesterLabel}` : ''}
                           </div>
@@ -461,12 +468,29 @@ export default function VendorOrdersPage() {
                           </div>
                         </td>
                         <td className="px-5 py-4 text-right">
-                          <Link 
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              onClick={() => {
+                                openCustomerWhatsApp(
+                                  order.student?.phone || order.studentPhone,
+                                  order.publicId,
+                                  order.student?.name || order.studentName,
+                                  (err) => toast.error(err, { id: 'wa' })
+                                );
+                              }}
+                              className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-transparent hover:border-green-100"
+                              title="Open WhatsApp chat"
+                              aria-label="Open WhatsApp chat"
+                            >
+                              <WhatsAppIcon className="w-4 h-4 text-green-600" />
+                            </button>
+                            <Link 
                             href={`/vendor/orders/${order.publicId}`}
                             className="inline-flex items-center px-4 py-2 bg-white border border-gray-200 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                           >
                             Manage
-                          </Link>
+                            </Link>
+                          </div>
                         </td>
                       </tr>
                     ))

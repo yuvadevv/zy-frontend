@@ -207,7 +207,7 @@ export default function OrderTrackingPage() {
         <OrderProgressTimeline timeline={timeline} />
         
         {order.status !== 'cancelled' && order.status !== 'rejected' && (
-          <EstimatedDeliveryCard deliveryInfo={order.deliveryInfo} />
+          <EstimatedDeliveryCard deliveryInfo={order.deliveryInfo} orderStatus={order.status} />
         )}
         
         {order.items?.map(item => (

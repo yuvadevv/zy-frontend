@@ -12,6 +12,8 @@ import CommonManualBatches from '@/features/operations/CommonManualBatches';
 import ImportWizard from '@/features/operations/ImportWizard';
 import { generateExcelExport } from '@/features/operations/ExportGenerator';
 import { MobileOrderCard } from '@/features/operations/MobileOrderCard';
+import { formatStudentPhone, openCustomerWhatsApp } from '@/utils/whatsapp';
+import { WhatsAppIcon } from '@/components/ui/WhatsAppIcon';
 import { Printer } from 'lucide-react';
 
 export default function AdminOrdersPage() {
@@ -465,6 +467,12 @@ export default function AdminOrdersPage() {
                         <td className="px-5 py-4">
                           <div className="font-semibold text-gray-900">{order.student?.name || 'Not provided'}</div>
                           <div className="text-xs text-gray-500 mt-0.5">{order.student?.rollNumber || '-'}</div>
+                          <div className="text-xs font-medium text-gray-600 mt-0.5">
+                            <span className="text-gray-400">Mobile: </span>
+                            <span className={formatStudentPhone(order.student?.phone) === 'Phone not available' ? 'text-gray-400 italic' : 'text-gray-800 font-mono'}>
+                              {formatStudentPhone(order.student?.phone)}
+                            </span>
+                          </div>
                           <div className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-wider">
                             {order.academic?.branchCode || '-'} {order.academic?.yearLabel ? `• ${order.academic.yearLabel}` : ''} {order.academic?.semesterLabel ? `• ${order.academic.semesterLabel}` : ''}
                           </div>
@@ -493,6 +501,22 @@ export default function AdminOrdersPage() {
                         </td>
                         <td className="px-5 py-4 text-right">
                           <div className="flex justify-end gap-2 items-center">
+                            {/* WhatsApp Customer Action */}
+                            <button
+                              onClick={() => {
+                                openCustomerWhatsApp(
+                                  order.student?.phone,
+                                  order.publicId,
+                                  order.student?.name,
+                                  (err) => toast.error(err, { id: 'wa' })
+                                );
+                              }}
+                              className="p-2 text-gray-500 hover:text-green-600 hover:bg-green-50 rounded-lg transition-colors border border-transparent hover:border-green-100"
+                              title="Open WhatsApp chat"
+                              aria-label="Open WhatsApp chat"
+                            >
+                              <WhatsAppIcon className="w-4 h-4 text-green-600" />
+                            </button>
                             {order.items?.some((i: any) => i.document_id) && (
                               <div className="flex gap-1 mr-2 border-r border-gray-200 pr-3">
                                 <button
