@@ -2,9 +2,10 @@ import { WidgetConfig } from '../types';
 
 export const DASHBOARD_WIDGETS: WidgetConfig[] = [
   { id: 'greeting', title: 'Greeting', enabled: true, priority: 1, refreshIntervalMs: 0, analyticsKey: 'dashboard_greeting', rolloutPercentage: 100 },
-  { id: 'continue_left_off', title: 'Continue Where You Left Off', enabled: true, priority: 2, refreshIntervalMs: 0, analyticsKey: 'dashboard_continue_left_off', rolloutPercentage: 100 },
+  { id: 'service_launcher', title: 'Services Launcher', enabled: true, priority: 2.0, refreshIntervalMs: 0, analyticsKey: 'dashboard_service_launcher', rolloutPercentage: 100 },
+  { id: 'continue_left_off', title: 'Continue Where You Left Off', enabled: true, priority: 2.2, refreshIntervalMs: 0, analyticsKey: 'dashboard_continue_left_off', rolloutPercentage: 100 },
   { id: 'campaign_carousel', title: 'Campaign Carousel', enabled: true, priority: 2.5, refreshIntervalMs: 0, analyticsKey: 'dashboard_campaign_carousel', rolloutPercentage: 100 },
-  { id: 'campus_food_promo', title: 'Campus Food Announcement', enabled: true, priority: 2.6, refreshIntervalMs: 0, analyticsKey: 'dashboard_campus_food_promo', rolloutPercentage: 100 },
+  { id: 'campus_food_promo', title: 'Campus Food Announcement', enabled: false, priority: 2.6, refreshIntervalMs: 0, analyticsKey: 'dashboard_campus_food_promo', rolloutPercentage: 0 },
   { id: 'campus_fest_specials', title: 'Campus Fest Specials', enabled: true, priority: 2.7, refreshIntervalMs: 0, analyticsKey: 'dashboard_campus_fest_specials', rolloutPercentage: 100 },
   { id: 'campus_fest_hero', title: 'Campus Fest Hero', enabled: false, priority: 2.8, refreshIntervalMs: 0, analyticsKey: 'dashboard_campus_fest_hero', rolloutPercentage: 0 },
   { id: 'current_order', title: 'Current Order', enabled: true, priority: 3, refreshIntervalMs: 15000, analyticsKey: 'dashboard_current_order', rolloutPercentage: 100 },

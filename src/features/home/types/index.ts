@@ -82,3 +82,18 @@ export interface WidgetConfig {
   analyticsKey: string;
   rolloutPercentage: number;
 }
+
+export type ServiceLauncherStatus = 'active' | 'coming_soon' | 'maintenance';
+
+export interface ServiceLauncherItem {
+  id: string;
+  label: string;
+  supportingText: string;
+  icon: 'printer' | 'food' | 'ride' | string;
+  href?: string;
+  status: ServiceLauncherStatus;
+  badge?: string;
+  isPrimary?: boolean;
+  analyticsKey?: string;
+}
+

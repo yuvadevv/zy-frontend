@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useStudent } from '@/features/student/providers/StudentProvider';
+import { useAuthSession } from '@/features/auth/hooks/useAuthSession';
 
 interface DashboardEntryProps {
   children: React.ReactNode;
@@ -14,11 +15,38 @@ export const DashboardEntry: React.FC<DashboardEntryProps> = ({ children }) => {
   const [isMounted, setIsMounted] = useState(false);
   
   const { profile, academicRecord } = useStudent();
+  const { user } = useAuthSession();
   
-  // Robust greeting name sanitization: never expose raw error messages (e.g. "error 404", "undefined", "null")
-  const rawName = profile?.full_name?.trim();
-  const isInvalidName = !rawName || /^(error|404|not found|undefined|null|failed)/i.test(rawName);
-  const studentName = isInvalidName ? "Student" : rawName;
+  // Robust greeting name resolution from profile, user metadata, cached session, or email
+  const resolveStudentName = (): string => {
+    const pName = profile?.full_name?.trim();
+    if (pName && !/^(error|404|not found|undefined|null|failed)/i.test(pName)) {
+      return pName;
+    }
+    const metaName = (user?.user_metadata?.full_name || user?.user_metadata?.name)?.trim();
+    if (metaName && !/^(error|404|not found|undefined|null|failed)/i.test(metaName)) {
+      return metaName;
+    }
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('bl_session_user');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          const sName = (parsed?.user_metadata?.full_name || parsed?.user_metadata?.name || parsed?.name)?.trim();
+          if (sName && !/^(error|404|not found|undefined|null|failed)/i.test(sName)) {
+            return sName;
+          }
+        }
+      } catch {}
+    }
+    if (user?.email) {
+      const handle = user.email.split('@')[0].replace(/[._-]/g, ' ');
+      return handle.charAt(0).toUpperCase() + handle.slice(1);
+    }
+    return "Student";
+  };
+
+  const studentName = resolveStudentName();
   const branch = academicRecord?.branches?.name || "Branch";
   const yearName = academicRecord?.academic_years?.name || "";
   const yearNumber = parseInt(yearName.replace(/[^0-9]/g, '') || '1') || 1;
@@ -87,17 +115,21 @@ export const DashboardEntry: React.FC<DashboardEntryProps> = ({ children }) => {
         transition={{ delay: 0.2, duration: 0.5 }}
       >
         {!showWelcomeCard && (
-          <section className="px-1.5 pt-1 pb-1">
-            <h1 className="text-[20px] font-black text-gray-900 tracking-tight leading-tight flex items-center gap-1.5">
+          <section className="px-1 pt-1 pb-1">
+            <div className="flex items-center gap-1.5 text-[12.5px] font-semibold text-gray-500">
               <span>{greeting}</span>
-              <span className="text-lg">👋</span>
+              <span>👋</span>
+            </div>
+            <h1 className="text-[22px] font-black text-[#151515] tracking-tight leading-tight mt-0.5">
+              {studentName}
             </h1>
-            <p className="text-[17px] font-bold text-gray-800 leading-tight">{studentName}</p>
-            <p className="mt-0.5 text-[12px] font-medium text-gray-500">Welcome back.</p>
+            <p className="text-[12px] font-medium text-gray-400 mt-0.5">
+              Welcome back to campus.
+            </p>
           </section>
         )}
 
-        <div className="mt-2">
+        <div className="mt-2.5">
           {children}
         </div>
       </motion.div>

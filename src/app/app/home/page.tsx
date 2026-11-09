@@ -15,21 +15,22 @@ import { CampusFestHero } from '@/features/home/components/CampusFestHero';
 import { CampaignCarousel } from '@/features/home/components/CampaignCarousel';
 import { CampusFoodPromoBanner } from '@/features/home/components/CampusFoodPromoBanner';
 import { CampusFestSpecials } from '@/features/home/components/CampusFestSpecials';
+import { MultiServiceLauncher } from '@/features/home/components/MultiServiceLauncher';
 
 import { workerClient } from '@/lib/api/workerClient';
 import { mapCurrentOrder, mapQuickService, mapAnnouncement, mapSupportAction } from '@/features/home/mappers';
 import { STATIC_QUICK_SERVICES, STATIC_SUPPORT_ACTIONS } from '@/features/home/config/staticServices';
 
 const SectionHeader = ({ title, actionLabel, href }: { title: string, actionLabel?: string, href?: string }) => (
-  <div className="flex justify-between items-end mb-3 px-1">
-    <h2 className="text-[18px] font-bold text-gray-900 leading-none">{title}</h2>
+  <div className="flex justify-between items-center mb-2 px-0.5">
+    <h2 className="text-[14.5px] font-bold text-[#151515] leading-tight tracking-tight">{title}</h2>
     {actionLabel && (
       <a 
         href={href || '#'}
-        className="text-orange-500 font-bold text-[13px] flex items-center group active:text-orange-600 transition-colors"
+        className="text-[#FF6B00] font-bold text-[12px] flex items-center group active:opacity-80 transition-opacity"
       >
         <span className="leading-none">{actionLabel}</span>
-        <span className="ml-1 transition-transform group-hover:translate-x-1">→</span>
+        <span className="ml-1 transition-transform group-hover:translate-x-0.5">→</span>
       </a>
     )}
   </div>
@@ -149,6 +150,8 @@ export default function HomeDashboard() {
     if (widgetId === 'current_order' && !isLoading && activeOrders.length === 0) return null;
     if (widgetId === 'recent_orders' && !isLoading && recentOrders.length === 0) return null;
     switch (widgetId) {
+      case 'service_launcher':
+        return <section><MultiServiceLauncher /></section>;
       case 'campus_fest_hero':
         return <section><CampusFestHero /></section>;
       case 'campaign_carousel':
@@ -255,7 +258,7 @@ export default function HomeDashboard() {
 
   return (
     <DashboardEntry>
-      <div className="flex flex-col gap-5 w-full pb-24">
+      <div className="flex flex-col gap-4 w-full">
         {hasError && (
           <div className="mx-1 px-4 py-3 bg-red-50 text-red-600 rounded-xl flex items-center justify-between shadow-sm">
             <span className="text-sm font-semibold">Couldn't load your orders.</span>

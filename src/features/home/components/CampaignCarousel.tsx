@@ -333,7 +333,7 @@ export const CampaignCarousel = () => {
       <div 
         ref={scrollContainerRef}
         onScroll={handleScroll}
-        className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none rounded-[24px]"
+        className="flex w-full overflow-x-auto snap-x snap-mandatory scroll-smooth scrollbar-none rounded-[20px]"
         style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
       >
         {campaigns.map((card, idx) => {
@@ -345,7 +345,7 @@ export const CampaignCarousel = () => {
           return (
             <div
               key={card.id || idx}
-              className="w-full shrink-0 snap-center relative overflow-hidden rounded-[26px] h-[235px] sm:h-[260px] border border-white/10 bg-gray-950 flex flex-col justify-between shadow-sm"
+              className="w-full shrink-0 snap-center relative overflow-hidden rounded-[20px] h-[190px] sm:h-[215px] border border-white/10 bg-gray-950 flex flex-col justify-between shadow-sm"
             >
               {/* Authentic Student Photography Background */}
               <div className="absolute inset-0 z-0 pointer-events-none">
@@ -355,49 +355,49 @@ export const CampaignCarousel = () => {
                   className="w-full h-full object-cover object-[center_20%] sm:object-center transform scale-[1.01] brightness-[1.04] contrast-[1.02]"
                   loading={idx === 0 ? 'eager' : 'lazy'}
                 />
-                {/* Scrim Gradient Overlay for High Contrast Text (Reduced Opacity, Brighter Photos) */}
+                {/* Scrim Gradient Overlay for High Contrast Text */}
                 <div className={`absolute inset-0 bg-gradient-to-r ${theme.scrimGradient}`} />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/35 to-black/10" />
               </div>
 
               {/* Foreground Card Content */}
-              <div className="relative z-10 p-5 sm:p-6 flex flex-col justify-between h-full flex-1">
-                {/* Top Row: Badge Only (Numeric Slide Counter Removed) */}
+              <div className="relative z-10 p-4 sm:p-5 flex flex-col justify-between h-full flex-1">
+                {/* Top Row: Badge Only */}
                 <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     {card.badge && (
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] font-black tracking-wider uppercase px-3 py-1 rounded-full border shadow-xs ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
-                        <IconComponent className="w-3.5 h-3.5" />
+                      <span className={`inline-flex items-center gap-1.5 text-[10px] font-black tracking-wider uppercase px-2.5 py-0.5 rounded-full border shadow-xs ${theme.badgeBg} ${theme.badgeText} ${theme.badgeBorder}`}>
+                        <IconComponent className="w-3 h-3" />
                         <span>{card.badge}</span>
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Middle: Title & Message with Extra Breathing Room */}
-                <div className="my-auto py-1 max-w-[310px] sm:max-w-lg">
-                  <h2 className="text-2xl sm:text-[28px] font-black text-white tracking-tight leading-[1.18] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+                {/* Middle: Title & Message */}
+                <div className="my-auto py-1 max-w-[290px] sm:max-w-lg">
+                  <h2 className="text-[19px] sm:text-[22px] font-black text-white tracking-tight leading-[1.2] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
                     {card.title}
                   </h2>
-                  <p className="text-[13px] sm:text-[15px] text-white font-medium mt-1.5 leading-snug line-clamp-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
+                  <p className="text-[12px] sm:text-[13px] text-white/95 font-medium mt-1 leading-snug line-clamp-2 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]">
                     {card.message}
                   </p>
                 </div>
 
                 {/* Bottom Row: Working CTA or Coming Soon Button */}
-                <div className="pt-2 flex items-center justify-between">
+                <div className="pt-1 flex items-center justify-between">
                   {isComingSoon ? (
-                    <div className="inline-flex items-center gap-2 text-xs font-bold text-white/75 bg-white/20 backdrop-blur-md border border-white/15 py-2 px-4 rounded-xl cursor-not-allowed">
-                      <span className="w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+                    <div className="inline-flex items-center gap-1.5 text-[11px] font-bold text-white/80 bg-white/20 backdrop-blur-md border border-white/15 py-1.5 px-3.5 rounded-xl cursor-not-allowed">
+                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" />
                       <span>{card.cta_label || 'Coming Soon'}</span>
                     </div>
                   ) : (
                     <Link
                       href={card.cta_url}
-                      className={`inline-flex items-center gap-2 text-xs sm:text-sm font-bold py-2.5 px-5 rounded-2xl transition-all group ${theme.ctaButton}`}
+                      className={`inline-flex items-center gap-1.5 text-[11.5px] sm:text-xs font-bold py-2 px-4 rounded-xl transition-all group ${theme.ctaButton}`}
                     >
                       <span>{card.cta_label || 'View Offers'}</span>
-                      <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5" />
                     </Link>
                   )}
                 </div>
@@ -407,9 +407,9 @@ export const CampaignCarousel = () => {
         })}
       </div>
 
-      {/* Pagination Dots below the cards (Identical to Track Order Hero dots) */}
+      {/* Pagination Dots below the cards */}
       {campaigns.length > 1 && (
-        <div className="flex justify-center items-center gap-1.5 mt-3">
+        <div className="flex justify-center items-center gap-1.5 mt-2.5">
           {campaigns.map((_, i) => (
             <button
               key={i}

@@ -7,9 +7,17 @@ import { BottomNavigation } from './BottomNavigation';
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isOnboarding = pathname === '/app/onboarding';
+  const isFoodRoute = pathname.startsWith('/app/campus-food');
+  const isProductDetailPage = isFoodRoute && 
+    pathname !== '/app/campus-food' &&
+    pathname !== '/app/campus-food/stall' && 
+    pathname !== '/app/campus-food/mess';
 
   const getPageTitle = (path: string) => {
     if (path.includes('/home')) return 'Home';
+    if (path === '/app/campus-food/stall') return 'Private Food Stall';
+    if (path === '/app/campus-food/mess') return 'College Mess';
+    if (path.includes('/campus-food')) return 'Campus Food';
     if (path.includes('/orders')) return 'Orders';
     if (path.includes('/profile')) return 'Profile';
     if (path.includes('/notifications')) return 'Notifications';
@@ -32,16 +40,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pageTitle = getPageTitle(pathname);
 
   return (
-    <div className="mx-auto flex min-h-screen w-full max-w-[430px] flex-col bg-[#FF6B00] shadow-2xl relative overflow-hidden">
-      {!isOnboarding && <AppHeader title={pageTitle} />}
+    <div className={`mx-auto flex min-h-screen w-full max-w-[430px] flex-col ${isFoodRoute ? 'bg-white' : 'bg-[#FF6B00]'} shadow-2xl relative overflow-hidden`}>
+      {!isOnboarding && !isFoodRoute && <AppHeader title={pageTitle} />}
       {!isOnboarding ? (
-        <main className="flex-1 w-full bg-white rounded-t-[44px] relative z-10 -mt-6 px-3 pt-6 pb-24">
+        <main className={`flex-1 w-full bg-white ${isFoodRoute ? 'pt-safe pt-2' : 'rounded-t-[28px] -mt-4 pt-4'} relative z-10 px-3.5 pb-28 sm:pb-32`}>
           {children}
         </main>
       ) : (
         children
       )}
-      {!isOnboarding && <BottomNavigation />}
+      {!isOnboarding && !isProductDetailPage && <BottomNavigation />}
     </div>
   );
 }

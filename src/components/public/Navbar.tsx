@@ -7,22 +7,21 @@ import toast from 'react-hot-toast';
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { motion, AnimatePresence, useScroll, useSpring } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, ArrowUpRight } from 'lucide-react';
 import { usePathname } from 'next/navigation';
 
 const navLinks = [
-  { name: 'Home', href: '/', hash: '' },
-  { name: 'Features', href: '/#features', hash: 'features' },
+  { name: 'Services', href: '/#services', hash: 'services' },
+  { name: 'Workflow', href: '/#product', hash: 'product' },
   { name: 'How It Works', href: '/#how-it-works', hash: 'how-it-works' },
   { name: 'Why BLINTZY', href: '/#why-blintzy', hash: 'why-blintzy' },
+  { name: 'Ecosystem', href: '/#ecosystem', hash: 'ecosystem' },
   { name: 'FAQ', href: '/#faq', hash: 'faq' },
-  { name: 'Contact', href: '/contact', hash: '' },
 ];
 
 export function Navbar() {
-
   const { data: bootstrapData } = useQuery({
-    queryKey: ["bootstrap"],
+    queryKey: ['bootstrap'],
     queryFn: fetchBootstrapConfig,
     staleTime: 1000 * 60,
   });
@@ -34,6 +33,7 @@ export function Navbar() {
       toast('This feature is currently disabled during Coming Soon mode.', { icon: '🔒' });
     }
   };
+
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState<string>('');
@@ -43,7 +43,7 @@ export function Navbar() {
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
-    restDelta: 0.001
+    restDelta: 0.001,
   });
 
   useEffect(() => {
@@ -58,14 +58,14 @@ export function Navbar() {
     if (pathname !== '/') return;
 
     const sectionElements = navLinks
-      .map(link => link.hash ? document.getElementById(link.hash) : null)
+      .map((link) => (link.hash ? document.getElementById(link.hash) : null))
       .filter(Boolean) as HTMLElement[];
 
     const visibleSections = new Set<string>();
 
     const observerCallback: IntersectionObserverCallback = (entries) => {
       let changed = false;
-      entries.forEach(entry => {
+      entries.forEach((entry) => {
         if (entry.isIntersecting) {
           visibleSections.add(entry.target.id);
           changed = true;
@@ -78,26 +78,21 @@ export function Navbar() {
       });
 
       if (changed) {
-        // Find the first visible section in DOM order
-        const active = sectionElements.find(el => visibleSections.has(el.id));
+        const active = sectionElements.find((el) => visibleSections.has(el.id));
         if (active) {
           setActiveSection(active.id);
         }
       }
     };
 
-    const observerOptions = {
+    const observer = new IntersectionObserver(observerCallback, {
       root: null,
-      // Focus on the top half of the screen, just below the header
       rootMargin: '-100px 0px -40% 0px',
-      threshold: 0
-    };
+      threshold: 0,
+    });
 
-    const observer = new IntersectionObserver(observerCallback, observerOptions);
+    sectionElements.forEach((el) => observer.observe(el));
 
-    sectionElements.forEach(el => observer.observe(el));
-
-    // Handle 'Home' special case when scrolled to top
     const handleTopScroll = () => {
       if (window.scrollY < 100) {
         setActiveSection('');
@@ -114,77 +109,80 @@ export function Navbar() {
   return (
     <>
       <motion.div
-        className="fixed top-0 left-0 right-0 h-[3px] bg-orange-500 origin-left z-[60]"
+        className="fixed top-0 left-0 right-0 h-[2.5px] bg-[#FF6B00] origin-left z-[70]"
         style={{ scaleX }}
       />
       <header
         className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
           isScrolled
-            ? 'bg-white shadow-[0_2px_10px_rgba(0,0,0,0.02)] border-b border-gray-100 py-3'
+            ? 'bg-white/85 backdrop-blur-md shadow-[0_1px_3px_rgba(0,0,0,0.05)] border-b border-[#EAEAEA] py-3.5'
             : 'bg-transparent py-5'
         }`}
       >
         <div className="container mx-auto px-6 max-w-7xl flex items-center justify-between">
-          {/* Logo */}
-          <Link href="/" className="flex items-center gap-2 z-50 relative group">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-orange-500 text-white font-bold text-xl shadow-sm transition-transform group-hover:scale-105">
+          {/* Brand Logo */}
+          <Link href="/" className="flex items-center gap-2.5 z-50 group">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#FF6B00] text-white font-black text-lg shadow-[0_2px_8px_rgba(255,107,0,0.35)] transition-transform duration-300 group-hover:scale-105">
               B
             </div>
-            <span className="text-xl font-bold tracking-tight text-gray-900 transition-colors group-hover:text-orange-500">Blintzy</span>
+            <div className="flex flex-col">
+              <span className="text-lg font-black tracking-tight text-[#171717] leading-none transition-colors group-hover:text-[#FF6B00]">
+                BLINTZY
+              </span>
+              <span className="text-[10px] font-semibold text-[#737373] tracking-wider uppercase mt-0.5">
+                Campus Platform
+              </span>
+            </div>
           </Link>
 
           {/* Desktop Navigation */}
-          <nav className="hidden lg:flex items-center gap-8">
+          <nav className="hidden lg:flex items-center gap-1 bg-[#F7F7F5]/80 p-1.5 rounded-full border border-[#EAEAEA] backdrop-blur-sm">
             {navLinks.map((link) => {
-              const isContact = link.href === '/contact';
-              const isCurrentPage = pathname === link.href;
               const isHashActive = activeSection === link.hash;
-              
-              const isActive = isContact ? isCurrentPage : (pathname === '/' && isHashActive);
+              const isActive = pathname === '/' && isHashActive;
 
               return (
                 <Link
                   key={link.name}
                   href={link.href}
-                  className="relative group text-sm transition-colors py-2"
+                  className={`relative text-xs font-semibold px-4 py-1.5 rounded-full transition-all duration-200 ${
+                    isActive
+                      ? 'text-[#171717] bg-white shadow-sm font-bold'
+                      : 'text-[#737373] hover:text-[#171717] hover:bg-white/50'
+                  }`}
                 >
-                  <span className={`transition-all duration-200 ${isActive ? 'text-orange-600 font-bold' : 'text-gray-600 font-medium group-hover:text-gray-900'}`}>
-                    {link.name}
-                  </span>
-                  {/* Underline indicator */}
-                  <span 
-                    className={`absolute bottom-0 left-0 w-full h-[2px] bg-orange-500 rounded-full transition-all duration-300 ease-out ${
-                      isActive ? 'opacity-100 scale-x-100' : 'opacity-0 scale-x-0 group-hover:opacity-100 group-hover:scale-x-100 group-hover:bg-gray-300'
-                    }`} 
-                  />
+                  {link.name}
                 </Link>
               );
             })}
           </nav>
 
           {/* Actions */}
-          <div className="hidden lg:flex items-center gap-4">
+          <div className="hidden lg:flex items-center gap-3">
             <Link
-              href="/app/login" onClick={handleRestrictedAction}
-              className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors px-4 py-2"
+              href="/app/login"
+              onClick={handleRestrictedAction}
+              className="text-xs font-semibold text-[#737373] hover:text-[#171717] transition-colors px-3 py-2 rounded-lg"
             >
-              Login
+              Sign In
             </Link>
             <Link
-              href="/app/login" onClick={handleRestrictedAction}
-              className="text-sm font-semibold text-white bg-orange-500 hover:bg-orange-600 transition-all px-5 py-2.5 rounded-full shadow-sm hover:shadow-[0_4px_14px_0_rgba(249,115,22,0.39)] hover:-translate-y-[1px] active:scale-95"
+              href="/app/login"
+              onClick={handleRestrictedAction}
+              className="group inline-flex items-center gap-1.5 text-xs font-bold text-white bg-[#FF6B00] hover:bg-[#e05e00] transition-all px-4 py-2.5 rounded-full shadow-[0_4px_14px_rgba(255,107,0,0.25)] hover:shadow-[0_6px_20px_rgba(255,107,0,0.35)] active:scale-95"
             >
-              Get Started
+              <span>Start Printing</span>
+              <ArrowUpRight className="w-3.5 h-3.5 transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
           </div>
 
           {/* Mobile Menu Toggle */}
           <button
-            className="lg:hidden p-2 text-gray-600 hover:text-gray-900 transition-colors z-50 relative rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500/20"
+            className="lg:hidden p-2 text-[#171717] hover:text-[#FF6B00] transition-colors z-50 relative rounded-lg focus:outline-none"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             aria-label="Toggle menu"
           >
-            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6 text-[#171717]" />}
           </button>
         </div>
       </header>
@@ -193,43 +191,41 @@ export function Navbar() {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, x: '100%' }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
             className="fixed inset-0 z-40 bg-white pt-24 px-6 flex flex-col h-[100dvh]"
           >
-            <nav className="flex flex-col gap-6 flex-1">
+            <nav className="flex flex-col gap-4 flex-1 pt-4">
               {navLinks.map((link) => {
-                const isContact = link.href === '/contact';
-                const isCurrentPage = pathname === link.href;
-                const isHashActive = activeSection === link.hash;
-                const isActive = isContact ? isCurrentPage : (pathname === '/' && isHashActive);
-                
+                const isActive = pathname === '/' && activeSection === link.hash;
+
                 return (
                   <Link
                     key={link.name}
                     href={link.href}
                     onClick={() => setIsMobileMenuOpen(false)}
-                    className={`text-2xl font-bold transition-colors ${
-                      isActive ? 'text-orange-600' : 'text-gray-900 hover:text-orange-500'
+                    className={`text-xl font-bold transition-colors py-2 border-b border-[#EAEAEA] flex items-center justify-between ${
+                      isActive ? 'text-[#FF6B00]' : 'text-[#171717] hover:text-[#FF6B00]'
                     }`}
                   >
-                    {link.name}
+                    <span>{link.name}</span>
+                    <ArrowUpRight className="w-5 h-5 text-[#737373]" />
                   </Link>
                 );
               })}
             </nav>
-            <div className="flex flex-col gap-4 pb-12">
+            <div className="flex flex-col gap-3 pb-10">
               <Link
                 href="/app/login"
                 onClick={(e) => {
                   handleRestrictedAction(e);
                   if (!e.defaultPrevented) setIsMobileMenuOpen(false);
                 }}
-                className="text-lg font-semibold text-center text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-colors py-4 rounded-2xl"
+                className="text-base font-bold text-center text-[#171717] bg-[#F7F7F5] hover:bg-gray-100 border border-[#EAEAEA] transition-colors py-3.5 rounded-xl"
               >
-                Login
+                Sign In
               </Link>
               <Link
                 href="/app/login"
@@ -237,9 +233,9 @@ export function Navbar() {
                   handleRestrictedAction(e);
                   if (!e.defaultPrevented) setIsMobileMenuOpen(false);
                 }}
-                className="text-lg font-semibold text-center text-white bg-orange-500 hover:bg-orange-600 transition-colors py-4 rounded-2xl shadow-sm"
+                className="text-base font-bold text-center text-white bg-[#FF6B00] hover:bg-[#e05e00] transition-colors py-3.5 rounded-xl shadow-md"
               >
-                Get Started
+                Start Printing Now
               </Link>
             </div>
           </motion.div>

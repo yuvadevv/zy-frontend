@@ -1,15 +1,18 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { motion, useAnimation, useInView } from 'framer-motion';
-import { publicContent } from '@/config/publicContent';
+import { useAnimation, useInView } from 'framer-motion';
 import { SectionContainer } from './SectionContainer';
 
-const Counter = ({ from, to }: { from: number, to: number }) => {
+interface StatItem {
+  label: string;
+  value: number;
+}
+
+const Counter = ({ from, to }: { from: number; to: number }) => {
   const [count, setCount] = useState(from);
-  const controls = useAnimation();
   const ref = React.useRef(null);
-  const isInView = useInView(ref, { once: true, margin: "-50px" });
+  const isInView = useInView(ref, { once: true, margin: '-50px' });
 
   useEffect(() => {
     if (isInView) {
@@ -18,7 +21,7 @@ const Counter = ({ from, to }: { from: number, to: number }) => {
       const duration = 2000;
       const incrementTime = 20;
       const step = Math.abs(end - start) / (duration / incrementTime);
-      
+
       const timer = setInterval(() => {
         start += step;
         if (start >= end) {
@@ -28,7 +31,7 @@ const Counter = ({ from, to }: { from: number, to: number }) => {
           setCount(Math.floor(start));
         }
       }, incrementTime);
-      
+
       return () => clearInterval(timer);
     }
   }, [isInView, from, to]);
@@ -37,19 +40,24 @@ const Counter = ({ from, to }: { from: number, to: number }) => {
 };
 
 export function Statistics({ data }: { data?: any[] }) {
-  const stats = data && data.length > 0 
-    ? data.map(d => ({ label: d.title, value: parseInt((d.message || '0').replace(/,/g, '')) }))
-    : publicContent.statistics;
+  if (!data || data.length === 0) return null;
+
+  const stats: StatItem[] = data.map((d) => ({
+    label: d.title,
+    value: parseInt((d.message || '0').replace(/,/g, ''), 10) || 0,
+  }));
 
   return (
-    <SectionContainer className="bg-orange-500 text-white">
+    <SectionContainer className="bg-[#FF6B00] text-white">
       <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-5xl mx-auto text-center divide-x divide-orange-400">
         {stats.map((stat, i) => (
           <div key={i} className="flex flex-col items-center justify-center p-4">
             <span className="text-4xl md:text-5xl font-extrabold mb-2 text-white">
               <Counter from={0} to={stat.value} />
             </span>
-            <span className="text-orange-100 font-semibold uppercase tracking-wider text-sm">{stat.label}</span>
+            <span className="text-orange-100 font-semibold uppercase tracking-wider text-sm">
+              {stat.label}
+            </span>
           </div>
         ))}
       </div>

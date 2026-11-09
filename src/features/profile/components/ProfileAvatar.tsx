@@ -23,8 +23,8 @@ export const ProfileAvatar = ({ name, avatarUrl, size = 'md' }: ProfileAvatarPro
 
   return (
     <div className={`${sizeClasses[size]} rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold shrink-0 overflow-hidden`}>
-      {avatarUrl ? (
-        <img src={avatarUrl} alt={name} className="w-full h-full object-cover" />
+      {avatarUrl && avatarUrl.trim().length > 0 ? (
+        <img src={avatarUrl.trim()} alt={name} className="w-full h-full object-cover" />
       ) : (
         name ? getInitials(name) : <User className="w-1/2 h-1/2 opacity-50" />
       )}

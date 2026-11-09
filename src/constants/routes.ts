@@ -20,6 +20,15 @@ export const APP_ROUTES = {
   REFER: '/app/refer',
   LEADERBOARD: '/app/leaderboard',
   AMBASSADOR: '/app/campus-fest/ambassador',
+  FOOD: {
+    LANDING: '/app/campus-food',
+    STALL: '/app/campus-food/stall',
+    MESS: '/app/campus-food/mess',
+    PRODUCT_DETAIL: (id: string) => `/app/campus-food/${id}`,
+    CART: '/app/campus-food/cart',
+    CHECKOUT: '/app/campus-food/checkout',
+    ORDER_CONFIRMATION: (id: string) => `/app/campus-food/orders/${id}`,
+  },
   CAMPUS_FOOD: '/app/campus-food',
   CHECKOUT: '/app/checkout',
   ORDERS: {

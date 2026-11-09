@@ -282,6 +282,139 @@ export const workerClient = {
 
   async validateReferralCode(code: string) {
     return this.fetch(`/api/referrals/validate/${encodeURIComponent(code)}`, {}, false);
+  },
+
+  // Campus Food Ordering & Public Discovery Endpoints
+  async getFoodProducts(params?: { vendorId?: string; categoryId?: string; dietary?: string; search?: string }) {
+    const query = new URLSearchParams();
+    if (params?.vendorId) query.set('vendorId', params.vendorId);
+    if (params?.categoryId) query.set('categoryId', params.categoryId);
+    if (params?.dietary) query.set('dietary', params.dietary);
+    if (params?.search) query.set('search', params.search);
+    const qs = query.toString();
+    return this.fetch(`/api/food/products${qs ? `?${qs}` : ''}`, {}, false);
+  },
+
+  async getFoodProductById(id: string) {
+    return this.fetch(`/api/food/products/${encodeURIComponent(id)}`, {}, false);
+  },
+
+  async getFoodCategories() {
+    return this.fetch('/api/food/categories', {}, false);
+  },
+
+  // Campus Food Ordering & Payment Endpoints
+  async previewFoodOrder(items: Array<{ productId: string; quantity: number; cookingNotes?: string }>, vendorId?: string) {
+    return this.fetch('/api/food/orders/preview', {
+      method: 'POST',
+      body: JSON.stringify({ items, vendorId })
+    }, false);
+  },
+
+  async createFoodOrder(payload: {
+    items: Array<{ productId: string; quantity: number; cookingNotes?: string }>;
+    vendorId: string;
+    paymentMethod: 'ONLINE_UPI' | 'CASH_AT_COUNTER';
+    idempotencyKey?: string;
+    studentName?: string;
+    studentPhone?: string;
+  }) {
+    return this.fetch('/api/food/orders/create', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }, true);
+  },
+
+  async verifyFoodPayment(payload: {
+    orderId: string;
+    providerOrderId: string;
+    providerPaymentId: string;
+    providerSignature?: string;
+  }) {
+    return this.fetch('/api/food/orders/verify-payment', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }, true);
+  },
+
+  async getFoodOrders() {
+    return this.fetch('/api/food/orders', {}, true);
+  },
+
+  async getFoodOrder(id: string) {
+    return this.fetch(`/api/food/orders/${id}`, {}, true);
+  },
+
+  async verifyFoodPickup(id: string, credential: string) {
+    return this.fetch(`/api/food/orders/${id}/verify-pickup`, {
+      method: 'POST',
+      body: JSON.stringify({ credential })
+    }, false);
+  },
+
+  // Vendor Operations & Kitchen Management
+  async getVendorFoodDashboard(vendorId: string) {
+    return this.fetch(`/api/food/vendor/dashboard?vendorId=${encodeURIComponent(vendorId)}`, {}, false);
+  },
+
+  async getVendorFoodOrders(vendorId: string, status = 'all') {
+    return this.fetch(`/api/food/vendor/orders?vendorId=${encodeURIComponent(vendorId)}&status=${encodeURIComponent(status)}`, {}, false);
+  },
+
+  async updateVendorFoodOrderStatus(orderId: string, status: string, vendorId: string) {
+    return this.fetch(`/api/food/vendor/orders/${encodeURIComponent(orderId)}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ status, vendorId })
+    }, false);
+  },
+
+  async getVendorFoodMenu(vendorId: string, mealType = 'all') {
+    return this.fetch(`/api/food/vendor/menu?vendorId=${encodeURIComponent(vendorId)}&mealType=${encodeURIComponent(mealType)}`, {}, false);
+  },
+
+  async createVendorFoodMenuItem(payload: {
+    vendorId: string;
+    name: string;
+    description?: string;
+    price: number;
+    categoryId: string;
+    dietary: 'veg' | 'non-veg' | 'egg';
+    image?: string;
+    stock?: number;
+    mealType?: string;
+  }) {
+    return this.fetch('/api/food/vendor/menu', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }, false);
+  },
+
+  async updateVendorFoodMenuItem(id: string, payload: any) {
+    return this.fetch(`/api/food/vendor/menu/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(payload)
+    }, false);
+  },
+
+  async toggleVendorFoodItemAvailability(id: string, isAvailable: boolean, vendorId: string) {
+    return this.fetch(`/api/food/vendor/menu/${encodeURIComponent(id)}/toggle-availability`, {
+      method: 'PATCH',
+      body: JSON.stringify({ isAvailable, vendorId })
+    }, false);
+  },
+
+  async updateVendorFoodStock(productId: string, newStock: number, vendorId: string, reason?: string) {
+    return this.fetch('/api/food/vendor/inventory/update-stock', {
+      method: 'PATCH',
+      body: JSON.stringify({ productId, newStock, vendorId, reason })
+    }, false);
+  },
+
+  async verifyVendorFoodPickup(credential: string, vendorId: string) {
+    return this.fetch('/api/food/vendor/verify-pickup', {
+      method: 'POST',
+      body: JSON.stringify({ credential, vendorId })
+    }, false);
   }
 };
 

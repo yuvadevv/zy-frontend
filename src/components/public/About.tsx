@@ -7,67 +7,105 @@ import { SectionContainer, SectionHeading } from './SectionContainer';
 import { staggerContainer, fadeInUp } from './animations';
 
 const sections = [
-  { icon: Rocket, title: "Our Mission", text: "To eliminate the friction of campus printing and give students their time back." },
-  { icon: Target, title: "Our Vision", text: "A fully digital, seamless ecosystem connecting every stakeholder in higher education." },
-  { icon: Heart, title: "Our Values", text: "Student-first design, uncompromising speed, and radical affordability." },
-  { icon: Zap, title: "Innovation", text: "We constantly push the boundaries of what campus logistics can look like." },
-  { icon: MapPin, title: "Campus First", text: "Built explicitly for the unique geographic and social layout of colleges." }
+  {
+    icon: Rocket,
+    title: 'Our Mission',
+    text: 'To eliminate the friction of campus logistics and give students their valuable study time back.',
+  },
+  {
+    icon: Target,
+    title: 'Our Vision',
+    text: 'A fully digital, interconnected ecosystem powering printing, food, and transit for colleges.',
+  },
+  {
+    icon: Heart,
+    title: 'Student-First Values',
+    text: 'Transparent pricing, dependable execution, and privacy designed explicitly for campus life.',
+  },
+  {
+    icon: Zap,
+    title: 'Campus Innovation',
+    text: 'Continuously refining automated dispatch and delivery routing across university blocks.',
+  },
+  {
+    icon: MapPin,
+    title: 'Campus Tailored',
+    text: 'Engineered specifically for the physical layout and academic rhythms of colleges.',
+  },
 ];
 
 export function About() {
   return (
-    <SectionContainer id="why-blintzy" className="bg-gray-900 text-white border-b border-gray-800 !py-16">
-      <div className="flex flex-col items-center text-center mb-10 max-w-3xl mx-auto">
-        <motion.span 
-          variants={fadeInUp}
-          className="text-sm font-bold tracking-wider text-orange-500 uppercase bg-orange-500/10 px-3 py-1 rounded-full mb-4"
-        >
-          About BLINTZY
-        </motion.span>
-        <motion.h2 
-          variants={fadeInUp}
-          className="text-3xl md:text-5xl font-extrabold text-white tracking-tight mb-4"
-        >
-          We are rewriting the rules.
-        </motion.h2>
-        <motion.p 
-          variants={fadeInUp}
-          className="text-lg text-gray-400 leading-relaxed"
-        >
-          For too long, campus printing has been stuck in the past. We are here to bring it into the future.
-        </motion.p>
-      </div>
+    <SectionContainer id="about" className="bg-white border-t border-[#EAEAEA]">
+      <SectionHeading
+        badge="About BLINTZY"
+        title="Built by Students, for Modern Campuses."
+        subtitle="For too long, campus printing and services have been stuck in the past. We are building the unified digital infrastructure colleges deserve."
+      />
 
-      <motion.div 
-        variants={staggerContainer}
-        initial="hidden"
-        whileInView="show"
-        viewport={{ once: true, margin: "-100px" }}
-        className="max-w-5xl mx-auto flex flex-col md:flex-row gap-8 items-center"
-      >
-        <motion.div variants={fadeInUp} className="flex-1 space-y-6">
-          <h3 className="text-3xl font-bold text-white mb-6">Built by students, for the campus.</h3>
-          <p className="text-gray-400 leading-relaxed text-lg">
-            BLINTZY started with a simple observation: students were losing countless hours standing in line to print basic assignments. It was inefficient, expensive, and stressful.
+      <div className="max-w-6xl mx-auto flex flex-col lg:flex-row gap-12 items-center">
+        <motion.div
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-80px' }}
+          variants={fadeInUp}
+          className="flex-1 space-y-5"
+        >
+          <div className="inline-block text-xs font-bold text-[#FF6B00] uppercase tracking-wider bg-[#FF6B00]/10 px-3 py-1 rounded-full">
+            Our Story
+          </div>
+          <h3 className="text-2xl md:text-3xl font-extrabold text-[#171717] tracking-tight leading-snug">
+            From crowded campus print shops to one unified screen.
+          </h3>
+          <p className="text-[#737373] leading-relaxed text-sm md:text-base">
+            BLINTZY started with a frustratingly familiar scene: students packed shoulder-to-shoulder in a campus xerox shop before 9 AM, hoping the printer wouldn’t jam before their lab records were due.
           </p>
-          <p className="text-gray-400 leading-relaxed text-lg">
-            We realized that by building a digital bridge between students, classrooms, and existing print vendors, we could modernize the entire ecosystem. No more pen drives. No more exact change. Just tap, print, and receive.
+          <p className="text-[#737373] leading-relaxed text-sm md:text-base">
+            We realized that by building a digital bridge between students, classrooms, and existing print vendors, we could modernize the entire process. No more pen drives. No more exact change disputes. Just tap, print, and receive.
           </p>
+          <div className="pt-2 flex items-center gap-6 text-sm font-semibold text-[#171717]">
+            <div>
+              <span className="block text-2xl font-black text-[#FF6B00]">Digital</span>
+              <span className="text-xs text-[#737373]">Queue Elimination</span>
+            </div>
+            <div className="h-8 w-px bg-[#EAEAEA]" />
+            <div>
+              <span className="block text-2xl font-black text-[#171717]">Direct</span>
+              <span className="text-xs text-[#737373]">Classroom Delivery</span>
+            </div>
+            <div className="h-8 w-px bg-[#EAEAEA]" />
+            <div>
+              <span className="block text-2xl font-black text-[#171717]">Upfront</span>
+              <span className="text-xs text-[#737373]">Transparent Pricing</span>
+            </div>
+          </div>
         </motion.div>
 
-        <motion.div variants={staggerContainer} className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <motion.div
+          variants={staggerContainer}
+          initial="hidden"
+          whileInView="show"
+          viewport={{ once: true, margin: '-80px' }}
+          className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4 w-full"
+        >
           {sections.map((sec, i) => {
             const Icon = sec.icon;
             return (
-              <motion.div key={i} variants={fadeInUp} className={`bg-gray-800 p-6 rounded-2xl border border-gray-700 hover:border-orange-500/50 transition-colors ${i === 4 ? 'sm:col-span-2' : ''}`}>
-                <Icon className="w-8 h-8 text-orange-500 mb-4" />
-                <h4 className="text-lg font-bold text-white mb-2">{sec.title}</h4>
-                <p className="text-gray-400 text-sm leading-relaxed">{sec.text}</p>
+              <motion.div
+                key={i}
+                variants={fadeInUp}
+                className="bg-[#F7F7F5] rounded-2xl p-5 border border-[#EAEAEA] hover:border-[#FF6B00]/30 hover:bg-white hover:shadow-sm transition-all duration-200"
+              >
+                <div className="w-10 h-10 rounded-xl bg-white border border-[#EAEAEA] flex items-center justify-center text-[#FF6B00] mb-3 shadow-xs">
+                  <Icon className="w-5 h-5" />
+                </div>
+                <h4 className="font-bold text-[#171717] text-sm mb-1.5">{sec.title}</h4>
+                <p className="text-xs text-[#737373] leading-relaxed">{sec.text}</p>
               </motion.div>
-            )
+            );
           })}
         </motion.div>
-      </motion.div>
+      </div>
     </SectionContainer>
   );
 }
