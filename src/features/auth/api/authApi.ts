@@ -4,6 +4,18 @@ import { SessionManager } from '@/utils/SessionManager';
 
 const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
 
+function formatAuthNetworkError(errOrMsg?: string, status?: number) {
+  if (
+    typeof window !== 'undefined' &&
+    window.location.hostname !== 'localhost' &&
+    window.location.hostname !== '127.0.0.1' &&
+    (WORKER_URL.includes('localhost') || WORKER_URL.includes('127.0.0.1'))
+  ) {
+    return 'Cloud deployment cannot reach local backend (127.0.0.1:8787). Please test locally at http://localhost:3000/login or configure NEXT_PUBLIC_WORKER_URL in Vercel.';
+  }
+  return errOrMsg || 'Unable to connect to authentication server. Please try again.';
+}
+
 export const authApi = {
   signInWithGoogle: async (nextUrl?: string) => {
     if (typeof window === 'undefined') return { url: null };
@@ -24,21 +36,29 @@ export const authApi = {
   },
 
   signUpWithEmail: async (credentials: SignupFormData) => {
-    const res = await fetch(`${WORKER_URL}/api/auth/signup`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: credentials.email,
-        password: credentials.password,
-        data: {
-          fullName: (credentials as any).fullName,
-          phone: (credentials as any).phone
-        }
-      })
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${WORKER_URL}/api/auth/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: credentials.email,
+          password: credentials.password,
+          data: {
+            fullName: (credentials as any).fullName,
+            phone: (credentials as any).phone
+          }
+        })
+      });
+    } catch (networkErr: any) {
+      throw new Error(formatAuthNetworkError(networkErr?.message));
+    }
 
     const result = await res.json().catch(() => ({ error: 'Failed to parse response' }));
     if (!res.ok) {
+      if (res.status === 503 || result.error === 'Failed to parse response') {
+        throw new Error(formatAuthNetworkError(result.error?.message || result.error, res.status));
+      }
       const msg = result.error?.message || result.error || 'Failed to sign up';
       throw new Error(msg);
     }
@@ -63,18 +83,26 @@ export const authApi = {
   },
 
   signInWithEmail: async (credentials: LoginFormData) => {
-    const res = await fetch(`${WORKER_URL}/api/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        email: (credentials as any).email || (credentials as any).username,
-        username: (credentials as any).username,
-        password: credentials.password
-      })
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${WORKER_URL}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: (credentials as any).email || (credentials as any).username,
+          username: (credentials as any).username,
+          password: credentials.password
+        })
+      });
+    } catch (networkErr: any) {
+      throw new Error(formatAuthNetworkError(networkErr?.message));
+    }
 
     const result = await res.json().catch(() => ({ error: 'Failed to parse response' }));
     if (!res.ok) {
+      if (res.status === 503 || result.error === 'Failed to parse response') {
+        throw new Error(formatAuthNetworkError(result.error?.message || result.error, res.status));
+      }
       const msg = result.error?.message || result.error || 'Invalid login credentials';
       throw new Error(msg);
     }
