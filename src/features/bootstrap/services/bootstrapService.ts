@@ -47,12 +47,12 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
     };
   } catch (err) {
     console.warn('Failed to fetch platform status (fallback active):', err);
-    // Fallback if worker is completely down
+    // Fallback if worker is temporarily unreachable (do not falsely lock users out of public pages)
     return {
       success: false,
       data: {
-        maintenance: true,
-        maintenance_message: "Platform is temporarily unavailable.",
+        maintenance: false,
+        maintenance_message: "",
         coming_soon: false,
         minimum_version: "1.0.0",
         latest_version: "1.0.0",
