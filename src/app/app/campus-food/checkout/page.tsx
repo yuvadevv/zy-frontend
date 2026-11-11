@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { 
   ChevronLeft, 
   Store, 
@@ -14,7 +15,14 @@ import {
   User,
   MapPin,
   Sparkles,
-  Loader2
+  Loader2,
+  Lock,
+  Building2,
+  GraduationCap,
+  Calendar,
+  Layers,
+  Hash,
+  ExternalLink
 } from 'lucide-react';
 import { useFoodCart } from '@/features/food/store/useFoodCart';
 import { useStudent } from '@/features/student/providers/StudentProvider';
@@ -43,13 +51,12 @@ export default function FoodCheckoutPage() {
   const router = useRouter();
   const { 
     items, 
-    vendorId,
-    vendorName, 
-    counterLocation, 
     getSubtotal, 
     getGrandTotal,
+    getVendorGroups,
     setActiveOrder,
-    placeOrder 
+    placeOrder,
+    clearCart
   } = useFoodCart();
 
   const { profile, academicRecord } = useStudent();
@@ -74,11 +81,18 @@ export default function FoodCheckoutPage() {
     }
   }, [items, router]);
 
-  // Student info resolution
-  const rawName = profile?.full_name || user?.user_metadata?.full_name || user?.user_metadata?.name || '';
+  // Part 5: Student Details strictly read-only from authenticated student profile / DB
+  const rawName = profile?.full_name || (user as any)?.user_metadata?.full_name || (user as any)?.user_metadata?.name || '';
   const studentName = cleanStudentName(rawName, user?.email);
-  const collegeName = academicRecord?.colleges?.name || 'Ramachandra College of Engineering';
-  const phoneNumber = profile?.phone_number || (user as any)?.phone || user?.user_metadata?.phone || user?.user_metadata?.phone_number || '';
+  const phoneNumber = profile?.phone_number || (user as any)?.phone || (user as any)?.user_metadata?.phone || (user as any)?.user_metadata?.phone_number || '';
+  const rollNumber = academicRecord?.roll_number || (user as any)?.user_metadata?.roll_number || '';
+  const branchName = academicRecord?.branches?.name || (user as any)?.user_metadata?.branch || '';
+  const academicYear = academicRecord?.academic_years?.name || (academicRecord?.academic_years as any)?.label || (user as any)?.user_metadata?.academic_year || '';
+  const sectionName = academicRecord?.sections?.name || (user as any)?.user_metadata?.section || '';
+
+  const hasMissingProfileFields = !studentName || !phoneNumber || !rollNumber || !branchName;
+
+  const vendorGroups = getVendorGroups();
 
   // 1. Authoritative Backend Pricing Preview Check
   useEffect(() => {
@@ -94,7 +108,7 @@ export default function FoodCheckoutPage() {
           cookingNotes: i.notes,
         }));
 
-        const res = await workerClient.previewFoodOrder(payload, vendorId || undefined);
+        const res = await workerClient.previewFoodOrder(payload);
         const previewData = res.data || res;
         if (isMounted && previewData.grandTotal !== undefined) {
           setVerifiedTotal(previewData.grandTotal);
@@ -111,7 +125,7 @@ export default function FoodCheckoutPage() {
     return () => {
       isMounted = false;
     };
-  }, [items, vendorId]);
+  }, [items]);
 
   const clientSubtotal = getSubtotal();
   const displayTotal = verifiedTotal ?? getGrandTotal();
@@ -134,27 +148,35 @@ export default function FoodCheckoutPage() {
       // Step 1: Create Order on Backend (Authoritative Server Pricing + Idempotency)
       const createRes = await workerClient.createFoodOrder({
         items: itemsPayload,
-        vendorId: vendorId || items[0]?.product?.vendorId || 'vendor_canteen_stall',
         paymentMethod,
         idempotencyKey: idempotencyKeyRef.current,
         studentName,
         studentPhone: phoneNumber,
       });
 
-      const orderData = createRes.data?.order || createRes.order;
-      if (!orderData) {
+      const resData = createRes.data || createRes;
+      const orderData = resData.order || resData.orders?.[0];
+      const checkoutData = resData.checkout;
+
+      if (!orderData && !checkoutData) {
         throw new Error(createRes.error?.message || 'Failed to initialize food order.');
       }
 
+      // Clear cart from local state
+      clearCart();
+
+      // Target redirect route
+      const destinationId = checkoutData?.id || orderData?.id || orderData?.order_number || orderData?.orderNumber;
+
       // Case A: Pay at Counter (CASH_AT_COUNTER)
-      if (paymentMethod === 'CASH_AT_COUNTER' || !createRes.data?.requiresPayment) {
-        setActiveOrder(orderData);
-        router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(orderData.id || orderData.order_number || orderData.orderNumber));
+      if (paymentMethod === 'CASH_AT_COUNTER' || !resData.requiresPayment) {
+        if (orderData) setActiveOrder(orderData);
+        router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
         return;
       }
 
       // Case B: Pay Online (ONLINE_UPI)
-      const paymentInfo = createRes.data?.payment || createRes.payment;
+      const paymentInfo = resData.payment;
 
       if (!paymentInfo) {
         throw new Error('Payment gateway order information missing from server response.');
@@ -162,11 +184,11 @@ export default function FoodCheckoutPage() {
 
       // Subcase B1: Development Mock Mode
       if (paymentInfo.keyId === 'mock_key') {
-        // Simulate gateway verification
-        await new Promise((resolve) => setTimeout(resolve, 800));
+        await new Promise((resolve) => setTimeout(resolve, 600));
 
         await workerClient.verifyFoodPayment({
-          orderId: orderData.id,
+          checkoutId: checkoutData?.id,
+          orderId: orderData?.id,
           providerOrderId: paymentInfo.providerOrderId,
           providerPaymentId: `mock_pay_${Date.now()}`,
         });
@@ -177,8 +199,8 @@ export default function FoodCheckoutPage() {
           paymentStatus: 'PAID',
         };
 
-        setActiveOrder(verifiedOrder);
-        router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(orderData.id || orderData.order_number || orderData.orderNumber));
+        if (verifiedOrder) setActiveOrder(verifiedOrder);
+        router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
         return;
       }
 
@@ -190,16 +212,17 @@ export default function FoodCheckoutPage() {
 
       const options = {
         key: paymentInfo.keyId,
-        amount: paymentInfo.amount * 100, // paise
+        amount: Math.round(paymentInfo.amount * 100), // paise
         currency: paymentInfo.currency || 'INR',
-        name: 'BLINTZY Food',
-        description: `Campus Dining Pickup - Token Order`,
+        name: 'BLINTZY Campus Food',
+        description: `Campus Dining Pickup Order - ${checkoutData?.checkoutNumber || 'Unified Checkout'}`,
         order_id: paymentInfo.providerOrderId,
         handler: async function (response: any) {
           try {
             // Strictly verify signature on server before confirming order
             await workerClient.verifyFoodPayment({
-              orderId: orderData.id,
+              checkoutId: checkoutData?.id,
+              orderId: orderData?.id,
               providerOrderId: paymentInfo.providerOrderId,
               providerPaymentId: response.razorpay_payment_id,
               providerSignature: response.razorpay_signature,
@@ -211,8 +234,8 @@ export default function FoodCheckoutPage() {
               paymentStatus: 'PAID',
             };
 
-            setActiveOrder(verifiedOrder);
-            router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(orderData.id || orderData.order_number || orderData.orderNumber));
+            if (verifiedOrder) setActiveOrder(verifiedOrder);
+            router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
           } catch (verifyErr: any) {
             console.error('Server signature verification failed:', verifyErr);
             setErrorMessage('Payment was received, but server signature verification failed. Please show your UPI confirmation at the counter.');
@@ -230,7 +253,7 @@ export default function FoodCheckoutPage() {
         },
         modal: {
           ondismiss: function () {
-            setErrorMessage('Payment was cancelled. Your cart items are preserved, you can retry whenever you are ready.');
+            setErrorMessage('Payment was cancelled. Your order remains pending, you can retry anytime.');
             setIsSubmitting(false);
             isRequestInFlight.current = false;
           },
@@ -247,13 +270,6 @@ export default function FoodCheckoutPage() {
       rzp.open();
     } catch (err: any) {
       console.error('Order Submission Error:', err);
-      // Fallback local placement if offline test
-      if (err.message && err.message.includes('fetch')) {
-        const fallbackOrder = placeOrder(paymentMethod);
-        setActiveOrder(fallbackOrder);
-        router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(fallbackOrder.orderId || fallbackOrder.tokenNumber));
-        return;
-      }
       setErrorMessage(err.message || 'Failed to place food order. Please try again.');
       setIsSubmitting(false);
       isRequestInFlight.current = false;
@@ -281,7 +297,7 @@ export default function FoodCheckoutPage() {
               Order Checkout
             </h1>
             <span className="text-[10.5px] font-bold text-gray-400">
-              Verified Campus Dining Counter
+              Verified Campus Food Collection
             </span>
           </div>
         </div>
@@ -299,199 +315,249 @@ export default function FoodCheckoutPage() {
 
       {/* 2. BODY CONTENT */}
       <div className="flex flex-col gap-4 pt-3">
-        {/* Counter Pickup Context Card */}
-        <section className="p-4 rounded-2xl bg-orange-50/80 border border-orange-200/90 shadow-2xs flex flex-col gap-2.5">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-[#FF6B00] text-white flex items-center justify-center shadow-2xs shrink-0">
-                <Store className="w-4 h-4 stroke-[2.2]" />
-              </div>
-              <div className="flex flex-col leading-tight min-w-0">
-                <span className="text-xs font-black text-[#151515] truncate">
-                  {vendorName || 'Campus Food Counter'}
-                </span>
-                <span className="text-[11px] font-bold text-orange-950 truncate">
-                  {counterLocation || 'Main Canteen Counter'}
-                </span>
-              </div>
-            </div>
-
-            <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-white text-[#FF6B00] border border-orange-300 shadow-2xs">
-              Token Pickup
+        {/* Multi-Counter Context Cards (Part 3) */}
+        <section className="flex flex-col gap-2.5">
+          <div className="flex items-center justify-between px-0.5">
+            <span className="text-[11px] font-black uppercase tracking-wider text-gray-500">
+              Counters for this Order ({vendorGroups.length})
+            </span>
+            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              Direct Pickup
             </span>
           </div>
 
-          <div className="pt-2.5 border-t border-orange-200/70 flex items-center justify-between text-[11px] text-gray-700 font-medium">
-            <div className="flex items-center gap-1.5">
-              <Clock className="w-3.5 h-3.5 text-[#FF6B00]" />
-              <span>Prep Time: ~10-15 mins</span>
-            </div>
-            <div className="flex items-center gap-1.5 text-emerald-700 font-bold">
-              <ShieldCheck className="w-3.5 h-3.5" />
-              <span>Verified Kitchen</span>
-            </div>
-          </div>
-        </section>
-
-        {/* Student Pickup Identity */}
-        <section className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200/80 shadow-2xs flex flex-col gap-2">
-          <div className="flex items-center justify-between text-xs pb-1 border-b border-gray-200/60">
-            <div className="flex items-center gap-1.5 font-bold text-gray-700">
-              <User className="w-3.5 h-3.5 text-[#FF6B00]" />
-              <span>Student Details</span>
-            </div>
-            <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.2 rounded border border-emerald-200">
-              Authenticated Student
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-xs">
-            <span className="font-black text-[#151515]">{studentName}</span>
-            <span className="text-gray-500 font-medium">{phoneNumber || 'Campus Student'}</span>
-          </div>
-
-          <div className="flex items-center gap-1 text-[10.5px] text-gray-500 font-medium">
-            <MapPin className="w-3 h-3 text-[#FF6B00] shrink-0" />
-            <span className="truncate">{collegeName}</span>
-          </div>
-        </section>
-
-        {/* Order Items Review */}
-        <section className="p-3.5 rounded-2xl bg-white border border-gray-150 shadow-2xs flex flex-col gap-2.5">
-          <div className="flex items-center justify-between pb-1.5 border-b border-gray-100">
-            <span className="text-[11px] font-black uppercase tracking-wider text-gray-700">
-              Order Items ({items.length})
-            </span>
-            <button
-              onClick={() => router.push(APP_ROUTES.FOOD.CART)}
-              className="text-[11px] font-bold text-[#FF6B00] hover:underline cursor-pointer"
-            >
-              Edit Cart
-            </button>
-          </div>
-
-          <div className="flex flex-col divide-y divide-gray-100">
-            {items.map((item) => (
-              <div key={item.id} className="py-2 flex items-center justify-between text-xs gap-2">
-                <div className="flex items-center gap-2 min-w-0">
-                  <DietaryBadge type={item.product.dietary} size="sm" />
-                  <div className="flex flex-col min-w-0">
-                    <span className="font-extrabold text-[#151515] truncate">
-                      {item.quantity}x {item.product.name}
+          <div className="flex flex-col gap-2">
+            {vendorGroups.map((group) => (
+              <div 
+                key={group.vendorId}
+                className="p-3.5 rounded-2xl bg-orange-50/80 border border-orange-200/90 shadow-2xs flex items-center justify-between gap-2"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-[#FF6B00] text-white flex items-center justify-center shadow-2xs shrink-0">
+                    <Store className="w-4 h-4 stroke-[2.2]" />
+                  </div>
+                  <div className="flex flex-col leading-tight min-w-0">
+                    <span className="text-xs font-black text-[#151515] truncate">
+                      {group.vendorName}
                     </span>
-                    {item.notes && (
-                      <span className="text-[10px] text-gray-400 italic truncate">
-                        "{item.notes}"
-                      </span>
-                    )}
+                    <span className="text-[10.5px] font-bold text-orange-950 truncate">
+                      {group.counterLocation}
+                    </span>
                   </div>
                 </div>
-                <span className="font-black text-[#151515] shrink-0">
-                  ₹{item.totalPrice}
-                </span>
+
+                <div className="flex flex-col items-end shrink-0">
+                  <span className="text-xs font-black text-[#151515]">
+                    ₹{group.subtotal}
+                  </span>
+                  <span className="text-[10px] font-semibold text-gray-500">
+                    {group.items.length} {group.items.length === 1 ? 'dish' : 'dishes'}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
+
+          <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-200/70 text-[10.5px] text-gray-600 flex items-center gap-1.5 font-medium">
+            <Clock className="w-3.5 h-3.5 text-[#FF6B00] shrink-0" />
+            <span>Separate tokens will be generated for each counter for fast, zero-confusion collection.</span>
+          </div>
         </section>
 
-        {/* Payment Method Selector */}
-        <section className="p-3.5 rounded-2xl bg-white border border-gray-150 shadow-2xs flex flex-col gap-2.5">
-          <div className="flex items-center justify-between">
-            <span className="text-[11px] font-black uppercase tracking-wider text-gray-700">
-              Select Payment Method
-            </span>
-            <span className="text-[10px] font-bold text-gray-400">
-              Server-Verified Security
+        {/* Part 5: Authenticated Student Information (6 Verified Read-Only Fields) */}
+        <section className="p-4 rounded-2xl bg-white border border-gray-200 shadow-2xs flex flex-col gap-3">
+          <div className="flex items-center justify-between pb-2 border-b border-gray-150">
+            <div className="flex items-center gap-1.5 font-black text-xs text-[#151515]">
+              <User className="w-4 h-4 text-[#FF6B00]" />
+              <span>Student Identity (Read-Only)</span>
+            </div>
+            <span className="inline-flex items-center gap-1 text-[9.5px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+              <Lock className="w-2.5 h-2.5" />
+              <span>Database Verified</span>
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-2.5">
-            {/* Online UPI */}
+          {/* Missing fields guidance notice */}
+          {hasMissingProfileFields && (
+            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                <span>Some academic profile fields are incomplete.</span>
+              </div>
+              <Link 
+                href="/app/profile" 
+                className="font-bold text-[#FF6B00] hover:underline shrink-0 flex items-center gap-0.5"
+              >
+                <span>Edit Profile</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
+            </div>
+          )}
+
+          {/* 6 Grid Fields */}
+          <div className="grid grid-cols-2 gap-2.5 text-xs">
+            {/* 1. Full Student Name */}
+            <div className="flex flex-col p-2.5 rounded-xl bg-gray-50 border border-gray-200/70">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Full Name
+              </span>
+              <span className="font-extrabold text-[#151515] mt-0.5 truncate">
+                {studentName || 'Campus Student'}
+              </span>
+            </div>
+
+            {/* 2. Registered Mobile Number */}
+            <div className="flex flex-col p-2.5 rounded-xl bg-gray-50 border border-gray-200/70">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">
+                Registered Mobile
+              </span>
+              <span className="font-extrabold text-[#151515] mt-0.5 truncate">
+                {phoneNumber || 'Not configured'}
+              </span>
+            </div>
+
+            {/* 3. Roll Number */}
+            <div className="flex flex-col p-2.5 rounded-xl bg-gray-50 border border-gray-200/70">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                <Hash className="w-2.5 h-2.5" />
+                <span>Roll Number</span>
+              </span>
+              <span className="font-extrabold text-[#151515] mt-0.5 truncate">
+                {rollNumber || 'Not specified'}
+              </span>
+            </div>
+
+            {/* 4. Branch */}
+            <div className="flex flex-col p-2.5 rounded-xl bg-gray-50 border border-gray-200/70">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                <Building2 className="w-2.5 h-2.5" />
+                <span>Branch</span>
+              </span>
+              <span className="font-extrabold text-[#151515] mt-0.5 truncate">
+                {branchName || 'Not specified'}
+              </span>
+            </div>
+
+            {/* 5. Academic Year / Class */}
+            <div className="flex flex-col p-2.5 rounded-xl bg-gray-50 border border-gray-200/70">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                <Calendar className="w-2.5 h-2.5" />
+                <span>Academic Year</span>
+              </span>
+              <span className="font-extrabold text-[#151515] mt-0.5 truncate">
+                {academicYear || 'Current Year'}
+              </span>
+            </div>
+
+            {/* 6. Section */}
+            <div className="flex flex-col p-2.5 rounded-xl bg-gray-50 border border-gray-200/70">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider flex items-center gap-1">
+                <Layers className="w-2.5 h-2.5" />
+                <span>Section</span>
+              </span>
+              <span className="font-extrabold text-[#151515] mt-0.5 truncate">
+                {sectionName || 'General'}
+              </span>
+            </div>
+          </div>
+        </section>
+
+        {/* 3. Payment Method Selection (Part 4) */}
+        <section className="flex flex-col gap-2.5">
+          <span className="text-[11px] font-black uppercase tracking-wider text-gray-500 px-0.5">
+            Select Payment Method
+          </span>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            {/* Option A: Online UPI (Recommended) */}
             <button
               type="button"
               onClick={() => setPaymentMethod('ONLINE_UPI')}
-              className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition cursor-pointer ${
+              className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
                 paymentMethod === 'ONLINE_UPI'
-                  ? 'border-[#FF6B00] bg-orange-50/60 ring-2 ring-[#FF6B00]/20'
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
+                  ? 'bg-orange-50/90 border-[#FF6B00] shadow-2xs ring-1 ring-[#FF6B00]'
+                  : 'bg-white border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="flex items-center justify-between">
-                <CreditCard className="w-4 h-4 text-[#FF6B00]" />
-                {paymentMethod === 'ONLINE_UPI' && (
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B00]" />
-                )}
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                paymentMethod === 'ONLINE_UPI'
+                  ? 'bg-[#FF6B00] text-white shadow-2xs'
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
+                <CreditCard className="w-4 h-4 stroke-[2.2]" />
               </div>
-              <span className="font-black text-xs text-[#151515]">Pay Online (UPI)</span>
-              <span className="text-[10px] text-gray-500 font-medium">GPay / PhonePe / QR</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-[#151515]">
+                    Pay Online (Instant UPI)
+                  </span>
+                  <span className="text-[9px] font-black uppercase tracking-wider px-1.5 py-0.2 rounded bg-[#FF6B00] text-white">
+                    Instant
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-gray-500 font-medium mt-0.5 leading-snug">
+                  GPay, PhonePe, Paytm or UPI Apps. Single combined payment for all counters.
+                </p>
+              </div>
             </button>
 
-            {/* Pay at Counter */}
+            {/* Option B: Pay Cash at Counter */}
             <button
               type="button"
               onClick={() => setPaymentMethod('CASH_AT_COUNTER')}
-              className={`p-3 rounded-xl border text-left flex flex-col gap-1 transition cursor-pointer ${
+              className={`p-3.5 rounded-2xl border text-left transition-all flex items-start gap-3 cursor-pointer ${
                 paymentMethod === 'CASH_AT_COUNTER'
-                  ? 'border-[#FF6B00] bg-orange-50/60 ring-2 ring-[#FF6B00]/20'
-                  : 'border-gray-200 bg-white hover:bg-gray-50'
+                  ? 'bg-orange-50/90 border-[#FF6B00] shadow-2xs ring-1 ring-[#FF6B00]'
+                  : 'bg-white border-gray-200 hover:border-gray-300'
               }`}
             >
-              <div className="flex items-center justify-between">
-                <Banknote className="w-4 h-4 text-[#FF6B00]" />
-                {paymentMethod === 'CASH_AT_COUNTER' && (
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#FF6B00]" />
-                )}
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 ${
+                paymentMethod === 'CASH_AT_COUNTER'
+                  ? 'bg-[#FF6B00] text-white shadow-2xs'
+                  : 'bg-gray-100 text-gray-500'
+              }`}>
+                <Banknote className="w-4 h-4 stroke-[2.2]" />
               </div>
-              <span className="font-black text-xs text-[#151515]">Pay at Counter</span>
-              <span className="text-[10px] text-gray-500 font-medium">Cash / UPI on pickup</span>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black text-[#151515]">
+                    Pay at Counter (Cash/POS)
+                  </span>
+                </div>
+                <p className="text-[10.5px] text-gray-500 font-medium mt-0.5 leading-snug">
+                  Pay directly to staff upon pickup. Token marked paid upon staff confirmation.
+                </p>
+              </div>
             </button>
-          </div>
-
-          {/* Payment Method Details Note */}
-          <div className="p-2.5 rounded-xl bg-gray-50 border border-gray-150 text-[11px] text-gray-600 leading-relaxed font-medium">
-            {paymentMethod === 'ONLINE_UPI' ? (
-              <p>
-                🔒 <strong>Online UPI:</strong> Pay instantly via any UPI app. Token is generated and sent directly to kitchen display upon server signature verification.
-              </p>
-            ) : (
-              <p>
-                💵 <strong>Pay at Counter:</strong> Order token is generated immediately. Pay with cash or UPI at the canteen counter when collecting your food.
-              </p>
-            )}
           </div>
         </section>
 
-        {/* Bill Summary */}
-        <section className="p-3.5 rounded-2xl bg-gray-50 border border-gray-200/80 shadow-2xs flex flex-col gap-2 text-xs">
-          <div className="flex items-center justify-between text-gray-600">
-            <span>Items Subtotal</span>
-            <span className="font-bold text-gray-900">
-              ₹{clientSubtotal}
-            </span>
-          </div>
-
-          <div className="flex items-center justify-between text-gray-600">
-            <span>Counter Pickup</span>
-            <span className="font-bold text-emerald-600">FREE</span>
-          </div>
-
-          <div className="pt-2 border-t border-gray-200 flex items-center justify-between font-black text-sm text-[#151515]">
+        {/* 4. Order Summary Card */}
+        <section className="p-4 rounded-2xl bg-white border border-gray-200 shadow-2xs flex flex-col gap-2.5">
+          <div className="flex items-center justify-between text-xs pb-2 border-b border-gray-150">
+            <span className="font-black text-[#151515]">Total Payable</span>
             <div className="flex items-center gap-1.5">
-              <span>Total Payable Amount</span>
               {isCalculatingPreview && (
                 <Loader2 className="w-3 h-3 text-[#FF6B00] animate-spin" />
               )}
+              <span className="text-base font-black text-[#151515]">
+                ₹{displayTotal}
+              </span>
             </div>
-            <span className="text-[#FF6B00] text-base">₹{displayTotal}</span>
+          </div>
+
+          <div className="flex items-center justify-between text-[11px] text-gray-500 font-medium">
+            <span>Items Count: {items.length}</span>
+            <span>Platform & Delivery Fee: ₹0</span>
           </div>
         </section>
       </div>
 
-      {/* 3. STICKY BOTTOM CONFIRMATION BUTTON */}
+      {/* 5. STICKY BOTTOM ACTION BAR */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] p-3.5 bg-white/95 backdrop-blur-xl border-t border-gray-200/90 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] z-40 flex items-center justify-between gap-3">
         <div className="flex flex-col">
           <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none">
-            Final Payable
+            {paymentMethod === 'ONLINE_UPI' ? 'Pay Online' : 'Pay at Counter'}
           </span>
           <span className="text-xl sm:text-2xl font-black text-[#151515] tracking-tight mt-0.5">
             ₹{displayTotal}
@@ -500,19 +566,17 @@ export default function FoodCheckoutPage() {
 
         <button
           onClick={handleConfirmOrder}
-          disabled={isSubmitting}
-          className="flex-1 py-3.5 px-5 rounded-2xl bg-[#FF6B00] hover:bg-orange-600 active:scale-98 transition-all text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-md shadow-orange-500/30 cursor-pointer disabled:opacity-60"
+          disabled={isSubmitting || items.length === 0}
+          className="flex-1 max-w-[240px] py-3.5 px-5 rounded-2xl bg-[#FF6B00] hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-white text-xs sm:text-sm font-black shadow-md shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer"
         >
           {isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
-              <span>Securing Order Token...</span>
+              <span>Processing...</span>
             </>
           ) : (
             <>
-              <span>
-                {paymentMethod === 'ONLINE_UPI' ? 'Pay Online & Confirm' : 'Confirm & Generate Token'}
-              </span>
+              <span>{paymentMethod === 'ONLINE_UPI' ? 'Pay & Place Order' : 'Confirm Order'}</span>
               <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             </>
           )}

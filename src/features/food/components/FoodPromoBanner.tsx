@@ -28,7 +28,7 @@ export const FoodPromoBanner: React.FC = () => {
               <span>Campus Specials</span>
             </span>
             <span className="text-[10px] font-bold text-orange-300">
-              Zero Queue Ordering
+              Fast Counter Pickup
             </span>
           </div>
 

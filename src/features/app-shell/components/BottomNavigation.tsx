@@ -9,13 +9,34 @@ import { useNotifications } from '@/features/notifications/providers/Notificatio
 
 export function BottomNavigation() {
   const pathname = usePathname();
-  const tabs = Object.values(APP_ROUTES);
+  const rawTabs = Object.values(APP_ROUTES);
   const { unreadCount } = useNotifications();
+
+  const isFoodSection = pathname.startsWith('/app/campus-food');
+
+  // Compute tabs with contextual routing for Food vs Academic/Print
+  const tabs = rawTabs.map((tab) => {
+    if (isFoodSection) {
+      if (tab.path === '/app/orders') {
+        return { ...tab, path: '/app/campus-food/orders' };
+      }
+      if (tab.path === '/app/home') {
+        return { ...tab, path: '/app/campus-food' };
+      }
+    }
+    return tab;
+  });
 
   // Helper to accurately resolve active destination including nested sub-routes
   const getIsActive = (tabPath: string) => {
+    if (tabPath === '/app/campus-food/orders') {
+      return pathname.startsWith('/app/campus-food/orders');
+    }
     if (tabPath === '/app/orders') {
-      return pathname.startsWith('/app/orders');
+      return pathname.startsWith('/app/orders') && !pathname.startsWith('/app/campus-food/orders');
+    }
+    if (tabPath === '/app/campus-food') {
+      return pathname.startsWith('/app/campus-food') && !pathname.startsWith('/app/campus-food/orders');
     }
     if (tabPath === '/app/notifications') {
       return pathname.startsWith('/app/notifications');
@@ -27,12 +48,12 @@ export function BottomNavigation() {
       return (
         pathname === '/app/home' ||
         pathname.startsWith('/app/services') ||
-        pathname.startsWith('/app/campus-food') ||
         pathname.startsWith('/app/offers') ||
         pathname.startsWith('/app/campus-fest') ||
         pathname.startsWith('/app/refer') ||
         pathname.startsWith('/app/leaderboard') ||
         (!pathname.startsWith('/app/orders') &&
+         !pathname.startsWith('/app/campus-food') &&
          !pathname.startsWith('/app/notifications') &&
          !pathname.startsWith('/app/profile'))
       );

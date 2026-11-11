@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-import { FoodProduct, FoodCartItem, FoodOrder, FoodPaymentMethod, CustomizationOption } from '../types';
+import { FoodProduct, FoodCartItem, FoodOrder, FoodPaymentMethod, CustomizationOption, FoodVendorGroup } from '../types';
 
 interface FoodCartState {
   items: FoodCartItem[];
@@ -10,7 +10,7 @@ interface FoodCartState {
   vendorName: string | null;
   counterLocation: string | null;
 
-  // Conflict modal state when student adds an item from a different vendor
+  // Conflict modal state (deprecated/no-op in unified multi-counter cart)
   conflictItem: FoodProduct | null;
   isConflictModalOpen: boolean;
 
@@ -39,6 +39,7 @@ interface FoodCartState {
   getTotalCount: () => number;
   getSubtotal: () => number;
   getGrandTotal: () => number;
+  getVendorGroups: () => FoodVendorGroup[];
 }
 
 export const useFoodCart = create<FoodCartState>()(
@@ -55,16 +56,7 @@ export const useFoodCart = create<FoodCartState>()(
       orderHistory: [],
 
       addItem: (product, quantity = 1, selectedOptions, notes) => {
-        const { items, vendorId } = get();
-
-        // 1. If cart has items from another vendor, trigger conflict modal
-        if (items.length > 0 && vendorId && vendorId !== product.vendorId) {
-          set({
-            conflictItem: product,
-            isConflictModalOpen: true,
-          });
-          return;
-        }
+        const { items } = get();
 
         // Calculate unit price with options
         let extraOptionsPrice = 0;
@@ -108,41 +100,17 @@ export const useFoodCart = create<FoodCartState>()(
           vendorId: product.vendorId,
           vendorName: product.vendorName,
           counterLocation: product.counterLocation,
+          isConflictModalOpen: false,
+          conflictItem: null,
         });
       },
 
       confirmVendorSwitch: () => {
-        const { conflictItem } = get();
-        if (!conflictItem) {
-          set({ isConflictModalOpen: false, conflictItem: null });
-          return;
-        }
-
-        const unitPrice = conflictItem.price;
-        const newItem: FoodCartItem = {
-          id: `${conflictItem.id}`,
-          productId: conflictItem.id,
-          product: conflictItem,
-          quantity: 1,
-          unitPrice,
-          totalPrice: unitPrice,
-        };
-
-        set({
-          items: [newItem],
-          vendorId: conflictItem.vendorId,
-          vendorName: conflictItem.vendorName,
-          counterLocation: conflictItem.counterLocation,
-          conflictItem: null,
-          isConflictModalOpen: false,
-        });
+        set({ isConflictModalOpen: false, conflictItem: null });
       },
 
       cancelVendorSwitch: () => {
-        set({
-          conflictItem: null,
-          isConflictModalOpen: false,
-        });
+        set({ isConflictModalOpen: false, conflictItem: null });
       },
 
       updateQuantity: (cartItemId, newQuantity) => {
@@ -198,11 +166,10 @@ export const useFoodCart = create<FoodCartState>()(
       placeOrder: (paymentMethod) => {
         const { items, vendorId, vendorName, counterLocation, orderHistory } = get();
         const subtotal = items.reduce((sum, item) => sum + item.totalPrice, 0);
-        const platformFee = 0; // Direct campus counter pickup - zero extra fees
-        const tax = 0; // Authentic campus dining prices are all-inclusive
+        const platformFee = 0;
+        const tax = 0;
         const grandTotal = subtotal;
 
-        // Generate counter pickup token like #F-108
         const randomNum = Math.floor(100 + Math.random() * 900);
         const tokenNumber = `#F-${randomNum}`;
         const orderId = `BLZ-FOOD-${Date.now().toString().slice(-6)}`;
@@ -275,6 +242,33 @@ export const useFoodCart = create<FoodCartState>()(
 
       getGrandTotal: () => {
         return get().getSubtotal();
+      },
+
+      getVendorGroups: () => {
+        const { items } = get();
+        const groupsMap = new Map<string, FoodVendorGroup>();
+
+        for (const item of items) {
+          const vId = item.product.vendorId || 'vendor_canteen_stall';
+          const vName = item.product.vendorName || (vId === 'vendor_college_mess' ? 'College Mess Dining' : 'Campus Canteen Stall');
+          const vLocation = item.product.counterLocation || (vId === 'vendor_college_mess' ? 'Dining Hall Counter' : 'Counter 1 (Main Food Court)');
+
+          if (!groupsMap.has(vId)) {
+            groupsMap.set(vId, {
+              vendorId: vId,
+              vendorName: vName,
+              counterLocation: vLocation,
+              items: [],
+              subtotal: 0,
+            });
+          }
+
+          const group = groupsMap.get(vId)!;
+          group.items.push(item);
+          group.subtotal += item.totalPrice;
+        }
+
+        return Array.from(groupsMap.values());
       },
     }),
     {

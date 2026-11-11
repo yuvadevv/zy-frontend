@@ -69,6 +69,7 @@ export default function FoodProductDetailPage() {
   // Cart store
   const { 
     addItem, 
+    updateQuantity,
     getItemQuantity, 
     getTotalCount, 
     openCartDrawer 
@@ -301,8 +302,8 @@ export default function FoodProductDetailPage() {
               <span>~10-15 mins pickup</span>
             </div>
             <div className="flex items-center gap-1">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Campus Hygiene Verified</span>
+              <Store className="w-3.5 h-3.5 text-emerald-600" />
+              <span>Direct Counter Collection</span>
             </div>
           </div>
         </div>
@@ -364,72 +365,87 @@ export default function FoodProductDetailPage() {
             />
           </div>
         )}
-
-        {/* Existing in-cart summary notification */}
-        {existingCartQty > 0 && (
-          <div className="p-3 rounded-xl bg-orange-50/80 border border-orange-200/70 flex items-center justify-between text-xs">
-            <div className="flex items-center gap-1.5 text-gray-700 font-bold">
-              <Check className="w-4 h-4 text-[#FF6B00] stroke-[2.5]" />
-              <span>{existingCartQty} already in your cart</span>
-            </div>
-            <button
-              onClick={() => router.push(APP_ROUTES.FOOD.CART)}
-              className="text-[#FF6B00] font-black hover:underline cursor-pointer"
-            >
-              View Cart →
-            </button>
-          </div>
-        )}
       </div>
 
       {/* ======================================================== */}
-      {/* 8. STICKY BOTTOM ADD TO CART ACTION BAR                   */}
+      {/* 8. STICKY BOTTOM ACTION BAR (Part 7 Consistent Design)   */}
       {/* ======================================================== */}
       <div className="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[430px] p-3.5 bg-white/95 backdrop-blur-xl border-t border-gray-200/90 shadow-[0_-8px_24px_rgba(0,0,0,0.06)] z-40 flex items-center justify-between gap-3">
-        {/* Calculated Amount */}
-        <div className="flex flex-col">
-          <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none">
-            Total Amount
-          </span>
-          <span className="text-xl sm:text-2xl font-black text-[#151515] tracking-tight mt-0.5">
-            ₹{calculatedTotal}
-          </span>
-        </div>
-
-        {/* Add to Cart CTA Button */}
-        {product.isAvailable ? (
-          <button
-            onClick={handleAddToCart}
-            className={`flex-1 py-3.5 px-5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98 ${
-              addedAnimation 
-                ? 'bg-emerald-600 text-white shadow-emerald-500/25'
-                : 'bg-[#FF6B00] hover:bg-orange-600 text-white shadow-orange-500/30'
-            }`}
-          >
-            {addedAnimation ? (
-              <>
-                <Check className="w-4 h-4 stroke-[3]" />
-                <span>Added to Food Cart!</span>
-              </>
-            ) : (
-              <>
-                <span>{existingCartQty > 0 ? 'Add More to Cart' : 'Add to Food Cart'}</span>
-                <ArrowRight className="w-4 h-4 stroke-[2.5]" />
-              </>
-            )}
-          </button>
-        ) : (
+        {!product.isAvailable ? (
           <button
             disabled
-            className="flex-1 py-3.5 px-5 rounded-2xl bg-gray-200 text-gray-400 font-bold text-xs sm:text-sm cursor-not-allowed"
+            className="w-full py-3.5 px-5 rounded-2xl bg-gray-200 text-gray-400 font-bold text-xs sm:text-sm cursor-not-allowed text-center"
           >
-            Sold Out
+            Currently Sold Out
           </button>
+        ) : existingCartQty === 0 ? (
+          // IF NOT IN CART: Show Price + Add to Cart Button
+          <>
+            <div className="flex flex-col">
+              <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider leading-none">
+                Price
+              </span>
+              <span className="text-xl sm:text-2xl font-black text-[#151515] tracking-tight mt-0.5">
+                ₹{calculatedTotal}
+              </span>
+            </div>
+
+            <button
+              onClick={handleAddToCart}
+              className={`flex-1 max-w-[240px] py-3.5 px-5 rounded-2xl font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm transition-all cursor-pointer active:scale-98 ${
+                addedAnimation 
+                  ? 'bg-emerald-600 text-white shadow-emerald-500/25'
+                  : 'bg-[#FF6B00] hover:bg-orange-600 text-white shadow-orange-500/30'
+              }`}
+            >
+              {addedAnimation ? (
+                <>
+                  <Check className="w-4 h-4 stroke-[3]" />
+                  <span>Added to Cart!</span>
+                </>
+              ) : (
+                <>
+                  <span>Add to Food Cart</span>
+                  <ArrowRight className="w-4 h-4 stroke-[2.5]" />
+                </>
+              )}
+            </button>
+          </>
+        ) : (
+          // IF ALREADY IN CART: Quantity Stepper + View Cart
+          <>
+            <div className="flex items-center gap-2">
+              <div className="inline-flex items-center bg-gray-100 rounded-xl p-1 border border-gray-200">
+                <button
+                  onClick={() => updateQuantity(product.id, existingCartQty - 1)}
+                  className="w-8 h-8 rounded-lg bg-white hover:bg-gray-50 active:scale-95 text-[#151515] flex items-center justify-center shadow-2xs cursor-pointer"
+                  aria-label="Decrease quantity"
+                >
+                  <Minus className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+                <span className="w-9 text-center text-xs font-black text-[#151515]">
+                  {existingCartQty} in cart
+                </span>
+                <button
+                  onClick={() => updateQuantity(product.id, Math.min(10, existingCartQty + 1))}
+                  className="w-8 h-8 rounded-lg bg-white hover:bg-gray-50 active:scale-95 text-[#151515] flex items-center justify-center shadow-2xs cursor-pointer"
+                  aria-label="Increase quantity"
+                >
+                  <Plus className="w-3.5 h-3.5 stroke-[2.5]" />
+                </button>
+              </div>
+            </div>
+
+            <button
+              onClick={() => router.push(APP_ROUTES.FOOD.CART)}
+              className="flex-1 max-w-[190px] py-3.5 px-4 rounded-2xl bg-[#151515] hover:bg-black active:scale-98 text-white font-black text-xs sm:text-sm flex items-center justify-center gap-2 shadow-sm cursor-pointer"
+            >
+              <ShoppingBag className="w-4 h-4 stroke-[2.2] text-[#FF6B00]" />
+              <span>View Cart</span>
+            </button>
+          </>
         )}
       </div>
-
-      {/* Multi-Vendor Conflict Modal */}
-      <FoodVendorConflictModal />
 
       {/* Food Cart Drawer */}
       <FoodCartDrawer

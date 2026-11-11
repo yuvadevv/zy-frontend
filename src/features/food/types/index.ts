@@ -56,6 +56,14 @@ export interface FoodCartItem {
   totalPrice: number;
 }
 
+export interface FoodVendorGroup {
+  vendorId: string;
+  vendorName: string;
+  counterLocation: string;
+  items: FoodCartItem[];
+  subtotal: number;
+}
+
 export type FoodPaymentMethod = 'ONLINE_UPI' | 'CASH_AT_COUNTER';
 
 export type FoodOrderStatus = 

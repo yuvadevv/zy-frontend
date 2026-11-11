@@ -313,7 +313,7 @@ export const workerClient = {
 
   async createFoodOrder(payload: {
     items: Array<{ productId: string; quantity: number; cookingNotes?: string }>;
-    vendorId: string;
+    vendorId?: string;
     paymentMethod: 'ONLINE_UPI' | 'CASH_AT_COUNTER';
     idempotencyKey?: string;
     studentName?: string;
@@ -326,7 +326,8 @@ export const workerClient = {
   },
 
   async verifyFoodPayment(payload: {
-    orderId: string;
+    orderId?: string;
+    checkoutId?: string;
     providerOrderId: string;
     providerPaymentId: string;
     providerSignature?: string;
@@ -343,6 +344,13 @@ export const workerClient = {
 
   async getFoodOrder(id: string) {
     return this.fetch(`/api/food/orders/${id}`, {}, true);
+  },
+
+  async reportFoodOrderIssue(id: string, payload: { issueType: string; description: string }) {
+    return this.fetch(`/api/food/orders/${id}/issue`, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }, true);
   },
 
   async verifyFoodPickup(id: string, credential: string) {
