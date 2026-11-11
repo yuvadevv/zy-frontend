@@ -29,6 +29,7 @@ function parseJwtPayload(token: string): any | null {
 }
 
 let isRefreshingPromise: Promise<{ token: string | null; user: AuthUser | null }> | null = null;
+let lastFailedRefreshTime = 0;
 
 export const SessionManager = {
   setSession: async (token: string, user?: AuthUser | null, refreshToken?: string | null) => {
@@ -149,6 +150,11 @@ export const SessionManager = {
   refreshSession: async (): Promise<{ token: string | null; user: AuthUser | null }> => {
     if (typeof window === 'undefined') return { token: null, user: null };
 
+    // Cooldown protection: prevent rapid-fire refresh loops if refresh just failed
+    if (Date.now() - lastFailedRefreshTime < 4000) {
+      return { token: null, user: null };
+    }
+
     if (isRefreshingPromise) {
       return isRefreshingPromise;
     }
@@ -161,12 +167,17 @@ export const SessionManager = {
         }
 
         const config = getSupabaseConfig();
-        const url = `${config.url}/auth/v1/token?grant_type=refresh_token`;
+        const baseUrl = (config.url && config.url.startsWith('http')) 
+          ? config.url 
+          : 'https://wpikxgrsinwtvpjjjkhl.supabase.co';
+        const anonKey = config.anonKey || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwaWt4Z3JzaW53dHZwampqa2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NDczMDIsImV4cCI6MjA5OTQyMzMwMn0.agwF8eG7s1oBb_a_frXeIpGBOCyP1J_NKqgNsbqy5wQ';
+
+        const url = `${baseUrl}/auth/v1/token?grant_type=refresh_token`;
 
         const res = await fetch(url, {
           method: 'POST',
           headers: {
-            'apikey': config.anonKey,
+            'apikey': anonKey,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({ refresh_token: refreshToken })
@@ -175,8 +186,9 @@ export const SessionManager = {
         const data = await res.json().catch(() => null);
 
         if (!res.ok || !data || data.error || !data.access_token) {
-          // If rejected with 400/401 (invalid/revoked refresh token), clear local session
-          if (res.status === 400 || res.status === 401) {
+          lastFailedRefreshTime = Date.now();
+          // If rejected with 400/401/404 (invalid/revoked refresh token or missing endpoint), clear stale session
+          if (res.status === 400 || res.status === 401 || res.status === 404 || data?.error === 'invalid_grant') {
             console.warn('Session refresh rejected by Supabase Auth, clearing stale session');
             await SessionManager.clearSession();
           }
@@ -210,7 +222,11 @@ export const SessionManager = {
 
     if (SessionManager.isExpired(90)) {
       const refreshed = await SessionManager.refreshSession();
-      return refreshed.token || token;
+      // If refresh failed, do NOT return the expired token (which triggers redirect loops)
+      if (!refreshed.token) {
+        return null;
+      }
+      return refreshed.token;
     }
 
     return token;
