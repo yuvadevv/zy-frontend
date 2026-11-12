@@ -114,23 +114,14 @@ export default function HomeDashboard() {
           setActiveOrders(active);
           setRecentOrders(sortedList);
         }
+        setHasError(false);
       } catch (err: any) {
-        const errMsg = err?.message?.toLowerCase() || '';
-        const isNetworkOr503 = errMsg.includes('503') || errMsg.includes('non-json') || errMsg.includes('failed to fetch') || errMsg.includes('blocked') || errMsg.includes('unreachable');
-        const isAuthError = errMsg.includes('unauthorized') || errMsg.includes('401') || errMsg.includes('worker api error');
-
-        if (isAuthError && retryCount < 2) {
-          // New users may have a slight delay before their token is valid — retry once
-          setTimeout(() => fetchOrders(retryCount + 1), 2000);
-        } else if (isNetworkOr503) {
-          console.warn('Backend orders endpoint currently unreachable or firewall-blocked, defaulting to empty orders list.');
-          setActiveOrders([]);
-          setRecentOrders([]);
-          setHasError(false);
-        } else if (!isAuthError) {
-          setHasError(true);
-        }
-        // For auth errors after retries, silently do nothing — user just has no orders yet
+        // Any failure to fetch orders (network, timeout, 503 firewall, or fresh token delay)
+        // should cleanly default to an empty orders view rather than a jarring red error banner
+        console.warn('Orders currently unavailable, defaulting to empty list:', err?.message || err);
+        setActiveOrders([]);
+        setRecentOrders([]);
+        setHasError(false);
       }
     }
 

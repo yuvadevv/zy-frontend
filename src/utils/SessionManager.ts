@@ -219,8 +219,11 @@ export const SessionManager = {
           if (res.status === 400 || res.status === 401 || data?.error === 'invalid_grant') {
             console.warn('Session refresh rejected by Supabase Auth, clearing stale session');
             await SessionManager.clearSession();
+            return { token: null, user: null };
           }
-          return { token: null, user: null };
+          // For 503 / network / firewall issues, retain existing session tokens
+          console.warn(`Session refresh encountered temporary network/firewall status ${res.status}, retaining existing session tokens`);
+          return { token: SessionManager.getToken(), user: SessionManager.getUser() };
         }
 
         const newAccessToken = data.access_token;
@@ -250,11 +253,11 @@ export const SessionManager = {
 
     if (SessionManager.isExpired(90)) {
       const refreshed = await SessionManager.refreshSession();
-      // If refresh failed, do NOT return the expired token (which triggers redirect loops)
-      if (!refreshed.token) {
-        return null;
+      if (refreshed.token) {
+        return refreshed.token;
       }
-      return refreshed.token;
+      // If refresh failed due to temporary network/firewall 503, retain current token as best-effort
+      return token;
     }
 
     return token;
