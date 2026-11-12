@@ -125,29 +125,6 @@ export async function proxy(request: NextRequest) {
     return loginRedirect;
   }
 
-  // Profile completion check for onboarding
-  if (user && request.nextUrl.pathname.startsWith('/app')) {
-    const isCompleted = 
-      request.cookies.get('bl_profile_completed')?.value === 'true' || 
-      Boolean(user.user_metadata?.profile_completed);
-
-    if (!isCompleted && !request.nextUrl.pathname.startsWith('/app/onboarding')) {
-      const onboardingRedirect = NextResponse.redirect(new URL('/app/onboarding', request.url));
-      if (refreshedTokens) {
-        applySessionCookies(onboardingRedirect, refreshedTokens, isSecure);
-      }
-      return onboardingRedirect;
-    }
-
-    if (isCompleted && request.nextUrl.pathname.startsWith('/app/onboarding')) {
-      const homeRedirect = NextResponse.redirect(new URL('/app/home', request.url));
-      if (refreshedTokens) {
-        applySessionCookies(homeRedirect, refreshedTokens, isSecure);
-      }
-      return homeRedirect;
-    }
-  }
-
   const response = NextResponse.next();
   if (refreshedTokens) {
     applySessionCookies(response, refreshedTokens, isSecure);

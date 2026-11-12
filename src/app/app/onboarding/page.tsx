@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession';
 import { useOnboarding } from '@/features/student/providers/OnboardingProvider';
@@ -14,6 +15,7 @@ import { SuccessStep } from '@/features/student/components/SuccessStep';
 import { Loader2 } from 'lucide-react';
 
 export default function OnboardingWizard() {
+  const router = useRouter();
   const { user } = useAuthSession();
   const { step, setStep } = useOnboarding();
   const { profile, isLoading: isStudentLoading } = useStudent();
@@ -23,9 +25,9 @@ export default function OnboardingWizard() {
       if (typeof document !== 'undefined') {
         document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
       }
-      window.location.href = '/app/home';
+      router.replace('/app/home');
     }
-  }, [profile, isStudentLoading]);
+  }, [profile, isStudentLoading, router]);
 
   const STEPS = ['Personal', 'Academic', 'Review'];
 
