@@ -2,7 +2,7 @@
 import { SignupFormData, LoginFormData } from '../validators/authValidators';
 import { SessionManager } from '@/utils/SessionManager';
 
-const WORKER_URL = process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787';
+const WORKER_URL = (process.env.NEXT_PUBLIC_WORKER_URL || 'http://127.0.0.1:8787').replace(/\/+$/, '');
 
 function formatAuthNetworkError(errOrMsg?: string, status?: number) {
   if (
@@ -119,7 +119,8 @@ export const authApi = {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const studentData = await studentRes.json();
-        if (studentRes.ok && studentData?.student?.name) {
+        const student = studentData?.student || studentData?.data?.student;
+        if (studentRes.ok && (student?.name || student?.full_name)) {
           document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
         }
       } catch (e) {

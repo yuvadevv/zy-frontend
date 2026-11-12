@@ -16,7 +16,7 @@ export const createClient = () => {
   const client = createBrowserClient(url, anonKey, {
     auth: {
       persistSession: true,
-      autoRefreshToken: true,
+      autoRefreshToken: false, // SessionManager owns token refreshes to avoid race conditions & refresh token reuse revocations
       detectSessionInUrl: true,
     },
   });

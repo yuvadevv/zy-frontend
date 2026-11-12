@@ -215,8 +215,8 @@ export const SessionManager = {
 
         if (!res.ok || !data || data.error || !data.access_token) {
           lastFailedRefreshTime = Date.now();
-          // If rejected with 400/401/404 (invalid/revoked refresh token or missing endpoint), clear stale session
-          if (res.status === 400 || res.status === 401 || res.status === 404 || data?.error === 'invalid_grant') {
+          // Only clear if Supabase explicitly rejects credentials (400/401 with invalid_grant)
+          if (res.status === 400 || res.status === 401 || data?.error === 'invalid_grant') {
             console.warn('Session refresh rejected by Supabase Auth, clearing stale session');
             await SessionManager.clearSession();
           }

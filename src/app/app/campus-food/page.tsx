@@ -122,46 +122,31 @@ export default function UnifiedCampusFoodPage() {
   // Check if student is browsing the default curated feed
   const isBrowsingAll = selectedCategoryId === 'all' && !searchQuery.trim() && selectedDietary === 'all';
 
-  // Curated section groupings matching specific campus discovery sections
+  // Curated section groupings for Chopsticks & Campus Catalogue
   const popularItems = useMemo(() => {
     return products.filter((p) => p.isPopular);
   }, [products]);
 
   const displayedPopular = showAllPopular ? popularItems : popularItems.slice(0, 4);
 
-  // 1. Today's Meals
-  const todaysMeals = useMemo(() => {
-    return products.filter((p) => p.categoryId === 'meals' || p.isMeal);
+  // 1. Biryani Specials
+  const biryaniSpecials = useMemo(() => {
+    return products.filter((p) => p.categoryId === 'biryani');
   }, [products]);
 
-  // 2. Veg Curries
-  const vegCurries = useMemo(() => {
-    return products.filter((p) => p.categoryId === 'veg-curries');
+  // 2. Fried Rice
+  const friedRiceItems = useMemo(() => {
+    return products.filter((p) => p.categoryId === 'fried-rice');
   }, [products]);
 
-  // 3. Chicken Specials
-  const chickenSpecials = useMemo(() => {
-    return products.filter((p) => p.categoryId === 'chicken-curries');
+  // 3. Noodles
+  const noodleItems = useMemo(() => {
+    return products.filter((p) => p.categoryId === 'noodles');
   }, [products]);
 
-  // 4. Fried Rice & Noodles
-  const friedRiceAndNoodles = useMemo(() => {
-    return products.filter((p) => ['fried-rice', 'noodles', 'egg-items'].includes(p.categoryId));
-  }, [products]);
-
-  // 5. Pizza & Fast Food
-  const pizzaAndFastFood = useMemo(() => {
-    return products.filter((p) => ['pizza', 'fast-food'].includes(p.categoryId));
-  }, [products]);
-
-  // 6. Rolls & Quick Bites
-  const rollsAndQuickBites = useMemo(() => {
-    return products.filter((p) => ['chicken-rolls', 'breakfast'].includes(p.categoryId));
-  }, [products]);
-
-  // 7. Snacks & Beverages
-  const snacksAndBeverages = useMemo(() => {
-    return products.filter((p) => ['snacks', 'snacks-beverages'].includes(p.categoryId));
+  // 4. Starters & Manchurian
+  const starterItems = useMemo(() => {
+    return products.filter((p) => p.categoryId === 'starters');
   }, [products]);
 
   const selectedCategoryLabel = useMemo(() => {
@@ -197,6 +182,61 @@ export default function UnifiedCampusFoodPage() {
       {/* 3. PROMOTIONAL BANNER (Compact, shown on default view)   */}
       {/* ======================================================== */}
       {isBrowsingAll && <FoodPromoBanner />}
+
+      {/* ======================================================== */}
+      {/* 3.5. CAMPUS FOOD COUNTERS                                */}
+      {/* ======================================================== */}
+      {isBrowsingAll && (
+        <section className="flex flex-col gap-2 pt-0.5">
+          <div className="flex items-center justify-between px-0.5">
+            <h2 className="text-xs sm:text-[13px] font-black uppercase tracking-wider text-gray-900 flex items-center gap-1.5">
+              <span>Campus Food Counters</span>
+            </h2>
+            <span className="text-[11px] font-bold text-gray-400">2 Active Counters</span>
+          </div>
+
+          <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+            {/* CHOPSTICKS Card */}
+            <div className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-zinc-900 to-zinc-800 text-white p-3.5 flex flex-col justify-between shadow-md border border-zinc-700/60 min-h-[140px]">
+              <div className="flex items-start justify-between">
+                <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#FF6B00] text-white">
+                  Fast Food
+                </span>
+                <span className="text-[10px] text-zinc-300 font-bold">17 Items</span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white tracking-tight">CHOPSTICKS</h3>
+                <p className="text-[11px] text-zinc-300 line-clamp-1 mt-0.5">Main Food Court Counter</p>
+                <div className="mt-2.5 flex items-center gap-1 text-[11px] font-black text-orange-400">
+                  <span>Browse items below</span>
+                  <ArrowRight className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+
+            {/* RCE MESS Card */}
+            <div 
+              onClick={() => router.push(APP_ROUTES.CAMPUS_FOOD_MESS || '/app/campus-food/mess')}
+              className="relative overflow-hidden rounded-[20px] bg-gradient-to-br from-emerald-950 via-zinc-900 to-zinc-900 text-white p-3.5 flex flex-col justify-between shadow-md border border-emerald-800/40 min-h-[140px] cursor-pointer active:scale-98 transition group"
+            >
+              <div className="flex items-start justify-between">
+                <span className="text-[9.5px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-emerald-600 text-white">
+                  College Mess
+                </span>
+                <span className="text-[10px] text-emerald-300 font-bold">Weekly Menu</span>
+              </div>
+              <div>
+                <h3 className="text-base font-black text-white tracking-tight group-hover:text-emerald-400 transition-colors">RCE MESS</h3>
+                <p className="text-[11px] text-zinc-300 line-clamp-1 mt-0.5">Dining Hall Counter</p>
+                <div className="mt-2.5 flex items-center gap-1 text-[11px] font-black text-emerald-400 group-hover:translate-x-0.5 transition-transform">
+                  <span>View Schedule</span>
+                  <ArrowRight className="w-3 h-3" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ======================================================== */}
       {/* 4. FOOD CATEGORIES                                       */}
@@ -241,104 +281,23 @@ export default function UnifiedCampusFoodPage() {
             </div>
           </section>
 
-          {/* Section 1: Today's Meals */}
-          {todaysMeals.length > 0 && (
-            <section className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-1.5">
-                  <Clock className="w-4 h-4 text-emerald-600 stroke-[2.4]" />
-                  <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
-                    Today's Meals
-                  </h2>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Mess & Canteen
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {todaysMeals.map((product) => (
-                  <FoodProductCard
-                    key={product.id}
-                    product={product}
-                    onOpenDetails={handleOpenDetails}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Section 2: Veg Curries */}
-          {vegCurries.length > 0 && (
-            <section className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-emerald-600 stroke-[2.4]" />
-                  <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
-                    Veg Curries
-                  </h2>
-                </div>
-                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
-                  Pure Veg Special
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {vegCurries.map((product) => (
-                  <FoodProductCard
-                    key={product.id}
-                    product={product}
-                    onOpenDetails={handleOpenDetails}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Section 3: Chicken Specials */}
-          {chickenSpecials.length > 0 && (
-            <section className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-1.5">
-                  <Flame className="w-4 h-4 text-rose-600 stroke-[2.4]" />
-                  <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
-                    Chicken Specials
-                  </h2>
-                </div>
-                <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
-                  Hot & Spicy
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {chickenSpecials.map((product) => (
-                  <FoodProductCard
-                    key={product.id}
-                    product={product}
-                    onOpenDetails={handleOpenDetails}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Section 4: Fried Rice & Noodles */}
-          {friedRiceAndNoodles.length > 0 && (
+          {/* Section 1: Biryani Specials */}
+          {biryaniSpecials.length > 0 && (
             <section className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between px-0.5">
                 <div className="flex items-center gap-1.5">
                   <Flame className="w-4 h-4 text-orange-500 stroke-[2.4]" />
                   <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
-                    Fried Rice & Noodles
+                    Biryani Specials
                   </h2>
                 </div>
                 <span className="text-[10px] font-bold text-orange-700 bg-orange-50 px-2 py-0.5 rounded-full border border-orange-200">
-                  Wok Tossed
+                  Dum & Fry
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {friedRiceAndNoodles.map((product) => (
+                {biryaniSpecials.map((product) => (
                   <FoodProductCard
                     key={product.id}
                     product={product}
@@ -349,23 +308,50 @@ export default function UnifiedCampusFoodPage() {
             </section>
           )}
 
-          {/* Section 5: Pizza & Fast Food */}
-          {pizzaAndFastFood.length > 0 && (
+          {/* Section 2: Fried Rice */}
+          {friedRiceItems.length > 0 && (
             <section className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between px-0.5">
                 <div className="flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-amber-500 stroke-[2.4]" />
+                  <Sparkles className="w-4 h-4 text-emerald-600 stroke-[2.4]" />
                   <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
-                    Pizza & Fast Food
+                    Wok Fried Rice
+                  </h2>
+                </div>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  High Flame Tossed
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
+                {friedRiceItems.map((product) => (
+                  <FoodProductCard
+                    key={product.id}
+                    product={product}
+                    onOpenDetails={handleOpenDetails}
+                  />
+                ))}
+              </div>
+            </section>
+          )}
+
+          {/* Section 3: Wok Noodles */}
+          {noodleItems.length > 0 && (
+            <section className="flex flex-col gap-2.5">
+              <div className="flex items-center justify-between px-0.5">
+                <div className="flex items-center gap-1.5">
+                  <Utensils className="w-4 h-4 text-amber-600 stroke-[2.4]" />
+                  <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
+                    Wok Noodles
                   </h2>
                 </div>
                 <span className="text-[10px] font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200">
-                  Crispy & Fresh
+                  Street Style
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {pizzaAndFastFood.map((product) => (
+                {noodleItems.map((product) => (
                   <FoodProductCard
                     key={product.id}
                     product={product}
@@ -376,50 +362,23 @@ export default function UnifiedCampusFoodPage() {
             </section>
           )}
 
-          {/* Section 6: Rolls & Quick Bites */}
-          {rollsAndQuickBites.length > 0 && (
+          {/* Section 4: Starters & Manchurian */}
+          {starterItems.length > 0 && (
             <section className="flex flex-col gap-2.5">
               <div className="flex items-center justify-between px-0.5">
                 <div className="flex items-center gap-1.5">
-                  <Utensils className="w-4 h-4 text-[#FF6B00] stroke-[2.4]" />
+                  <Flame className="w-4 h-4 text-rose-600 stroke-[2.4]" />
                   <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
-                    Rolls & Quick Bites
+                    Starters & Manchurian
                   </h2>
                 </div>
-                <span className="text-[10px] font-bold text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
-                  Campus Favourites
+                <span className="text-[10px] font-bold text-rose-700 bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                  Hot & Sizzling
                 </span>
               </div>
 
               <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {rollsAndQuickBites.map((product) => (
-                  <FoodProductCard
-                    key={product.id}
-                    product={product}
-                    onOpenDetails={handleOpenDetails}
-                  />
-                ))}
-              </div>
-            </section>
-          )}
-
-          {/* Section 7: Snacks & Beverages */}
-          {snacksAndBeverages.length > 0 && (
-            <section className="flex flex-col gap-2.5">
-              <div className="flex items-center justify-between px-0.5">
-                <div className="flex items-center gap-1.5">
-                  <Coffee className="w-4 h-4 text-amber-600 stroke-[2.4]" />
-                  <h2 className="text-sm sm:text-base font-black text-[#151515] tracking-tight">
-                    Snacks & Beverages
-                  </h2>
-                </div>
-                <span className="text-[10px] font-bold text-gray-500 uppercase tracking-wide">
-                  Between Lectures
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
-                {snacksAndBeverages.map((product) => (
+                {starterItems.map((product) => (
                   <FoodProductCard
                     key={product.id}
                     product={product}

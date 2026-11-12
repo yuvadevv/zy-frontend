@@ -48,11 +48,11 @@ export const FoodProductCard: React.FC<FoodProductCardProps> = ({
   const [imgError, setImgError] = React.useState(false);
 
   // Short clean label for counter location
-  const counterTag = product.counterLocation.includes('Counter 1')
-    ? 'Counter 1'
-    : product.counterLocation.includes('Mess')
-    ? 'Mess Counter'
-    : product.counterLocation;
+  const counterTag = product.vendorName === 'CHOPSTICKS' || product.counterLocation.includes('Chopsticks')
+    ? 'CHOPSTICKS'
+    : product.vendorName === 'RCE MESS' || product.counterLocation.includes('Mess')
+    ? 'RCE MESS'
+    : (product.vendorName || 'Counter');
 
   // Guaranteed valid food image URL (falls back to offline SVG vector illustration)
   const isUnsplash = Boolean(product.image && typeof product.image === 'string' && product.image.includes('images.unsplash.com'));

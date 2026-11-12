@@ -1,84 +1,69 @@
 import { FoodCategory } from '../types';
-import { getFoodIllustrationDataUri } from '../utils/foodIllustrations';
 
 export const FOOD_CATEGORIES: FoodCategory[] = [
   {
     id: 'all',
-    label: 'All Foods',
-    image: getFoodIllustrationDataUri('all', 'All Foods'),
+    label: 'All Items',
+    image: '/images/food/chopsticks_cover.webp',
   },
   {
-    id: 'breakfast',
-    label: 'Breakfast',
-    image: getFoodIllustrationDataUri('breakfast', 'Breakfast'),
-  },
-  {
-    id: 'meals',
-    label: 'Meals',
-    image: getFoodIllustrationDataUri('meals', 'Meals'),
-  },
-  {
-    id: 'veg-curries',
-    label: 'Veg Curries',
-    image: getFoodIllustrationDataUri('veg-curries', 'Veg Curries'),
-  },
-  {
-    id: 'chicken-curries',
-    label: 'Chicken Curries',
-    image: getFoodIllustrationDataUri('chicken-curries', 'Chicken Curries'),
+    id: 'biryani',
+    label: 'Biryani',
+    image: '/images/food/chicken_dum_biryani.jpg',
   },
   {
     id: 'fried-rice',
     label: 'Fried Rice',
-    image: getFoodIllustrationDataUri('fried-rice', 'Fried Rice'),
-  },
-  {
-    id: 'egg-items',
-    label: 'Egg Items',
-    image: getFoodIllustrationDataUri('egg-items', 'Egg Items'),
+    image: '/images/food/chicken_fried_rice.jpg',
   },
   {
     id: 'noodles',
     label: 'Noodles',
-    image: getFoodIllustrationDataUri('noodles', 'Noodles'),
+    image: '/images/food/chicken_noodles.jpg',
   },
   {
-    id: 'pizza',
-    label: 'Pizza',
-    image: getFoodIllustrationDataUri('pizza', 'Pizza'),
-  },
-  {
-    id: 'chicken-rolls',
-    label: 'Chicken Rolls',
-    image: getFoodIllustrationDataUri('chicken-rolls', 'Chicken Rolls'),
-  },
-  {
-    id: 'fast-food',
-    label: 'Fast Food',
-    image: getFoodIllustrationDataUri('fast-food', 'Fast Food'),
-  },
-  {
-    id: 'snacks',
-    label: 'Snacks',
-    image: getFoodIllustrationDataUri('snacks', 'Snacks'),
+    id: 'starters',
+    label: 'Starters & Manchurian',
+    image: '/images/food/chicken_65.jpg',
   },
 ];
 
 export const VENDORS_CONFIG = {
+  CHOPSTICKS: {
+    id: 'vendor_canteen_stall',
+    name: 'CHOPSTICKS',
+    shortName: 'CHOPSTICKS',
+    counterLocation: 'Chopsticks Counter (Main Food Court)',
+    badgeText: 'CHOPSTICKS',
+    pickupInstructions: 'Pick up at the Chopsticks Counter in the Main Food Court. Present your pickup token.',
+    coverImage: '/images/food/chopsticks_cover.webp',
+    description: 'Fast food & authentic biryanis, fried rice, noodles and sizzling starters.'
+  },
+  RCE_MESS: {
+    id: 'vendor_college_mess',
+    name: 'RCE MESS',
+    shortName: 'RCE MESS',
+    counterLocation: 'RCE Mess Dining Hall Counter',
+    badgeText: 'RCE MESS',
+    pickupInstructions: 'Pick up at the RCE Mess Serving Counter in Dining Hall. Present your meal coupon / token.',
+    coverImage: '/images/food/rce_mess_cover.webp',
+    description: 'Official College Mess serving wholesome traditional South Indian meals and daily specials.'
+  },
+  // Backwards compatible aliases
   CANTEEN_STALL: {
     id: 'vendor_canteen_stall',
-    name: 'Campus Canteen Fast Food & Rolls',
-    shortName: 'Canteen Stall',
-    counterLocation: 'Counter 1 (Main Canteen)',
-    badgeText: 'Canteen Counter 1',
-    pickupInstructions: 'Pick up at Counter 1 inside the Student Canteen. Present your token number.',
+    name: 'CHOPSTICKS',
+    shortName: 'CHOPSTICKS',
+    counterLocation: 'Chopsticks Counter (Main Food Court)',
+    badgeText: 'CHOPSTICKS',
+    pickupInstructions: 'Pick up at the Chopsticks Counter in the Main Food Court. Present your pickup token.',
   },
   COLLEGE_MESS: {
     id: 'vendor_college_mess',
-    name: 'College Mess & Dining Hall',
-    shortName: 'College Mess',
-    counterLocation: 'Dining Hall Mess Counter',
-    badgeText: 'Mess Dining Counter',
-    pickupInstructions: 'Pick up at the College Mess Serving Counter. Show your token on screen.',
+    name: 'RCE MESS',
+    shortName: 'RCE MESS',
+    counterLocation: 'RCE Mess Dining Hall Counter',
+    badgeText: 'RCE MESS',
+    pickupInstructions: 'Pick up at the RCE Mess Serving Counter in Dining Hall. Present your meal coupon / token.',
   },
 } as const;

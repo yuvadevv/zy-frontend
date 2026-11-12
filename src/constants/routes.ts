@@ -30,6 +30,7 @@ export const APP_ROUTES = {
     ORDER_CONFIRMATION: (id: string) => `/app/campus-food/orders/${id}`,
   },
   CAMPUS_FOOD: '/app/campus-food',
+  CAMPUS_FOOD_MESS: '/app/campus-food/mess',
   CHECKOUT: '/app/checkout',
   ORDERS: {
     LIST: '/app/orders',

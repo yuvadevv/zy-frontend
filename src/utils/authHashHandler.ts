@@ -88,7 +88,8 @@ export async function handleOAuthHashRedirect(): Promise<OAuthHashResult> {
           headers: { 'Authorization': `Bearer ${token}` }
         });
         const data = await res.json();
-        if (res.ok && data?.student?.name) {
+        const student = data?.student || data?.data?.student;
+        if (res.ok && (student?.name || student?.full_name)) {
           document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
         }
       } catch (e) {

@@ -5,7 +5,8 @@ export const studentService = {
   getProfile: async (userId: string): Promise<StudentProfile | null> => {
     try {
       const data = await workerClient.fetch('/api/students/me');
-      if (!data?.student) {
+      const s = data?.student || data?.data?.student;
+      if (!s) {
         if (typeof document !== 'undefined') {
           document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         }
@@ -14,7 +15,6 @@ export const studentService = {
       if (typeof document !== 'undefined') {
         document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
       }
-      const s = data.student;
       return {
         user_id: s.id || userId,
         full_name: s.name || '',
@@ -41,13 +41,13 @@ export const studentService = {
   getAcademicRecord: async (userId: string): Promise<StudentAcademicRecord | null> => {
     try {
       const data = await workerClient.fetch('/api/students/me');
-      if (!data?.student) {
+      const s = data?.student || data?.data?.student;
+      if (!s) {
         if (typeof document !== 'undefined') {
           document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
         }
         return null;
       }
-      const s = data.student;
       return {
         student_id: s.id || userId,
         roll_number: s.roll_number || '',

@@ -155,8 +155,18 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
       const token = SessionManager.getToken();
       const currentUser = SessionManager.getUser();
       if (token) {
-        setSession({ access_token: token, user: currentUser });
-        setUser(currentUser);
+        setSession(prev => {
+          if (prev?.access_token === token && prev?.user?.id === currentUser?.id) {
+            return prev;
+          }
+          return { access_token: token, user: currentUser };
+        });
+        setUser(prev => {
+          if (prev?.id === currentUser?.id && prev?.email === currentUser?.email) {
+            return prev;
+          }
+          return currentUser;
+        });
       }
     };
     window.addEventListener('auth:session_updated', handleSessionUpdated);
