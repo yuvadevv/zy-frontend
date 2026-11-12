@@ -39,6 +39,7 @@ export default function FoodProductDetailPage() {
 
   const [product, setProduct] = useState<FoodProduct | null>(initialProduct || null);
   const [isLoading, setIsLoading] = useState(!initialProduct);
+  const [imgError, setImgError] = useState(false);
 
   // Revalidate with live Cloudflare D1 product data
   useEffect(() => {
@@ -158,10 +159,11 @@ export default function FoodProductDetailPage() {
 
   const calculatedTotal = product.price * quantity;
 
+  const isUnsplash = Boolean(product.image && typeof product.image === 'string' && product.image.includes('images.unsplash.com'));
   const imageSrc =
-    product.image && typeof product.image === 'string' && product.image.trim().length > 0
+    !imgError && !isUnsplash && product.image && typeof product.image === 'string' && product.image.trim().length > 0
       ? product.image.trim()
-      : getProductFallbackImage(product.id, product.categoryId);
+      : getProductFallbackImage(product.id, product.categoryId, product.name);
 
   return (
     <div className="w-full flex flex-col pb-32 select-none relative">
@@ -173,9 +175,7 @@ export default function FoodProductDetailPage() {
           src={imageSrc}
           alt={product.name}
           className="w-full h-full object-cover"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = getProductFallbackImage(product.id, product.categoryId);
-          }}
+          onError={() => setImgError(true)}
         />
 
         {/* Top Scrim Gradient for floating buttons */}

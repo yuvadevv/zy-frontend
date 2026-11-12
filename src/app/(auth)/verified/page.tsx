@@ -9,8 +9,21 @@ import { AuthLayout } from '@/features/auth/components/AuthLayout';
 function VerifiedContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextUrl = searchParams.get('next') || '/app/onboarding';
+  const nextParam = searchParams.get('next');
+  const [destination, setDestination] = useState<string>('/app/home');
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    // Determine destination: if profile is completed or next isn't onboarding, default to /app/home
+    const isProfileCompleted = typeof document !== 'undefined' && document.cookie.includes('bl_profile_completed=true');
+    if (isProfileCompleted) {
+      setDestination('/app/home');
+    } else if (nextParam) {
+      setDestination(nextParam);
+    } else {
+      setDestination('/app/home');
+    }
+  }, [nextParam]);
 
   useEffect(() => {
     // Ensure the auth cookie is set from localStorage token before navigating.
@@ -50,10 +63,10 @@ function VerifiedContent() {
     if (!ready) return;
     // Automatically redirect after a short delay
     const timer = setTimeout(() => {
-      router.push(nextUrl);
+      router.push(destination);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [router, nextUrl, ready]);
+  }, [router, destination, ready]);
 
   return (
     <motion.div 
@@ -72,7 +85,7 @@ function VerifiedContent() {
       </p>
       
       <button
-        onClick={() => router.push(nextUrl)}
+        onClick={() => router.push(destination)}
         className="w-full bg-orange-500 hover:bg-orange-600 text-white font-bold py-4 rounded-xl transition-all active:scale-[0.98]"
       >
         Continue to App

@@ -45,6 +45,8 @@ export const FoodProductCard: React.FC<FoodProductCardProps> = ({
     updateQuantity(product.id, quantity - 1);
   };
 
+  const [imgError, setImgError] = React.useState(false);
+
   // Short clean label for counter location
   const counterTag = product.counterLocation.includes('Counter 1')
     ? 'Counter 1'
@@ -52,11 +54,12 @@ export const FoodProductCard: React.FC<FoodProductCardProps> = ({
     ? 'Mess Counter'
     : product.counterLocation;
 
-  // Guaranteed valid food image URL
+  // Guaranteed valid food image URL (falls back to offline SVG vector illustration)
+  const isUnsplash = Boolean(product.image && typeof product.image === 'string' && product.image.includes('images.unsplash.com'));
   const imageSrc =
-    product.image && typeof product.image === 'string' && product.image.trim().length > 0
+    !imgError && !isUnsplash && product.image && typeof product.image === 'string' && product.image.trim().length > 0
       ? product.image.trim()
-      : getProductFallbackImage(product.id, product.categoryId);
+      : getProductFallbackImage(product.id, product.categoryId, product.name);
 
   return (
     <div
@@ -70,9 +73,7 @@ export const FoodProductCard: React.FC<FoodProductCardProps> = ({
           alt={product.name}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
           loading="lazy"
-          onError={(e) => {
-            (e.target as HTMLImageElement).src = getProductFallbackImage(product.id, product.categoryId);
-          }}
+          onError={() => setImgError(true)}
         />
 
         {/* Dietary Badge (Top-Left) */}

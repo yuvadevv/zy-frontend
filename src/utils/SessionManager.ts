@@ -31,10 +31,34 @@ function parseJwtPayload(token: string): any | null {
 let isRefreshingPromise: Promise<{ token: string | null; user: AuthUser | null }> | null = null;
 let lastFailedRefreshTime = 0;
 
+export interface SetSessionOptions {
+  skipSupabaseSync?: boolean;
+  forceBroadcast?: boolean;
+}
+
 export const SessionManager = {
-  setSession: async (token: string, user?: AuthUser | null, refreshToken?: string | null) => {
+  setSession: async (
+    token: string, 
+    user?: AuthUser | null, 
+    refreshToken?: string | null,
+    options?: SetSessionOptions
+  ) => {
     if (typeof window === 'undefined') return;
     try {
+      const currentToken = localStorage.getItem('bl_session_token');
+      const currentRefreshToken = localStorage.getItem('bl_session_refresh_token');
+      const currentUserStr = localStorage.getItem('bl_session_user');
+      const newUserStr = user ? JSON.stringify(user) : null;
+
+      const isSameToken = Boolean(token && token === currentToken);
+      const isSameRefresh = Boolean(!refreshToken || refreshToken === currentRefreshToken);
+      const isSameUser = Boolean(!newUserStr || newUserStr === currentUserStr);
+
+      // If token, refresh token, and user are already identical in storage, exit early to prevent infinite loops
+      if (isSameToken && isSameRefresh && isSameUser && !options?.forceBroadcast) {
+        return;
+      }
+
       if (token) {
         localStorage.setItem('bl_session_token', token);
       }
@@ -55,20 +79,24 @@ export const SessionManager = {
         document.cookie = `bl_refresh_token=${encodeURIComponent(refreshToken)}; path=/; max-age=2592000; SameSite=Lax${secureFlag}`;
       }
 
-      // Also sync session with Supabase browser client
-      if (token && refreshToken) {
+      // Only sync session with Supabase browser client if not explicitly skipped and tokens changed
+      if (token && refreshToken && !options?.skipSupabaseSync && (!isSameToken || !isSameRefresh)) {
         syncSupabaseSession(token, refreshToken).catch(() => {});
       }
 
-      // Persist HttpOnly cookies via server route
-      await fetch('/api/auth/session', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, refreshToken })
-      }).catch((e) => console.warn('Server session cookie sync warning:', e));
+      // Persist HttpOnly cookies via server route (only if tokens actually changed)
+      if (!isSameToken || !isSameRefresh) {
+        await fetch('/api/auth/session', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, refreshToken })
+        }).catch((e) => console.warn('Server session cookie sync warning:', e));
+      }
 
-      // Notify any listeners within the current window/tab
-      window.dispatchEvent(new CustomEvent('auth:session_updated'));
+      // Notify listeners within current window/tab only if token or user actually changed
+      if (!isSameToken || !isSameUser || options?.forceBroadcast) {
+        window.dispatchEvent(new CustomEvent('auth:session_updated'));
+      }
     } catch (e) {
       console.warn('Failed to save session to storage', e);
     }

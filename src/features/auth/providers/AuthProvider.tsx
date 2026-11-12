@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
 import { SessionManager, AuthUser } from '@/utils/SessionManager';
 import { handleOAuthHashRedirect } from '@/utils/authHashHandler';
-import { createClient, syncSupabaseSession } from '@/lib/supabase/client';
+import { createClient, syncSupabaseSession, isCurrentlySyncingSupabase } from '@/lib/supabase/client';
 
 export interface AuthSession {
   access_token: string;
@@ -108,11 +108,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     try {
       const supabase = createClient();
       const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event: any, newSession: any) => {
+        // Ignore auth state change events that were triggered by our own sync to prevent feedback loop
+        if (isCurrentlySyncingSupabase()) {
+          return;
+        }
+
         if (event === 'SIGNED_OUT') {
           setSession(null);
           setUser(null);
         } else if (event === 'TOKEN_REFRESHED' || event === 'SIGNED_IN') {
           if (newSession?.access_token) {
+            const currentToken = SessionManager.getToken();
+            // If already holding this token in storage, don't re-trigger setSession or state thrash
+            if (currentToken === newSession.access_token) {
+              return;
+            }
+
             const u: AuthUser | null = newSession.user ? {
               id: newSession.user.id,
               email: newSession.user.email,
@@ -120,7 +131,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
               user_metadata: newSession.user.user_metadata || {},
             } : SessionManager.getUser();
 
-            await SessionManager.setSession(newSession.access_token, u, newSession.refresh_token);
+            // Pass skipSupabaseSync: true because this event originated from Supabase itself
+            await SessionManager.setSession(newSession.access_token, u, newSession.refresh_token, { skipSupabaseSync: true });
             setSession({ access_token: newSession.access_token, user: u });
             setUser(u);
           }

@@ -190,8 +190,9 @@ export default function FoodCartPage() {
                 {/* Items in this Vendor Group */}
                 <div className="divide-y divide-gray-100">
                   {group.items.map((cartItem) => {
-                    const fallbackImg = getProductFallbackImage(cartItem.product.id, cartItem.product.categoryId);
-                    const imageSrc = cartItem.product.image && typeof cartItem.product.image === 'string' && cartItem.product.image.trim().length > 0
+                    const fallbackImg = getProductFallbackImage(cartItem.product.id, cartItem.product.categoryId, cartItem.product.name);
+                    const isUnsplash = Boolean(cartItem.product.image && typeof cartItem.product.image === 'string' && cartItem.product.image.includes('images.unsplash.com'));
+                    const imageSrc = !isUnsplash && cartItem.product.image && typeof cartItem.product.image === 'string' && cartItem.product.image.trim().length > 0
                       ? cartItem.product.image.trim()
                       : fallbackImg;
 

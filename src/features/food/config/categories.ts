@@ -1,65 +1,66 @@
 import { FoodCategory } from '../types';
+import { getFoodIllustrationDataUri } from '../utils/foodIllustrations';
 
 export const FOOD_CATEGORIES: FoodCategory[] = [
   {
     id: 'all',
     label: 'All Foods',
-    image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('all', 'All Foods'),
   },
   {
     id: 'breakfast',
     label: 'Breakfast',
-    image: 'https://images.unsplash.com/photo-1589301760014-d929f3979dbc?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('breakfast', 'Breakfast'),
   },
   {
     id: 'meals',
     label: 'Meals',
-    image: 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('meals', 'Meals'),
   },
   {
     id: 'veg-curries',
     label: 'Veg Curries',
-    image: 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('veg-curries', 'Veg Curries'),
   },
   {
     id: 'chicken-curries',
     label: 'Chicken Curries',
-    image: 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('chicken-curries', 'Chicken Curries'),
   },
   {
     id: 'fried-rice',
     label: 'Fried Rice',
-    image: 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('fried-rice', 'Fried Rice'),
   },
   {
     id: 'egg-items',
     label: 'Egg Items',
-    image: 'https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('egg-items', 'Egg Items'),
   },
   {
     id: 'noodles',
     label: 'Noodles',
-    image: 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('noodles', 'Noodles'),
   },
   {
     id: 'pizza',
     label: 'Pizza',
-    image: 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('pizza', 'Pizza'),
   },
   {
     id: 'chicken-rolls',
     label: 'Chicken Rolls',
-    image: 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('chicken-rolls', 'Chicken Rolls'),
   },
   {
     id: 'fast-food',
     label: 'Fast Food',
-    image: 'https://images.unsplash.com/photo-1567620832903-9fc6debc209f?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('fast-food', 'Fast Food'),
   },
   {
     id: 'snacks',
     label: 'Snacks',
-    image: 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=180&h=180&q=80',
+    image: getFoodIllustrationDataUri('snacks', 'Snacks'),
   },
 ];
 

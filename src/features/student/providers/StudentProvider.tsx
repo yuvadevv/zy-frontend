@@ -52,7 +52,7 @@ export const StudentProvider = ({ children }: { children: React.ReactNode }) => 
     if (!authLoading) {
       fetchStudentData();
     }
-  }, [user, authLoading]);
+  }, [user?.id, authLoading]);
 
   return (
     <StudentContext.Provider value={{ profile, academicRecord, isLoading: isLoading || authLoading, refreshProfile: fetchStudentData }}>

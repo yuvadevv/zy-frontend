@@ -21,7 +21,8 @@ export default function OnboardingWizard() {
   const { profile, isLoading: isStudentLoading } = useStudent();
 
   useEffect(() => {
-    if (!isStudentLoading && profile && profile.full_name) {
+    const hasName = Boolean(profile?.full_name?.trim() || (profile as any)?.name?.trim());
+    if (!isStudentLoading && profile && hasName) {
       if (typeof document !== 'undefined') {
         document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
       }

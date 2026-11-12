@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { FOOD_CATEGORIES } from '../config/categories';
+import { getFoodIllustrationDataUri } from '../utils/foodIllustrations';
 import { Sparkles } from 'lucide-react';
 
 interface FoodCategoryTilesProps {
@@ -71,12 +72,12 @@ export const FoodCategoryTiles: React.FC<FoodCategoryTilesProps> = ({
                 }`}
               >
                 <img
-                  src={category.image && category.image.trim().length > 0 ? category.image.trim() : '/images/banners/banner_campus_food.webp'}
+                  src={category.image && category.image.trim().length > 0 ? category.image.trim() : getFoodIllustrationDataUri(category.id, category.label)}
                   alt={category.label}
                   className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform duration-300"
                   loading="lazy"
                   onError={(e) => {
-                    (e.target as HTMLImageElement).src = '/images/banners/banner_campus_food.webp';
+                    (e.target as HTMLImageElement).src = getFoodIllustrationDataUri(category.id, category.label);
                   }}
                 />
 

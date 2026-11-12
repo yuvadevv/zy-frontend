@@ -50,10 +50,12 @@ export default function UnifiedCampusFoodPage() {
         if (res?.success && Array.isArray(res?.data?.products) && res.data.products.length > 0) {
           if (isMounted) {
             setProducts(res.data.products.map((p: any) => {
-              const fallback = getProductFallbackImage(p.id, p.categoryId);
+              const fallback = getProductFallbackImage(p.id, p.categoryId, p.name);
+              const isBlockedCdn = p.image && typeof p.image === 'string' && p.image.includes('images.unsplash.com');
+              const finalImage = (!p.image || isBlockedCdn) ? fallback : p.image.trim();
               return {
                 ...p,
-                image: (p.image && typeof p.image === 'string' && p.image.trim().length > 0) ? p.image.trim() : fallback,
+                image: finalImage,
                 description: (p.description && typeof p.description === 'string' && p.description.trim().length > 0) ? p.description.trim() : 'Freshly prepared at campus counter.',
                 isPopular: p.isPopular ?? (p.categoryId === 'breakfast' || p.categoryId === 'fast-food' || p.price > 80),
                 isMeal: p.isMeal ?? (p.categoryId === 'meals' || p.categoryId === 'veg-meals')

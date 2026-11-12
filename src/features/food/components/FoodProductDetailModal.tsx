@@ -30,10 +30,11 @@ export const FoodProductDetailModal: React.FC<FoodProductDetailModalProps> = ({
     onClose();
   };
 
+  const isUnsplash = Boolean(product.image && typeof product.image === 'string' && product.image.includes('images.unsplash.com'));
   const imageSrc =
-    product.image && typeof product.image === 'string' && product.image.trim().length > 0
+    !isUnsplash && product.image && typeof product.image === 'string' && product.image.trim().length > 0
       ? product.image.trim()
-      : getProductFallbackImage(product.id, product.categoryId);
+      : getProductFallbackImage(product.id, product.categoryId, product.name);
 
   return (
     <AnimatePresence>
@@ -61,7 +62,7 @@ export const FoodProductDetailModal: React.FC<FoodProductDetailModalProps> = ({
               alt={product.name}
               className="w-full h-full object-cover"
               onError={(e) => {
-                (e.target as HTMLImageElement).src = getProductFallbackImage(product.id, product.categoryId);
+                (e.target as HTMLImageElement).src = getProductFallbackImage(product.id, product.categoryId, product.name);
               }}
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent" />

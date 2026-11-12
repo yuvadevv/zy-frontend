@@ -26,7 +26,7 @@ function parseJwt(token: string) {
 
 async function refreshSupabaseToken(refreshToken: string) {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://wpikxgrsinwtvpjjjkhl.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndwaWt4Z3JzaW53dHZwampqa2hsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM4NDczMDIsImV4cCI6MjA5OTQyMzMwMn0.agwF8eG7s1oBb_a_frXeIpGBOCyP1J_NKqgNsbqy5wQ';
   if (!supabaseUrl || !supabaseAnonKey) return null;
 
   try {

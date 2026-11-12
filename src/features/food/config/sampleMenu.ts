@@ -1,5 +1,6 @@
 import { FoodProduct } from '../types';
 import { VENDORS_CONFIG } from './categories';
+import { getFoodIllustrationDataUri } from '../utils/foodIllustrations';
 
 export const SAMPLE_FOOD_MENU: FoodProduct[] = [
   // 1. Breakfast (Campus Canteen)
@@ -367,39 +368,17 @@ export const getFoodProductById = (id: string): FoodProduct | undefined => {
   return SAMPLE_FOOD_MENU.find((p) => p.id === id);
 };
 
-export const getProductFallbackImage = (productId?: string, categoryId?: string): string => {
+export const getProductFallbackImage = (productId?: string, categoryId?: string, productName?: string): string => {
+  let title = productName;
+  let resolvedCat = categoryId;
+
   if (productId) {
     const found = SAMPLE_FOOD_MENU.find((p) => p.id === productId);
-    if (found?.image && found.image.trim()) {
-      return found.image;
+    if (found) {
+      if (!title) title = found.name;
+      if (!resolvedCat) resolvedCat = found.categoryId;
     }
   }
 
-  switch (categoryId) {
-    case 'breakfast':
-      return 'https://images.unsplash.com/photo-1668236543090-82eba5ee5976?auto=format&fit=crop&w=600&q=80';
-    case 'meals':
-    case 'veg-meals':
-      return 'https://images.unsplash.com/photo-1610057099443-fde8c4d50f91?auto=format&fit=crop&w=600&q=80';
-    case 'chicken-curries':
-      return 'https://images.unsplash.com/photo-1603894584373-5ac82b2ae398?auto=format&fit=crop&w=600&q=80';
-    case 'veg-curries':
-      return 'https://images.unsplash.com/photo-1631452180519-c014fe946bc7?auto=format&fit=crop&w=600&q=80';
-    case 'fried-rice':
-      return 'https://images.unsplash.com/photo-1603133872878-684f208fb84b?auto=format&fit=crop&w=600&q=80';
-    case 'noodles':
-      return 'https://images.unsplash.com/photo-1585032226651-759b368d7246?auto=format&fit=crop&w=600&q=80';
-    case 'egg-items':
-      return 'https://images.unsplash.com/photo-1525755662778-989d0524087e?auto=format&fit=crop&w=600&q=80';
-    case 'pizza':
-    case 'fast-food':
-      return 'https://images.unsplash.com/photo-1574071318508-1cdbab80d002?auto=format&fit=crop&w=600&q=80';
-    case 'chicken-rolls':
-      return 'https://images.unsplash.com/photo-1626777552726-4a6b54c97e46?auto=format&fit=crop&w=600&q=80';
-    case 'snacks':
-    case 'snacks-beverages':
-      return 'https://images.unsplash.com/photo-1601050690597-df0568f70950?auto=format&fit=crop&w=600&q=80';
-    default:
-      return 'https://images.unsplash.com/photo-1546833999-b9f581a1996d?auto=format&fit=crop&w=600&q=80';
-  }
+  return getFoodIllustrationDataUri(resolvedCat, title);
 };
