@@ -21,14 +21,19 @@ export default function OnboardingWizard() {
   const { profile, isLoading: isStudentLoading } = useStudent();
 
   useEffect(() => {
-    const hasName = Boolean(profile?.full_name?.trim() || (profile as any)?.name?.trim());
-    if (!isStudentLoading && profile && hasName) {
+    const hasName = Boolean(
+      profile?.full_name?.trim() || 
+      (profile as any)?.name?.trim() ||
+      user?.user_metadata?.full_name?.trim() ||
+      user?.user_metadata?.name?.trim()
+    );
+    if (!isStudentLoading && (profile || user) && hasName) {
       if (typeof document !== 'undefined') {
         document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
       }
       router.replace('/app/home');
     }
-  }, [profile, isStudentLoading, router]);
+  }, [profile, isStudentLoading, user, router]);
 
   const STEPS = ['Personal', 'Academic', 'Review'];
 

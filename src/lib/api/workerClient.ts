@@ -23,13 +23,25 @@ export const workerClient = {
 
     let response: Response;
     try {
-      response = await fetch(`${WORKER_URL}${endpoint}`, {
-        cache: 'no-store',
-        credentials: 'include',
-        ...options,
-        headers
-      });
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 8000);
+      const signal = options.signal || controller.signal;
+
+      try {
+        response = await fetch(`${WORKER_URL}${endpoint}`, {
+          cache: 'no-store',
+          credentials: 'include',
+          ...options,
+          signal,
+          headers
+        });
+      } finally {
+        clearTimeout(timeoutId);
+      }
     } catch (networkErr: any) {
+      if (networkErr?.name === 'AbortError') {
+        throw new Error('Backend request timed out (campus network firewall or high latency)');
+      }
       throw new Error(networkErr?.message || 'Failed to connect to backend server');
     }
 

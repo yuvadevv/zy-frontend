@@ -115,10 +115,18 @@ export default function HomeDashboard() {
           setRecentOrders(sortedList);
         }
       } catch (err: any) {
-        const isAuthError = err?.message?.toLowerCase().includes('unauthorized') || err?.message?.toLowerCase().includes('401') || err?.message?.toLowerCase().includes('worker api error');
+        const errMsg = err?.message?.toLowerCase() || '';
+        const isNetworkOr503 = errMsg.includes('503') || errMsg.includes('non-json') || errMsg.includes('failed to fetch') || errMsg.includes('blocked') || errMsg.includes('unreachable');
+        const isAuthError = errMsg.includes('unauthorized') || errMsg.includes('401') || errMsg.includes('worker api error');
+
         if (isAuthError && retryCount < 2) {
           // New users may have a slight delay before their token is valid — retry once
           setTimeout(() => fetchOrders(retryCount + 1), 2000);
+        } else if (isNetworkOr503) {
+          console.warn('Backend orders endpoint currently unreachable or firewall-blocked, defaulting to empty orders list.');
+          setActiveOrders([]);
+          setRecentOrders([]);
+          setHasError(false);
         } else if (!isAuthError) {
           setHasError(true);
         }

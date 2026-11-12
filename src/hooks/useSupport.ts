@@ -3,19 +3,19 @@ import { workerClient } from '@/lib/api/workerClient';
 import { formatWhatsAppNumber, openWhatsAppChat } from '@/utils/whatsapp';
 
 export function useSupport() {
-  const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(null);
-  const [supportPhone, setSupportPhone] = useState<string | null>(null);
-  const [supportEmail, setSupportEmail] = useState<string | null>(null);
-  const [appVersion, setAppVersion] = useState<string | null>(null);
+  const [supportWhatsapp, setSupportWhatsapp] = useState<string | null>(formatWhatsAppNumber('+91 95813 53999'));
+  const [supportPhone, setSupportPhone] = useState<string | null>('919581353999');
+  const [supportEmail, setSupportEmail] = useState<string | null>('support@blintzy.com');
+  const [appVersion, setAppVersion] = useState<string | null>('1.0.0');
   const [termsUrl, setTermsUrl] = useState<string | null>(null);
   const [privacyPolicyUrl, setPrivacyPolicyUrl] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     async function fetchSupportConfig() {
       try {
         const response = await workerClient.getPlatformStatus();
-        const data = response.content || response;
+        const data = response.content || response.data || response;
         if (data) {
           if (data.support_whatsapp) {
             setSupportWhatsapp(formatWhatsAppNumber(data.support_whatsapp));
@@ -30,8 +30,8 @@ export function useSupport() {
           if (data.terms_pdf_url) setTermsUrl(data.terms_pdf_url);
           if (data.privacy_policy_pdf_url) setPrivacyPolicyUrl(data.privacy_policy_pdf_url);
         }
-      } catch (error) {
-        console.error('Failed to fetch platform support configuration', error);
+      } catch (error: any) {
+        console.warn('Using campus support configuration fallback:', error?.message || error);
       } finally {
         setIsLoading(false);
       }

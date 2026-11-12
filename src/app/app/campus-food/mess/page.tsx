@@ -131,8 +131,30 @@ export default function CollegeMessPage() {
       try {
         setIsLoading(true);
         const res = await workerClient.fetch('/api/food/mess/weekly-menu');
-        const list = res?.data?.menu || res?.menu;
-        if (Array.isArray(list) && list.length > 0) {
+        const rawList = res?.data?.menu || res?.menu;
+        if (Array.isArray(rawList) && rawList.length > 0) {
+          const dayMap: Record<string, number> = {
+            sunday: 0, sun: 0,
+            monday: 1, mon: 1,
+            tuesday: 2, tue: 2,
+            wednesday: 3, wed: 3,
+            thursday: 4, thu: 4,
+            friday: 5, fri: 5,
+            saturday: 6, sat: 6,
+            'monthly special': -1, monthly_special: -1, special: -1
+          };
+          const list: MessDayMenu[] = rawList.map((m: any) => {
+            let dow = m.dayOfWeek;
+            if (typeof dow === 'string') {
+              const clean = dow.toLowerCase().trim();
+              dow = clean in dayMap ? dayMap[clean] : parseInt(clean, 10);
+              if (isNaN(dow)) dow = 1;
+            }
+            return {
+              ...m,
+              dayOfWeek: typeof dow === 'number' ? dow : 1
+            };
+          });
           setWeeklyMenu(list);
         }
       } catch (e) {
