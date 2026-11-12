@@ -21,27 +21,36 @@ export const workerClient = {
       }
     }
 
-    let response = await fetch(`${WORKER_URL}${endpoint}`, {
-      cache: 'no-store',
-      credentials: 'include',
-      ...options,
-      headers
-    });
+    let response: Response;
+    try {
+      response = await fetch(`${WORKER_URL}${endpoint}`, {
+        cache: 'no-store',
+        credentials: 'include',
+        ...options,
+        headers
+      });
+    } catch (networkErr: any) {
+      throw new Error(networkErr?.message || 'Failed to connect to backend server');
+    }
 
     if (response.status === 401 && requireAuth) {
       const refreshed = await SessionManager.refreshSession();
       if (refreshed.token) {
         headers.set('Authorization', `Bearer ${refreshed.token}`);
-        response = await fetch(`${WORKER_URL}${endpoint}`, {
-          cache: 'no-store',
-          credentials: 'include',
-          ...options,
-          headers
-        });
+        try {
+          response = await fetch(`${WORKER_URL}${endpoint}`, {
+            cache: 'no-store',
+            credentials: 'include',
+            ...options,
+            headers
+          });
+        } catch {}
       }
     }
 
-    const data = await response.json();
+    const data = await response.json().catch(() => ({
+      error: `Server responded with status ${response.status} (non-JSON response). The backend API endpoint may be unreachable or blocked.`
+    }));
 
     if (!response.ok) {
       throw new Error(data.error?.message || data.error || 'Worker API error');
