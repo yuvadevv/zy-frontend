@@ -72,3 +72,4 @@ export function FoodLockedScreen({ message }: FoodLockedScreenProps) {
     </div>
   );
 }
+

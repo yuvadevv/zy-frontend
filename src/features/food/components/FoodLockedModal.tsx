@@ -85,3 +85,4 @@ export function FoodLockedModal({ isOpen, onClose, message }: FoodLockedModalPro
     </div>
   );
 }
+
