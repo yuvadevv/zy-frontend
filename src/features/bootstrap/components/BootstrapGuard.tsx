@@ -8,6 +8,7 @@ import { MaintenanceScreen } from "./MaintenanceScreen";
 import { ComingSoonScreen } from "./ComingSoonScreen";
 import { ForceUpdateScreen } from "./ForceUpdateScreen";
 import { NoInternetScreen } from "./NoInternetScreen";
+import { FoodLockedScreen } from "./FoodLockedScreen";
 
 export function BootstrapGuard({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -65,5 +66,8 @@ export function BootstrapGuard({ children }: { children: React.ReactNode }) {
     return <ComingSoonScreen onDismiss={handleDismiss} />;
   }
   if (data?.data.force_update && !isAdminOrVendor) return <ForceUpdateScreen />;
+  if (pathname?.startsWith('/app/campus-food') && data?.data.food_service_enabled === false && !isAdminOrVendor) {
+    return <FoodLockedScreen message={data?.data.food_service_lock_message} />;
+  }
   return <>{children}</>;
 }
