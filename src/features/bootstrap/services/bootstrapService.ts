@@ -11,8 +11,11 @@ export interface BootstrapConfig {
   support: string;
   server_time: string;
   food_service_enabled: boolean;
+  food_service_main_locked: boolean;
+  food_service_testing_allowed: boolean;
   food_service_status: 'active' | 'locked';
   food_service_lock_message?: string;
+  is_food_locked_for_current_client: boolean;
   social_links?: {
     twitter?: string;
     linkedin?: string;
@@ -20,11 +23,23 @@ export interface BootstrapConfig {
   };
 }
 
+export function isTestingEnvironment(): boolean {
+  if (typeof window === 'undefined') {
+    return process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF === 'testing' || 
+           process.env.VERCEL_GIT_COMMIT_REF === 'testing' ||
+           process.env.NODE_ENV === 'development';
+  }
+  const host = window.location.hostname.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  return host.includes('localhost') || 
+         host.includes('127.0.0.1') || 
+         host.includes('git-testing') || 
+         host.includes('testing') ||
+         search.includes('branch=testing');
+}
+
 export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: BootstrapConfig }> {
-  const isMainBranch = 
-    process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF === 'main' || 
-    process.env.NEXT_PUBLIC_VERCEL_ENV === 'production' ||
-    (typeof window !== 'undefined' && (window.location.hostname === 'blintzy.com' || window.location.hostname.endsWith('.blintzy.com')));
+  const isTesting = isTestingEnvironment();
 
   try {
     const rawResponse = await workerClient.getPlatformStatus();
@@ -38,16 +53,31 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
       ? Boolean((response.coming_soon as any).enabled)
       : Boolean(response.coming_soon);
 
-    let foodServiceEnabled: boolean;
+    let foodServiceEnabled = true;
     if (response.food_service_enabled !== undefined) {
       foodServiceEnabled = Boolean(response.food_service_enabled);
     } else if (response.service_timings?.food_service_enabled !== undefined) {
       foodServiceEnabled = Boolean(response.service_timings.food_service_enabled);
-    } else if (response.service_timings?.food_service_status !== undefined) {
-      foodServiceEnabled = response.service_timings.food_service_status === 'active';
+    }
+
+    let foodServiceMainLocked = true;
+    if (response.food_service_main_locked !== undefined) {
+      foodServiceMainLocked = Boolean(response.food_service_main_locked);
+    } else if (response.service_timings?.food_service_main_locked !== undefined) {
+      foodServiceMainLocked = Boolean(response.service_timings.food_service_main_locked);
+    }
+
+    // Determine lock for THIS client:
+    // If master switch disabled -> locked everywhere
+    // Else if on testing environment -> UNLOCKED (allowed)
+    // Else (main branch / production) -> LOCKED if food_service_main_locked is true (default)
+    let isFoodLockedForCurrentClient = false;
+    if (!foodServiceEnabled) {
+      isFoodLockedForCurrentClient = true;
+    } else if (isTesting) {
+      isFoodLockedForCurrentClient = false;
     } else {
-      // Default: On main/production -> locked by default. On testing/dev -> allowed.
-      foodServiceEnabled = !isMainBranch;
+      isFoodLockedForCurrentClient = foodServiceMainLocked;
     }
 
     const foodLockMessage = response.food_service_lock_message || 
@@ -67,15 +97,19 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
         support: response.support_email || "",
         server_time: new Date().toISOString(),
         food_service_enabled: foodServiceEnabled,
-        food_service_status: foodServiceEnabled ? 'active' : 'locked',
+        food_service_main_locked: foodServiceMainLocked,
+        food_service_testing_allowed: foodServiceEnabled,
+        food_service_status: isFoodLockedForCurrentClient ? 'locked' : 'active',
         food_service_lock_message: foodLockMessage,
+        is_food_locked_for_current_client: isFoodLockedForCurrentClient,
         social_links: response.social_links || {}
       }
     };
   } catch (err) {
     console.warn('Failed to fetch platform status (fallback active):', err);
-    const foodServiceEnabled = !isMainBranch;
-    // Fallback if worker is temporarily unreachable (do not falsely lock users out of public pages)
+    // On main fallback -> locked; On testing fallback -> unlocked
+    const isFoodLockedForCurrentClient = !isTesting;
+
     return {
       success: false,
       data: {
@@ -88,9 +122,12 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
         feature_flags: {},
         support: "",
         server_time: new Date().toISOString(),
-        food_service_enabled: foodServiceEnabled,
-        food_service_status: foodServiceEnabled ? 'active' : 'locked',
+        food_service_enabled: true,
+        food_service_main_locked: true,
+        food_service_testing_allowed: true,
+        food_service_status: isFoodLockedForCurrentClient ? 'locked' : 'active',
         food_service_lock_message: 'Campus Food ordering is launching soon! Please check back later.',
+        is_food_locked_for_current_client: isFoodLockedForCurrentClient,
         social_links: {}
       }
     };

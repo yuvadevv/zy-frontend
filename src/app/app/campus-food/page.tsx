@@ -17,6 +17,9 @@ import { FOOD_CATEGORIES } from '@/features/food/config/categories';
 import { FoodProduct, DietaryType } from '@/features/food/types';
 import { APP_ROUTES } from '@/constants/routes';
 import { workerClient } from '@/lib/api/workerClient';
+import { useQuery } from '@tanstack/react-query';
+import { fetchBootstrapConfig, isTestingEnvironment } from '@/features/bootstrap/services/bootstrapService';
+import { FoodLockedScreen } from '@/features/bootstrap/components/FoodLockedScreen';
 import { 
   Flame, 
   Clock, 
@@ -31,6 +34,18 @@ import {
 
 export default function UnifiedCampusFoodPage() {
   const router = useRouter();
+
+  // Route lock protection: if on main/production and food is locked, block immediately
+  const { data: bootstrapData } = useQuery({
+    queryKey: ['bootstrap'],
+    queryFn: fetchBootstrapConfig,
+    staleTime: 1000 * 15,
+  });
+
+  const isTesting = isTestingEnvironment();
+  const isFoodLocked = bootstrapData?.data 
+    ? Boolean(bootstrapData.data.is_food_locked_for_current_client)
+    : !isTesting;
 
   // Search & Filter State
   const [products, setProducts] = useState<FoodProduct[]>(SAMPLE_FOOD_MENU);
@@ -159,6 +174,10 @@ export default function UnifiedCampusFoodPage() {
     setSelectedCategoryId('all');
     setSelectedDietary('all');
   };
+
+  if (isFoodLocked) {
+    return <FoodLockedScreen message={bootstrapData?.data?.food_service_lock_message} />;
+  }
 
   return (
     <div className="w-full flex flex-col gap-3.5 sm:gap-4 pb-24 select-none">
