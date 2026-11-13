@@ -7,7 +7,7 @@ import { Printer, Utensils, Bike, ArrowUpRight, Lock } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { ServiceLauncherItem } from '../types';
 import { DEFAULT_LAUNCHER_SERVICES } from '../config/servicesLauncher';
-import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
+import { fetchBootstrapConfig, isTestingEnvironment } from '@/features/bootstrap/services/bootstrapService';
 import { FoodLockedModal } from '@/features/food/components/FoodLockedModal';
 
 interface MultiServiceLauncherProps {
@@ -25,10 +25,13 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
   const { data: bootstrapData } = useQuery({
     queryKey: ['bootstrap'],
     queryFn: fetchBootstrapConfig,
-    staleTime: 1000 * 30,
+    staleTime: 1000 * 15,
   });
 
-  const isFoodEnabled = bootstrapData?.data ? bootstrapData.data.food_service_enabled !== false : true;
+  const isTesting = isTestingEnvironment();
+  const isFoodLocked = bootstrapData?.data
+    ? Boolean(bootstrapData.data.is_food_locked_for_current_client)
+    : !isTesting; // Default on main: locked! Default on testing: allowed!
   const foodLockMessage = bootstrapData?.data?.food_service_lock_message;
 
   const renderIcon = (icon: string, isPrimary?: boolean, isMuted?: boolean, isLocked?: boolean) => {
@@ -81,13 +84,13 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
         <div className={`grid ${services.length === 2 ? 'grid-cols-2 gap-3' : 'grid-cols-3 gap-2 sm:gap-2.5'} w-full`}>
           {services.map((service) => {
             const isFoodItem = service.id === 'food';
-            const isFoodLocked = isFoodItem && !isFoodEnabled;
-            const isActive = !isFoodLocked && service.status === 'active' && !!service.href;
-            const isPrimary = !isFoodLocked && !!service.isPrimary;
-            const isMuted = isFoodLocked || service.status === 'coming_soon' || service.status === 'maintenance';
+            const isItemLocked = isFoodItem ? isFoodLocked : false;
+            const isActive = !isItemLocked && service.status === 'active' && !!service.href;
+            const isPrimary = !isItemLocked && !!service.isPrimary;
+            const isMuted = isItemLocked || service.status === 'coming_soon' || service.status === 'maintenance';
 
-            const displayBadge = isFoodLocked ? 'LOCKED' : service.badge;
-            const displaySupportingText = isFoodLocked ? 'Launching soon' : service.supportingText;
+            const displayBadge = isItemLocked ? 'LOCKED' : service.badge;
+            const displaySupportingText = isItemLocked ? 'Launching soon' : service.supportingText;
 
             const cardContent = (
               <div className="flex flex-col justify-between h-full relative z-10">
@@ -95,7 +98,7 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
                 <div className="flex items-start justify-between gap-1">
                   <div
                     className={`w-11 h-11 rounded-2xl flex items-center justify-center transition-transform duration-200 group-hover:scale-105 shrink-0 shadow-xs ${
-                      isFoodLocked
+                      isItemLocked
                         ? 'bg-zinc-800 border border-zinc-700/80 text-zinc-400'
                         : isPrimary
                         ? 'bg-gradient-to-br from-[#FF6B00] to-orange-600 text-white shadow-orange-500/35'
@@ -104,13 +107,13 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
                         : 'bg-orange-50 border border-orange-200/70 text-[#FF6B00] group-hover:border-[#FF6B00]/60'
                     }`}
                   >
-                    {renderIcon(service.icon, isPrimary, isMuted, isFoodLocked)}
+                    {renderIcon(service.icon, isPrimary, isMuted, isItemLocked)}
                   </div>
 
                   {displayBadge && (
                     <span
                       className={`text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full leading-none shrink-0 shadow-2xs flex items-center gap-1 ${
-                        isFoodLocked
+                        isItemLocked
                           ? 'bg-amber-500/15 text-amber-500 border border-amber-500/30'
                           : isPrimary
                           ? 'bg-[#FF6B00] text-white ring-1 ring-orange-400/50'
@@ -119,7 +122,7 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
                           : 'bg-emerald-50 text-emerald-700 border border-emerald-200/70'
                       }`}
                     >
-                      {isFoodLocked && <Lock className="w-2.5 h-2.5" />}
+                      {isItemLocked && <Lock className="w-2.5 h-2.5" />}
                       <span>{displayBadge}</span>
                     </span>
                   )}
@@ -130,7 +133,7 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
                   <div className="flex items-center justify-between gap-1">
                     <span
                       className={`text-[14px] sm:text-[15px] font-black leading-tight tracking-tight ${
-                        isFoodLocked
+                        isItemLocked
                           ? 'text-zinc-300 group-hover:text-amber-400 transition-colors'
                           : isPrimary
                           ? 'text-white'
@@ -147,14 +150,14 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
                           isPrimary ? 'text-orange-400' : 'text-gray-400 group-hover:text-[#FF6B00]'
                         }`}
                       />
-                    ) : isFoodLocked ? (
+                    ) : isItemLocked ? (
                       <Lock className="w-3.5 h-3.5 text-zinc-500 group-hover:text-amber-400 transition-colors" />
                     ) : null}
                   </div>
 
                   <span
                     className={`text-[10.5px] sm:text-[11px] leading-tight mt-1 line-clamp-1 ${
-                      isFoodLocked
+                      isItemLocked
                         ? 'text-zinc-500 font-medium'
                         : isPrimary
                         ? 'text-zinc-300 font-medium'
@@ -170,7 +173,7 @@ export const MultiServiceLauncher: React.FC<MultiServiceLauncherProps> = ({
             );
 
             // Case A: Food is Locked -> Open Interactive Info Modal
-            if (isFoodLocked) {
+            if (isItemLocked) {
               return (
                 <motion.div
                   key={service.id}

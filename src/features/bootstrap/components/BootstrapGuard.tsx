@@ -2,7 +2,7 @@
 import * as React from "react";
 import { useQuery } from "@tanstack/react-query";
 import { usePathname, useRouter } from "next/navigation";
-import { fetchBootstrapConfig } from "../services/bootstrapService";
+import { fetchBootstrapConfig, isTestingEnvironment } from "../services/bootstrapService";
 import { SplashScreen } from "./SplashScreen";
 import { MaintenanceScreen } from "./MaintenanceScreen";
 import { ComingSoonScreen } from "./ComingSoonScreen";
@@ -26,8 +26,8 @@ export function BootstrapGuard({ children }: { children: React.ReactNode }) {
   const { data, isLoading, isError } = useQuery({
     queryKey: ["bootstrap"],
     queryFn: fetchBootstrapConfig,
-    staleTime: 1000 * 60, // 1 minute caching
-    refetchInterval: 1000 * 60 * 5, // Polling every 5 minutes
+    staleTime: 1000 * 15, // 15 seconds caching
+    refetchInterval: 1000 * 60 * 2, // Polling every 2 minutes
   });
 
   const [dismissedComingSoon, setDismissedComingSoon] = React.useState(false);
@@ -66,8 +66,14 @@ export function BootstrapGuard({ children }: { children: React.ReactNode }) {
     return <ComingSoonScreen onDismiss={handleDismiss} />;
   }
   if (data?.data.force_update && !isAdminOrVendor) return <ForceUpdateScreen />;
-  if (pathname?.startsWith('/app/campus-food') && data?.data.food_service_enabled === false && !isAdminOrVendor) {
-    return <FoodLockedScreen message={data?.data.food_service_lock_message} />;
+
+  const isTesting = isTestingEnvironment();
+  const isFoodLocked = data?.data 
+    ? Boolean(data.data.is_food_locked_for_current_client) 
+    : !isTesting;
+
+  if (pathname?.startsWith('/app/campus-food') && isFoodLocked && !isAdminOrVendor) {
+    return <FoodLockedScreen message={data?.data?.food_service_lock_message} />;
   }
   return <>{children}</>;
 }
