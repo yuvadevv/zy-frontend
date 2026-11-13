@@ -24,8 +24,18 @@ export const workerClient = {
     let response: Response;
     try {
       const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 8000);
-      const signal = options.signal || controller.signal;
+      const timeoutMs = (options as any)?.timeoutMs || 30000;
+      const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+      let signal: AbortSignal = controller.signal;
+      if (options.signal) {
+        if (typeof AbortSignal !== 'undefined' && 'any' in AbortSignal) {
+          signal = (AbortSignal as any).any([options.signal, controller.signal]);
+        } else {
+          options.signal.addEventListener('abort', () => controller.abort());
+          signal = controller.signal;
+        }
+      }
 
       try {
         response = await fetch(`${WORKER_URL}${endpoint}`, {

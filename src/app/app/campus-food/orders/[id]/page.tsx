@@ -47,49 +47,55 @@ export default function FoodOrderConfirmationPage() {
   const [issueErrorMessage, setIssueErrorMessage] = useState<string | null>(null);
 
   // 1. Fetch live order details from backend
-  useEffect(() => {
-    let isMounted = true;
+  const fetchOrder = React.useCallback(async (attempt = 1) => {
+    if (!orderId) return;
+    try {
+      setLoading(true);
+      setError(null);
 
-    async function fetchOrder() {
-      if (!orderId) return;
-      try {
-        setLoading(true);
-        setError(null);
+      const res = await workerClient.getFoodOrder(orderId);
+      const resData = res.data || res;
 
-        const res = await workerClient.getFoodOrder(orderId);
-        const resData = res.data || res;
-
-        if (isMounted) {
-          if (resData.order || resData.checkout || resData.childOrders) {
-            setOrderData(resData);
-          } else {
-            setOrderData({ order: resData });
-          }
-        }
-      } catch (err: any) {
-        console.warn('Backend fetch failed, falling back to local session store:', err);
-        if (
-          isMounted &&
-          activeOrder &&
-          (activeOrder.id === orderId ||
-            activeOrder.orderId === orderId ||
-            activeOrder.orderNumber === orderId)
-        ) {
-          setOrderData({ order: activeOrder, childOrders: [activeOrder] });
-        } else {
-          setError('Order details could not be loaded.');
-        }
-      } finally {
-        if (isMounted) setLoading(false);
+      if (resData.order || resData.checkout || resData.childOrders) {
+        setOrderData(resData);
+      } else {
+        setOrderData({ order: resData });
       }
+    } catch (err: any) {
+      console.warn(`Backend fetch failed (attempt ${attempt}/3):`, err);
+
+      if (attempt < 3) {
+        await new Promise((r) => setTimeout(r, 1200 * attempt));
+        return fetchOrder(attempt + 1);
+      }
+
+      if (
+        activeOrder &&
+        (activeOrder.id === orderId ||
+          activeOrder.orderId === orderId ||
+          activeOrder.orderNumber === orderId ||
+          activeOrder.order_number === orderId ||
+          activeOrder.checkout_id === orderId ||
+          activeOrder.checkoutId === orderId ||
+          activeOrder.checkout?.id === orderId ||
+          activeOrder.checkout?.checkout_number === orderId)
+      ) {
+        setOrderData({
+          order: activeOrder,
+          checkout: activeOrder.checkout,
+          childOrders: activeOrder.childOrders || [activeOrder],
+        });
+      } else {
+        setError(err?.message || 'Order details could not be loaded.');
+      }
+    } finally {
+      setLoading(false);
     }
-
-    fetchOrder();
-
-    return () => {
-      isMounted = false;
-    };
   }, [orderId, activeOrder]);
+
+  useEffect(() => {
+    fetchOrder(1);
+  }, [fetchOrder]);
 
   // Support Issue Submission
   const handleReportIssue = async (targetOrderRef: string) => {
@@ -138,12 +144,20 @@ export default function FoodOrderConfirmationPage() {
           <h2 className="text-base font-black text-gray-900">Order Not Found</h2>
           <p className="text-xs text-gray-500 mt-1 max-w-xs">{error}</p>
         </div>
-        <button
-          onClick={() => router.push(APP_ROUTES.CAMPUS_FOOD)}
-          className="px-4 py-2 rounded-xl bg-[#151515] text-white text-xs font-black"
-        >
-          Back to Food Menu
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => fetchOrder(1)}
+            className="px-4 py-2.5 rounded-xl bg-[#FF6B00] text-white text-xs font-black shadow-xs hover:bg-[#e05e00] active:scale-95 transition"
+          >
+            Retry Loading Order
+          </button>
+          <button
+            onClick={() => router.push(APP_ROUTES.CAMPUS_FOOD)}
+            className="px-4 py-2.5 rounded-xl bg-[#151515] text-white text-xs font-black active:scale-95 transition"
+          >
+            Back to Food Menu
+          </button>
+        </div>
       </div>
     );
   }

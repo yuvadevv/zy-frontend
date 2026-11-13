@@ -101,6 +101,10 @@ export interface FoodOrder {
   orderId?: string;
   orderNumber?: string;
   order_number?: string;
+  checkout_id?: string;
+  checkoutId?: string;
+  checkout?: any;
+  childOrders?: any[];
   tokenNumber: string;
   token_number?: string;
   studentId?: string;

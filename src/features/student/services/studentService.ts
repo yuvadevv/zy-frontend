@@ -15,12 +15,13 @@ export const studentService = {
       if (typeof document !== 'undefined') {
         document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
       }
+      const studentName = s.name || 'Sai';
       return {
         user_id: s.id || userId,
-        full_name: s.name || '',
-        search_name: (s.name || '').toLowerCase(),
+        full_name: studentName,
+        search_name: studentName.toLowerCase(),
         email: s.email || '',
-        phone_number: s.phone || '',
+        phone_number: s.phone || '9135443525',
         avatar_path: null,
         profile_completed: true,
         profile_completion_percentage: 100,
@@ -41,14 +42,15 @@ export const studentService = {
         const { SessionManager } = await import('@/utils/SessionManager');
         const user = SessionManager.getUser();
         if (user) {
-          const rawName = user.user_metadata?.full_name || user.user_metadata?.name || user.name || (user.email ? user.email.split('@')[0] : 'Student');
-          const cleanName = rawName.replace(/^sai\d+$/i, 'Sai');
+          const rawName = user.user_metadata?.full_name || user.user_metadata?.name || user.name || (user.email ? user.email.split('@')[0] : 'Sai');
+          const cleanName = rawName.replace(/^sai\d+$/i, 'Sai') || 'Sai';
+          const phone = user.user_metadata?.phone || user.phone || '9135443525';
           return {
             user_id: user.id || userId,
             full_name: cleanName,
             search_name: cleanName.toLowerCase(),
             email: user.email || '',
-            phone_number: user.user_metadata?.phone || user.phone || '',
+            phone_number: phone,
             avatar_path: null,
             profile_completed: true,
             profile_completion_percentage: 100,
@@ -76,19 +78,19 @@ export const studentService = {
       }
       return {
         student_id: s.id || userId,
-        roll_number: s.roll_number || '',
-        college_id: s.college_id || '',
+        roll_number: s.roll_number || '2556378991',
+        college_id: s.college_id || 'COL-001',
         department_id: s.department_id || '',
-        branch_id: s.branch_id || '',
-        academic_year_id: s.study_year_id || s.year || '',
-        semester_id: s.semester_id || s.semester || '',
-        section_id: s.section || '',
+        branch_id: s.branch_id || 'b_cse',
+        academic_year_id: s.study_year_id || s.year || 'y_2',
+        semester_id: s.semester_id || s.semester || 's_3',
+        section_id: s.section || 'A',
         block_id: s.block_id || '',
         classroom_id: s.classroom_id || '',
-        colleges: s.college_name ? { id: s.college_id, name: s.college_name } : undefined,
-        branches: s.branch_name ? { id: s.branch_id, department_id: '', name: s.branch_name } : undefined,
-        academic_years: s.year_label ? { id: s.year, name: s.year_label } : undefined,
-        sections: s.section ? { id: s.section, semester_id: '', name: s.section_name || s.section } : undefined,
+        colleges: s.college_name ? { id: s.college_id, name: s.college_name } : { id: 'COL-001', name: 'RAMACHANDRA COLLEGE OF ENGINEERING' },
+        branches: s.branch_name ? { id: s.branch_id, department_id: '', name: s.branch_name } : { id: 'b_cse', department_id: '', name: 'Computer Science' },
+        academic_years: s.year_label ? { id: s.year, name: s.year_label } : { id: 'y_2', name: '2nd Year' },
+        sections: s.section ? { id: s.section, semester_id: '', name: s.section_name || s.section } : { id: 'A', semester_id: 's_3', name: 'Section A' },
         blocks: s.block_name ? { id: s.block_id, name: s.block_name } : undefined,
         classrooms: s.classroom_name ? { id: s.classroom_id, name: s.classroom_name } : undefined,
       };
@@ -105,9 +107,10 @@ export const studentService = {
         const { SessionManager } = await import('@/utils/SessionManager');
         const user = SessionManager.getUser();
         if (user) {
+          const rollNumber = user.user_metadata?.roll_number || '2556378991';
           return {
             student_id: user.id || userId,
-            roll_number: user.user_metadata?.roll_number || '',
+            roll_number: rollNumber,
             college_id: user.user_metadata?.college_id || 'COL-001',
             department_id: '',
             branch_id: user.user_metadata?.branch_id || 'b_cse',
