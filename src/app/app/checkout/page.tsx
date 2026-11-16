@@ -17,6 +17,8 @@ import { OrderPolicyCard } from '@/features/checkout/components/OrderPolicyCard'
 import { BottomSheet } from '@/design-system/components/feedback/BottomSheet/BottomSheet';
 import { useQuery } from '@tanstack/react-query';
 import { workerClient } from '@/lib/api/workerClient';
+import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
+import { PauseCircle } from 'lucide-react';
 
 const CheckoutPageContent = () => {
   const router = useRouter();
@@ -26,6 +28,17 @@ const CheckoutPageContent = () => {
   
   const [successOrderId, setSuccessOrderId] = React.useState<string | null>(null);
   const [confirmedCart, setConfirmedCart] = React.useState<any>(null);
+
+  const { data: bootstrapData } = useQuery({
+    queryKey: ['bootstrap'],
+    queryFn: fetchBootstrapConfig,
+    staleTime: 1000 * 15,
+  });
+
+  const isOrdersEnabled = bootstrapData?.data 
+    ? (bootstrapData.data.orders_enabled !== false && bootstrapData.data.printing_orders_enabled !== false) 
+    : true;
+  const ordersPausedMessage = bootstrapData?.data?.orders_paused_message || 'We are temporarily not accepting new orders right now. Please check back soon!';
 
   // If cart is empty, redirect back to cart
   useEffect(() => {
@@ -63,6 +76,10 @@ const CheckoutPageContent = () => {
 
   const handlePlaceOrder = async () => {
     if (!cart) return;
+    if (!isOrdersEnabled) {
+      alert(ordersPausedMessage);
+      return;
+    }
     
     // Merge checkout state with cart provider state for delivery, coupon, and offer
     const finalCheckoutState = {
@@ -130,6 +147,16 @@ const CheckoutPageContent = () => {
       ) : (
         <>
           <main className="flex-1 flex flex-col gap-6 w-full max-w-4xl mx-auto pb-40">
+            {!isOrdersEnabled && (
+              <div className="p-4 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 flex items-start gap-3 shadow-xs">
+                <PauseCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+                <div>
+                  <h4 className="font-bold text-sm">Orders Temporarily Paused</h4>
+                  <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">{ordersPausedMessage}</p>
+                </div>
+              </div>
+            )}
+
             <PaymentMethodCard 
               selectedId={state.paymentMethodId}
               onSelect={setPaymentMethodId}
@@ -152,7 +179,7 @@ const CheckoutPageContent = () => {
 
           <StickyCheckoutBar 
             total={finalTotal}
-            isValid={isValid}
+            isValid={isValid && isOrdersEnabled}
             isPlacingOrder={isPlacingOrder}
             onPlaceOrder={handlePlaceOrder}
           />

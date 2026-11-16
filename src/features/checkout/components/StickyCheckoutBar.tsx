@@ -2,7 +2,9 @@
 "use client";
 import React from 'react';
 import { Button } from '@/design-system/components/buttons/Button/Button';
-import { Loader2 } from 'lucide-react';
+import { Loader2, PauseCircle } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
 
 interface StickyCheckoutBarProps {
   total: number;
@@ -12,6 +14,18 @@ interface StickyCheckoutBarProps {
 }
 
 export const StickyCheckoutBar = ({ total, onPlaceOrder, isValid, isPlacingOrder }: StickyCheckoutBarProps) => {
+  const { data: bootstrapData } = useQuery({
+    queryKey: ['bootstrap'],
+    queryFn: fetchBootstrapConfig,
+    staleTime: 1000 * 15,
+  });
+
+  const isOrdersEnabled = bootstrapData?.data 
+    ? (bootstrapData.data.orders_enabled !== false && bootstrapData.data.printing_orders_enabled !== false) 
+    : true;
+
+  const isButtonDisabled = !isValid || isPlacingOrder || !isOrdersEnabled;
+
   return (
     <div className="fixed bottom-[72px] left-1/2 -translate-x-1/2 w-full max-w-[430px] bg-background border-t border-border shadow-[0_-4px_10px_rgba(0,0,0,0.05)] z-40 p-4">
       <div className="max-w-4xl mx-auto flex justify-between items-center gap-4">
@@ -22,15 +36,20 @@ export const StickyCheckoutBar = ({ total, onPlaceOrder, isValid, isPlacingOrder
         
         <Button 
           onClick={onPlaceOrder}
-          isDisabled={!isValid || isPlacingOrder}
+          isDisabled={isButtonDisabled}
           className={`flex-1 max-w-[200px] py-4 bg-primary text-primary-foreground font-bold rounded-xl transition-all ${
-            (!isValid || isPlacingOrder) ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/90 shadow-lg shadow-primary/20 hover:scale-[1.02]'
+            isButtonDisabled ? 'opacity-50 cursor-not-allowed' : 'hover:bg-primary/90 shadow-lg shadow-primary/20 hover:scale-[1.02]'
           }`}
         >
           {isPlacingOrder ? (
             <div className="flex items-center justify-center gap-2">
               <Loader2 className="w-5 h-5 animate-spin" />
               <span>Processing...</span>
+            </div>
+          ) : !isOrdersEnabled ? (
+            <div className="flex items-center justify-center gap-1.5">
+              <PauseCircle className="w-4 h-4" />
+              <span>Orders Paused</span>
             </div>
           ) : (
             'Place Order →'

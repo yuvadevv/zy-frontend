@@ -22,8 +22,11 @@ import {
   Calendar,
   Layers,
   Hash,
-  ExternalLink
+  ExternalLink,
+  PauseCircle
 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
 import { useFoodCart } from '@/features/food/store/useFoodCart';
 import { useStudent } from '@/features/student/providers/StudentProvider';
 import { useAuthSession } from '@/features/auth/hooks/useAuthSession';
@@ -65,6 +68,17 @@ export default function FoodCheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<FoodPaymentMethod>('ONLINE_UPI');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const { data: bootstrapData } = useQuery({
+    queryKey: ['bootstrap'],
+    queryFn: fetchBootstrapConfig,
+    staleTime: 1000 * 15,
+  });
+
+  const isOrdersEnabled = bootstrapData?.data 
+    ? (bootstrapData.data.orders_enabled !== false && bootstrapData.data.food_orders_enabled !== false) 
+    : true;
+  const ordersPausedMessage = bootstrapData?.data?.orders_paused_message || 'We are temporarily not accepting new orders right now. Please check back soon!';
 
   // Live verified backend preview state
   const [verifiedTotal, setVerifiedTotal] = useState<number | null>(null);
@@ -133,6 +147,11 @@ export default function FoodCheckoutPage() {
   // 2. Secure Order Confirmation & Payment Gateway Flow
   const handleConfirmOrder = async () => {
     if (items.length === 0 || isSubmitting || isRequestInFlight.current) return;
+
+    if (!isOrdersEnabled) {
+      setErrorMessage(ordersPausedMessage);
+      return;
+    }
 
     isRequestInFlight.current = true;
     setIsSubmitting(true);
@@ -318,6 +337,17 @@ export default function FoodCheckoutPage() {
           </div>
         </div>
       </header>
+
+      {/* Orders Paused Banner */}
+      {!isOrdersEnabled && (
+        <div className="mt-3 p-3.5 rounded-2xl bg-amber-50 border border-amber-300 text-amber-900 text-xs flex items-start gap-2.5 shadow-xs">
+          <PauseCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex-1">
+            <h4 className="font-bold text-xs uppercase tracking-wider text-amber-900">Orders Temporarily Paused</h4>
+            <p className="mt-0.5 leading-relaxed text-amber-800 font-medium">{ordersPausedMessage}</p>
+          </div>
+        </div>
+      )}
 
       {/* Error or Cancellation Banner */}
       {errorMessage && (
@@ -582,10 +612,19 @@ export default function FoodCheckoutPage() {
 
         <button
           onClick={handleConfirmOrder}
-          disabled={isSubmitting || items.length === 0}
-          className="flex-1 max-w-[240px] py-3.5 px-5 rounded-2xl bg-[#FF6B00] hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all text-white text-xs sm:text-sm font-black shadow-md shadow-orange-500/25 flex items-center justify-center gap-2 cursor-pointer"
+          disabled={isSubmitting || items.length === 0 || !isOrdersEnabled}
+          className={`flex-1 max-w-[240px] py-3.5 px-5 rounded-2xl transition-all text-white text-xs sm:text-sm font-black shadow-md flex items-center justify-center gap-2 ${
+            !isOrdersEnabled 
+              ? 'bg-zinc-200 text-zinc-500 cursor-not-allowed shadow-none' 
+              : 'bg-[#FF6B00] hover:bg-orange-600 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed shadow-orange-500/25 cursor-pointer'
+          }`}
         >
-          {isSubmitting ? (
+          {!isOrdersEnabled ? (
+            <>
+              <PauseCircle className="w-4 h-4" />
+              <span>Orders Paused</span>
+            </>
+          ) : isSubmitting ? (
             <>
               <Loader2 className="w-4 h-4 animate-spin stroke-[2.5]" />
               <span>Processing...</span>
