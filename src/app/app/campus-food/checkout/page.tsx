@@ -189,15 +189,25 @@ export default function FoodCheckoutPage() {
 
       // Case A: Pay at Counter (CASH_AT_COUNTER)
       if (paymentMethod === 'CASH_AT_COUNTER' || !resData.requiresPayment) {
+        const orderPayload = {
+          ...(orderData || {}),
+          checkout_id: checkoutData?.id,
+          checkoutId: checkoutData?.id,
+          checkout: checkoutData,
+          childOrders: resData.orders || [orderData],
+        };
         if (orderData) {
-          setActiveOrder({
-            ...orderData,
-            checkout_id: checkoutData?.id,
-            checkoutId: checkoutData?.id,
-            checkout: checkoutData,
-            childOrders: resData.orders || [orderData],
-          });
+          setActiveOrder(orderPayload);
         }
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('bl_last_food_order', JSON.stringify({
+              order: orderPayload,
+              checkout: checkoutData,
+              childOrders: resData.orders || [orderData],
+            }));
+          }
+        } catch { }
         router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
         return;
       }
@@ -231,6 +241,15 @@ export default function FoodCheckoutPage() {
         };
 
         if (verifiedOrder) setActiveOrder(verifiedOrder);
+        try {
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('bl_last_food_order', JSON.stringify({
+              order: verifiedOrder,
+              checkout: checkoutData,
+              childOrders: resData.orders || [orderData],
+            }));
+          }
+        } catch { }
         router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
         return;
       }
@@ -270,6 +289,15 @@ export default function FoodCheckoutPage() {
             };
 
             if (verifiedOrder) setActiveOrder(verifiedOrder);
+            try {
+              if (typeof window !== 'undefined') {
+                sessionStorage.setItem('bl_last_food_order', JSON.stringify({
+                  order: verifiedOrder,
+                  checkout: checkoutData,
+                  childOrders: resData.orders || [orderData],
+                }));
+              }
+            } catch { }
             router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
           } catch (verifyErr: any) {
             console.error('Server signature verification failed:', verifyErr);

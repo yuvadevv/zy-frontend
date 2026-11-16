@@ -69,21 +69,35 @@ export default function FoodOrderConfirmationPage() {
         return fetchOrder(attempt + 1);
       }
 
+      // Check memory activeOrder first
+      let fallback = activeOrder;
+
+      // If activeOrder is not in memory (e.g. page refreshed), check sessionStorage
+      if (!fallback && typeof window !== 'undefined') {
+        try {
+          const stored = sessionStorage.getItem('bl_last_food_order');
+          if (stored) {
+            const parsed = JSON.parse(stored);
+            fallback = parsed.order || parsed;
+          }
+        } catch { }
+      }
+
       if (
-        activeOrder &&
-        (activeOrder.id === orderId ||
-          activeOrder.orderId === orderId ||
-          activeOrder.orderNumber === orderId ||
-          activeOrder.order_number === orderId ||
-          activeOrder.checkout_id === orderId ||
-          activeOrder.checkoutId === orderId ||
-          activeOrder.checkout?.id === orderId ||
-          activeOrder.checkout?.checkout_number === orderId)
+        fallback &&
+        (fallback.id === orderId ||
+          fallback.orderId === orderId ||
+          fallback.orderNumber === orderId ||
+          fallback.order_number === orderId ||
+          fallback.checkout_id === orderId ||
+          fallback.checkoutId === orderId ||
+          fallback.checkout?.id === orderId ||
+          fallback.checkout?.checkout_number === orderId)
       ) {
         setOrderData({
-          order: activeOrder,
-          checkout: activeOrder.checkout,
-          childOrders: activeOrder.childOrders || [activeOrder],
+          order: fallback,
+          checkout: fallback.checkout,
+          childOrders: fallback.childOrders || [fallback],
         });
       } else {
         setError(err?.message || 'Order details could not be loaded.');
