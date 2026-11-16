@@ -202,14 +202,23 @@ export const SessionManager = {
 
         const url = `${baseUrl}/auth/v1/token?grant_type=refresh_token`;
 
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: {
-            'apikey': anonKey,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({ refresh_token: refreshToken })
-        });
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+        let res: Response;
+        try {
+          res = await fetch(url, {
+            method: 'POST',
+            headers: {
+              'apikey': anonKey,
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ refresh_token: refreshToken }),
+            signal: controller.signal
+          });
+        } finally {
+          clearTimeout(timeoutId);
+        }
 
         const data = await res.json().catch(() => null);
 
