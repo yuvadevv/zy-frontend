@@ -10,6 +10,10 @@ export interface BootstrapConfig {
   feature_flags: Record<string, boolean>;
   support: string;
   server_time: string;
+  orders_enabled: boolean;
+  printing_orders_enabled: boolean;
+  food_orders_enabled: boolean;
+  orders_paused_message: string;
   food_service_enabled: boolean;
   food_service_main_locked: boolean;
   food_service_testing_allowed: boolean;
@@ -52,6 +56,32 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
     const isComingSoon = typeof response.coming_soon === 'object' && response.coming_soon !== null
       ? Boolean((response.coming_soon as any).enabled)
       : Boolean(response.coming_soon);
+
+    // Order Acceptance & Stop Orders
+    let ordersEnabled = true;
+    if (response.orders_enabled !== undefined) {
+      ordersEnabled = Boolean(response.orders_enabled);
+    } else if (response.service_timings?.orders_enabled !== undefined) {
+      ordersEnabled = Boolean(response.service_timings.orders_enabled);
+    }
+
+    let printingOrdersEnabled = true;
+    if (response.printing_orders_enabled !== undefined) {
+      printingOrdersEnabled = Boolean(response.printing_orders_enabled);
+    } else if (response.service_timings?.printing_orders_enabled !== undefined) {
+      printingOrdersEnabled = Boolean(response.service_timings.printing_orders_enabled);
+    }
+
+    let foodOrdersEnabled = true;
+    if (response.food_orders_enabled !== undefined) {
+      foodOrdersEnabled = Boolean(response.food_orders_enabled);
+    } else if (response.service_timings?.food_orders_enabled !== undefined) {
+      foodOrdersEnabled = Boolean(response.service_timings.food_orders_enabled);
+    }
+
+    const ordersPausedMessage = response.orders_paused_message ||
+      response.service_timings?.orders_paused_message ||
+      'We are temporarily not accepting new orders right now. Please check back soon!';
 
     let foodServiceEnabled = true;
     if (response.food_service_enabled !== undefined) {
@@ -96,6 +126,10 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
         feature_flags: {},
         support: response.support_email || "",
         server_time: new Date().toISOString(),
+        orders_enabled: ordersEnabled,
+        printing_orders_enabled: printingOrdersEnabled,
+        food_orders_enabled: foodOrdersEnabled,
+        orders_paused_message: ordersPausedMessage,
         food_service_enabled: foodServiceEnabled,
         food_service_main_locked: foodServiceMainLocked,
         food_service_testing_allowed: foodServiceEnabled,
@@ -122,6 +156,10 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
         feature_flags: {},
         support: "",
         server_time: new Date().toISOString(),
+        orders_enabled: true,
+        printing_orders_enabled: true,
+        food_orders_enabled: true,
+        orders_paused_message: 'We are temporarily not accepting new orders right now. Please check back soon!',
         food_service_enabled: true,
         food_service_main_locked: true,
         food_service_testing_allowed: true,
