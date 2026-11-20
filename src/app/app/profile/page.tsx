@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { LogOut } from 'lucide-react';
 import { authService } from '@/features/auth/services/authService';
+import { workerClient } from '@/lib/api/workerClient';
 import { Button } from '@/design-system/components/buttons/Button/Button';
 import { ProfileHeader } from '@/features/profile/components/ProfileHeader';
 import { StudentProfileCard } from '@/features/profile/components/StudentProfileCard';
@@ -24,6 +25,20 @@ export default function ProfilePage() {
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('bl_push_token') : null;
+      if (token) {
+        await workerClient.unsubscribePush(token).catch(() => {});
+      }
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('bl_push_subscribed');
+        localStorage.removeItem('bl_push_token');
+        localStorage.removeItem('bl_last_food_order');
+      }
+    } catch (e) {
+      console.warn('Push cleanup on logout:', e);
+    }
+
     try {
       await authService.logout();
     } catch (error) {
