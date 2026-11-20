@@ -30,16 +30,29 @@ export interface BootstrapConfig {
 export function isTestingEnvironment(): boolean {
   if (typeof window === 'undefined') {
     return process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF === 'testing' || 
-           process.env.VERCEL_GIT_COMMIT_REF === 'testing' ||
-           process.env.NODE_ENV === 'development';
+           process.env.VERCEL_GIT_COMMIT_REF === 'testing';
   }
   const host = window.location.hostname.toLowerCase();
   const search = window.location.search.toLowerCase();
-  return host.includes('localhost') || 
-         host.includes('127.0.0.1') || 
-         host.includes('git-testing') || 
-         host.includes('testing') ||
-         search.includes('branch=testing');
+
+  // Explicit URL query overrides (allows testing both states easily anywhere)
+  if (search.includes('branch=testing') || search.includes('test_food=true')) return true;
+  if (search.includes('branch=main') || search.includes('lock_food=true') || search.includes('preview_lock=true')) return false;
+
+  // Check if deployed on testing branch
+  if (host.includes('git-testing') || host.includes('-testing') || host.includes('testing.')) return true;
+  if (process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_REF === 'testing') return true;
+
+  // Production main branch
+  if (host.includes('blintzy.com') || host.includes('blintzy.in') || host.includes('blintzy-main')) return false;
+
+  // Localhost simulation: allows developers to toggle simulated branch in localStorage
+  const simBranch = typeof window !== 'undefined' ? localStorage.getItem('bl_simulate_branch') : null;
+  if (simBranch === 'main') return false;
+  if (simBranch === 'testing') return true;
+
+  // Default for local development
+  return host.includes('localhost') || host.includes('127.0.0.1');
 }
 
 export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: BootstrapConfig }> {
@@ -98,16 +111,19 @@ export async function fetchBootstrapConfig(): Promise<{ success: boolean; data: 
     }
 
     // Determine lock for THIS client:
-    // If master switch disabled -> locked everywhere
-    // Else if on testing environment -> UNLOCKED (allowed)
-    // Else (main branch / production) -> LOCKED if food_service_main_locked is true (default)
+    // 1. If master switch disabled -> locked everywhere (both main & testing)
+    // 2. Else if food_service_main_locked is explicitly false -> unlocked everywhere (live)
+    // 3. Else if on testing environment -> UNLOCKED (allowed for testing)
+    // 4. Else (main branch / production) -> LOCKED
     let isFoodLockedForCurrentClient = false;
     if (!foodServiceEnabled) {
       isFoodLockedForCurrentClient = true;
+    } else if (!foodServiceMainLocked) {
+      isFoodLockedForCurrentClient = false;
     } else if (isTesting) {
       isFoodLockedForCurrentClient = false;
     } else {
-      isFoodLockedForCurrentClient = foodServiceMainLocked;
+      isFoodLockedForCurrentClient = true;
     }
 
     const foodLockMessage = response.food_service_lock_message || 

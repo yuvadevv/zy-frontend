@@ -5,7 +5,16 @@ import { useStudent } from '@/features/student/providers/StudentProvider';
 import { GraduationCap, Building2, MapPin, Hash, DoorClosed, Edit2, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export const AcademicInformationCard = () => {
-  const { academicRecord, isProfileCompleted, openAcademicModal } = useStudent();
+  const student = useStudent();
+  const academicRecord = student?.academicRecord;
+  const isProfileCompleted = Boolean(student?.isProfileCompleted);
+  const handleOpenAcademicModal = (onSuccess?: () => void) => {
+    if (student && typeof student.openAcademicModal === 'function') {
+      student.openAcademicModal(onSuccess);
+    } else {
+      window.location.href = '/app/profile/edit';
+    }
+  };
 
   if (!isProfileCompleted || !academicRecord) {
     return (
@@ -29,7 +38,7 @@ export const AcademicInformationCard = () => {
         </p>
 
         <button
-          onClick={() => openAcademicModal()}
+          onClick={() => handleOpenAcademicModal()}
           className="w-full py-3 px-4 rounded-xl bg-[#FF6B00] hover:bg-orange-600 text-white font-bold text-xs shadow-md shadow-orange-500/20 transition-all flex items-center justify-center gap-2 active:scale-[0.98]"
         >
           <span>Complete Academic Profile</span>
@@ -63,7 +72,7 @@ export const AcademicInformationCard = () => {
         </div>
 
         <button
-          onClick={() => openAcademicModal()}
+          onClick={() => handleOpenAcademicModal()}
           className="px-3 py-1.5 rounded-xl border border-gray-200 hover:border-gray-300 text-gray-700 text-xs font-bold flex items-center gap-1.5 transition-colors"
           title="Edit Academic Details"
         >
