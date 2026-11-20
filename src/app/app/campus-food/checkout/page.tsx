@@ -62,7 +62,18 @@ export default function FoodCheckoutPage() {
     clearCart
   } = useFoodCart();
 
-  const { profile, academicRecord, isProfileCompleted, openAcademicModal } = useStudent();
+  const student = useStudent();
+  const profile = student?.profile;
+  const academicRecord = student?.academicRecord;
+  const isProfileCompleted = Boolean(student?.isProfileCompleted);
+
+  const handleOpenAcademicModal = (onSuccess?: () => void) => {
+    if (student && typeof student.openAcademicModal === 'function') {
+      student.openAcademicModal(onSuccess);
+    } else {
+      router.push('/app/profile/edit');
+    }
+  };
   const { user } = useAuthSession();
 
   const [paymentMethod, setPaymentMethod] = useState<FoodPaymentMethod>('ONLINE_UPI');
@@ -151,7 +162,7 @@ export default function FoodCheckoutPage() {
     if (items.length === 0 || isSubmitting || isRequestInFlight.current) return;
 
         if (!isProfileCompleted) {
-      openAcademicModal(() => {
+      handleOpenAcademicModal(() => {
         handleConfirmOrder();
       });
       return;
@@ -475,7 +486,7 @@ if (!isOrdersEnabled) {
               </div>
               <button 
                 type="button"
-                onClick={() => openAcademicModal()}
+                onClick={() => handleOpenAcademicModal()}
                 className="font-bold text-white bg-[#FF6B00] hover:bg-orange-600 px-3 py-1.5 rounded-xl shadow-xs shrink-0 text-xs transition-colors"
               >
                 Complete Profile
@@ -485,7 +496,7 @@ if (!isOrdersEnabled) {
             <div className="flex justify-end -mt-1 -mb-1">
               <button 
                 type="button"
-                onClick={() => openAcademicModal()}
+                onClick={() => handleOpenAcademicModal()}
                 className="font-bold text-[#FF6B00] hover:underline text-xs flex items-center gap-1"
               >
                 <span>Edit Details</span>

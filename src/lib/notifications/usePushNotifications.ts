@@ -77,8 +77,10 @@ export function usePushNotifications(): UsePushNotificationsReturn {
 
       if (fbApiKey && fbProjectId && fbSenderId && fbAppId) {
         try {
-          const { initializeApp, getApps } = await import('firebase/app');
-          const { getMessaging, getToken } = await import('firebase/messaging');
+          const fbApp = 'firebase/app';
+          const fbMsg = 'firebase/messaging';
+          const { initializeApp, getApps } = await import(/* webpackIgnore: true */ fbApp);
+          const { getMessaging, getToken } = await import(/* webpackIgnore: true */ fbMsg);
 
           const app = getApps().length === 0
             ? initializeApp({

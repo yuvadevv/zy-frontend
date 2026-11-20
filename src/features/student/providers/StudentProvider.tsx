@@ -119,4 +119,16 @@ export const StudentProvider = ({ children }: { children: React.ReactNode }) => 
   );
 };
 
-export const useStudent = () => useContext(StudentContext);
+export const useStudent = () => {
+  const ctx = useContext(StudentContext);
+  return {
+    profile: ctx?.profile || null,
+    academicRecord: ctx?.academicRecord || null,
+    isLoading: ctx?.isLoading ?? false,
+    isProfileCompleted: Boolean(ctx?.isProfileCompleted),
+    isAcademicModalOpen: Boolean(ctx?.isAcademicModalOpen),
+    openAcademicModal: typeof ctx?.openAcademicModal === 'function' ? ctx.openAcademicModal : () => {},
+    closeAcademicModal: typeof ctx?.closeAcademicModal === 'function' ? ctx.closeAcademicModal : () => {},
+    refreshProfile: typeof ctx?.refreshProfile === 'function' ? ctx.refreshProfile : async () => {},
+  };
+};

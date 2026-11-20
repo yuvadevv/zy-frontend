@@ -26,7 +26,15 @@ const CheckoutPageContent = () => {
   const { cart, coupon, offer, deliveryDetails, applyOffer } = useCart();
   const { state, setDeliveryDetails, setPaymentMethodId, setCouponCode, setStudentNotes, setTermsAccepted, isValid, clearSession } = useCheckout();
   const { placeOrder, isPlacingOrder, error: orderError } = usePlaceOrder();
-  const { isProfileCompleted, openAcademicModal } = useStudent();
+  const student = useStudent();
+  const isProfileCompleted = Boolean(student?.isProfileCompleted);
+  const handleOpenAcademicModal = (onSuccess?: () => void) => {
+    if (student && typeof student.openAcademicModal === 'function') {
+      student.openAcademicModal(onSuccess);
+    } else {
+      router.push('/app/profile/edit');
+    }
+  };
   
   const [successOrderId, setSuccessOrderId] = React.useState<string | null>(null);
   const [confirmedCart, setConfirmedCart] = React.useState<any>(null);
@@ -44,11 +52,11 @@ const CheckoutPageContent = () => {
 
   useEffect(() => {
     if (orderError && (orderError.includes('PROFILE_COMPLETION_REQUIRED') || orderError.includes('academic details'))) {
-      openAcademicModal(() => {
+      handleOpenAcademicModal(() => {
         handlePlaceOrder();
       });
     }
-  }, [orderError, openAcademicModal]);
+  }, [orderError, student?.openAcademicModal]);
 
   // If cart is empty, redirect back to cart
   useEffect(() => {
@@ -91,7 +99,7 @@ const CheckoutPageContent = () => {
       return;
     }
     if (!isProfileCompleted) {
-      openAcademicModal(() => {
+      handleOpenAcademicModal(() => {
         handlePlaceOrder();
       });
       return;
@@ -184,7 +192,7 @@ const CheckoutPageContent = () => {
                 </div>
                 <button
                   type="button"
-                  onClick={() => openAcademicModal()}
+                  onClick={() => handleOpenAcademicModal()}
                   className="px-3.5 py-2 bg-[#FF6B00] hover:bg-orange-600 text-white text-xs font-bold rounded-xl shrink-0 shadow-sm transition-colors cursor-pointer"
                 >
                   Complete Profile
