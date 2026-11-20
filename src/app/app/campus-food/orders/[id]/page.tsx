@@ -34,8 +34,37 @@ export default function FoodOrderConfirmationPage() {
 
   const { activeOrder } = useFoodCart();
 
-  const [orderData, setOrderData] = useState<any>(null);
-  const [loading, setLoading] = useState(true);
+  const [orderData, setOrderData] = useState<any>(() => {
+    let fallback = activeOrder;
+    if (!fallback && typeof window !== 'undefined') {
+      try {
+        const stored = sessionStorage.getItem('bl_last_food_order');
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          fallback = parsed.order || parsed;
+        }
+      } catch { }
+    }
+    if (
+      fallback &&
+      (fallback.id === orderId ||
+        fallback.orderId === orderId ||
+        fallback.orderNumber === orderId ||
+        fallback.order_number === orderId ||
+        fallback.checkout_id === orderId ||
+        fallback.checkoutId === orderId ||
+        fallback.checkout?.id === orderId ||
+        fallback.checkout?.checkout_number === orderId)
+    ) {
+      return {
+        order: fallback,
+        checkout: fallback.checkout,
+        childOrders: fallback.childOrders || [fallback],
+      };
+    }
+    return null;
+  });
+  const [loading, setLoading] = useState(() => !orderData);
   const [error, setError] = useState<string | null>(null);
 
   // Help & Support Modal State (Part 12)
@@ -50,7 +79,7 @@ export default function FoodOrderConfirmationPage() {
   const fetchOrder = React.useCallback(async (attempt = 1) => {
     if (!orderId) return;
     try {
-      setLoading(true);
+      if (!orderData) setLoading(true);
       setError(null);
 
       const res = await workerClient.getFoodOrder(orderId);
@@ -65,7 +94,7 @@ export default function FoodOrderConfirmationPage() {
       console.warn(`Backend fetch failed (attempt ${attempt}/3):`, err);
 
       if (attempt < 3) {
-        await new Promise((r) => setTimeout(r, 1200 * attempt));
+        await new Promise((r) => setTimeout(r, 1000 * attempt));
         return fetchOrder(attempt + 1);
       }
 
@@ -100,12 +129,14 @@ export default function FoodOrderConfirmationPage() {
           childOrders: fallback.childOrders || [fallback],
         });
       } else {
-        setError(err?.message || 'Order details could not be loaded.');
+        if (!orderData) {
+          setError(err?.message || 'Order details could not be loaded.');
+        }
       }
     } finally {
       setLoading(false);
     }
-  }, [orderId, activeOrder]);
+  }, [orderId, activeOrder, orderData]);
 
   useEffect(() => {
     fetchOrder(1);
