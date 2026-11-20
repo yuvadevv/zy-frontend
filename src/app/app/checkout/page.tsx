@@ -18,13 +18,15 @@ import { BottomSheet } from '@/design-system/components/feedback/BottomSheet/Bot
 import { useQuery } from '@tanstack/react-query';
 import { workerClient } from '@/lib/api/workerClient';
 import { fetchBootstrapConfig } from '@/features/bootstrap/services/bootstrapService';
-import { PauseCircle } from 'lucide-react';
+import { PauseCircle, AlertCircle } from 'lucide-react';
+import { useStudent } from '@/features/student/providers/StudentProvider';
 
 const CheckoutPageContent = () => {
   const router = useRouter();
   const { cart, coupon, offer, deliveryDetails, applyOffer } = useCart();
   const { state, setDeliveryDetails, setPaymentMethodId, setCouponCode, setStudentNotes, setTermsAccepted, isValid, clearSession } = useCheckout();
   const { placeOrder, isPlacingOrder, error: orderError } = usePlaceOrder();
+  const { isProfileCompleted, openAcademicModal } = useStudent();
   
   const [successOrderId, setSuccessOrderId] = React.useState<string | null>(null);
   const [confirmedCart, setConfirmedCart] = React.useState<any>(null);
@@ -39,6 +41,14 @@ const CheckoutPageContent = () => {
     ? (bootstrapData.data.orders_enabled !== false && bootstrapData.data.printing_orders_enabled !== false) 
     : true;
   const ordersPausedMessage = bootstrapData?.data?.orders_paused_message || 'We are temporarily not accepting new orders right now. Please check back soon!';
+
+  useEffect(() => {
+    if (orderError && (orderError.includes('PROFILE_COMPLETION_REQUIRED') || orderError.includes('academic details'))) {
+      openAcademicModal(() => {
+        handlePlaceOrder();
+      });
+    }
+  }, [orderError, openAcademicModal]);
 
   // If cart is empty, redirect back to cart
   useEffect(() => {
@@ -78,6 +88,12 @@ const CheckoutPageContent = () => {
     if (!cart) return;
     if (!isOrdersEnabled) {
       alert(ordersPausedMessage);
+      return;
+    }
+    if (!isProfileCompleted) {
+      openAcademicModal(() => {
+        handlePlaceOrder();
+      });
       return;
     }
     
@@ -154,6 +170,25 @@ const CheckoutPageContent = () => {
                   <h4 className="font-bold text-sm">Orders Temporarily Paused</h4>
                   <p className="text-xs text-amber-800 mt-0.5 leading-relaxed">{ordersPausedMessage}</p>
                 </div>
+              </div>
+            )}
+
+            {!isProfileCompleted && (
+              <div className="p-4 rounded-2xl bg-orange-50 border border-orange-200 text-orange-950 flex items-center justify-between shadow-xs">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="w-5 h-5 text-[#FF6B00] shrink-0 mt-0.5" />
+                  <div>
+                    <h4 className="font-bold text-sm">Complete Your Academic Profile</h4>
+                    <p className="text-xs text-orange-800 mt-0.5">Please provide your academic details before placing your first order. This helps us deliver your orders to the correct classroom.</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => openAcademicModal()}
+                  className="px-3.5 py-2 bg-[#FF6B00] hover:bg-orange-600 text-white text-xs font-bold rounded-xl shrink-0 shadow-sm transition-colors cursor-pointer"
+                >
+                  Complete Profile
+                </button>
               </div>
             )}
 

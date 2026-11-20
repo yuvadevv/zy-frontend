@@ -82,24 +82,18 @@ export default function EditProfilePage() {
   const availableClassrooms = options?.classrooms.filter(c => c.block_id === selectedBlockId) || [];
 
   const onSubmit = async (data: EditProfileData) => {
-    if (!profile || !academicRecord) return;
-    
     setIsSaving(true);
     setError(null);
     try {
-      await studentService.updateProfile(profile.user_id, {
-        full_name: data.fullName,
-        phone_number: data.phoneNumber,
-        delivery_notes: data.deliveryNotes,
-      });
-
       const sem = options?.semesters.find(sem => sem.academic_year_id === data.academicYearId);
-      const semesterId = sem ? sem.id : academicRecord.semester_id;
+      const semesterId = sem ? sem.id : (academicRecord?.semester_id || 's_1');
 
-      await studentService.updateAcademicRecord(profile.user_id, {
+      await studentService.saveCompleteAcademicProfile({
+        name: data.fullName,
+        phone: data.phoneNumber,
         branch_id: data.branchId,
-        academic_year_id: data.academicYearId,
-        section_id: data.sectionId,
+        study_year_id: data.academicYearId,
+        section: data.sectionId,
         block_id: data.blockId,
         classroom_id: data.classroomId,
         roll_number: data.rollNumber.trim().toUpperCase(),
@@ -107,11 +101,12 @@ export default function EditProfilePage() {
       });
 
       await refreshProfile();
-      toast.success('Profile updated successfully');
+      toast.success('Academic profile updated successfully');
       router.back();
     } catch (err: any) {
-      setError(err.message || 'Failed to update profile');
-      toast.error('Failed to update profile');
+      const msg = err.message || 'Failed to update profile';
+      setError(msg);
+      toast.error(msg);
     } finally {
       setIsSaving(false);
     }
