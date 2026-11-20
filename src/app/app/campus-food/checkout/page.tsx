@@ -210,11 +210,13 @@ if (!isOrdersEnabled) {
         }
         try {
           if (typeof window !== 'undefined') {
-            sessionStorage.setItem('bl_last_food_order', JSON.stringify({
+            const serialized = JSON.stringify({
               order: orderPayload,
               checkout: checkoutData,
               childOrders: resData.orders || [orderData],
-            }));
+            });
+            sessionStorage.setItem('bl_last_food_order', serialized);
+            localStorage.setItem('bl_last_food_order', serialized);
           }
         } catch { }
         router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
@@ -252,11 +254,13 @@ if (!isOrdersEnabled) {
         if (verifiedOrder) setActiveOrder(verifiedOrder);
         try {
           if (typeof window !== 'undefined') {
-            sessionStorage.setItem('bl_last_food_order', JSON.stringify({
+            const serialized = JSON.stringify({
               order: verifiedOrder,
               checkout: checkoutData,
               childOrders: resData.orders || [orderData],
-            }));
+            });
+            sessionStorage.setItem('bl_last_food_order', serialized);
+            localStorage.setItem('bl_last_food_order', serialized);
           }
         } catch { }
         router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));
@@ -300,11 +304,13 @@ if (!isOrdersEnabled) {
             if (verifiedOrder) setActiveOrder(verifiedOrder);
             try {
               if (typeof window !== 'undefined') {
-                sessionStorage.setItem('bl_last_food_order', JSON.stringify({
+                const serialized = JSON.stringify({
                   order: verifiedOrder,
                   checkout: checkoutData,
                   childOrders: resData.orders || [orderData],
-                }));
+                });
+                sessionStorage.setItem('bl_last_food_order', serialized);
+                localStorage.setItem('bl_last_food_order', serialized);
               }
             } catch { }
             router.replace(APP_ROUTES.FOOD.ORDER_CONFIRMATION(destinationId));

@@ -27,6 +27,71 @@ import { FoodPickupQR } from '@/features/food/components/FoodPickupQR';
 import { DietaryBadge } from '@/features/food/components/DietaryBadge';
 import { APP_ROUTES } from '@/constants/routes';
 
+function resolveFallbackOrder(targetId: string, memOrder: any) {
+  // 1. Check memory active order
+  if (memOrder) {
+    const isMatch =
+      !targetId ||
+      memOrder.id === targetId ||
+      memOrder.orderId === targetId ||
+      memOrder.orderNumber === targetId ||
+      memOrder.order_number === targetId ||
+      memOrder.checkout_id === targetId ||
+      memOrder.checkoutId === targetId ||
+      memOrder.checkout?.id === targetId ||
+      memOrder.checkout?.checkout_number === targetId ||
+      (memOrder.childOrders && memOrder.childOrders.some((c: any) => c.id === targetId || c.order_number === targetId));
+
+    if (isMatch) {
+      return {
+        order: memOrder,
+        checkout: memOrder.checkout || null,
+        childOrders: memOrder.childOrders && memOrder.childOrders.length > 0 ? memOrder.childOrders : [memOrder],
+      };
+    }
+  }
+
+  // 2. Check storage (sessionStorage first, then localStorage)
+  if (typeof window !== 'undefined') {
+    const sources = [
+      sessionStorage.getItem('bl_last_food_order'),
+      localStorage.getItem('bl_last_food_order'),
+    ];
+
+    for (const raw of sources) {
+      if (!raw) continue;
+      try {
+        const parsed = JSON.parse(raw);
+        const rootOrder = parsed.order || parsed;
+        const checkout = parsed.checkout || rootOrder?.checkout || null;
+        const childOrders = parsed.childOrders || (rootOrder?.childOrders && rootOrder.childOrders.length > 0 ? rootOrder.childOrders : [rootOrder]);
+
+        const isMatch =
+          !targetId ||
+          rootOrder?.id === targetId ||
+          rootOrder?.orderId === targetId ||
+          rootOrder?.orderNumber === targetId ||
+          rootOrder?.order_number === targetId ||
+          rootOrder?.checkout_id === targetId ||
+          rootOrder?.checkoutId === targetId ||
+          checkout?.id === targetId ||
+          checkout?.checkout_number === targetId ||
+          (childOrders && childOrders.some((c: any) => c.id === targetId || c.order_number === targetId));
+
+        if (isMatch && rootOrder) {
+          return {
+            order: rootOrder,
+            checkout,
+            childOrders: childOrders && childOrders.length > 0 ? childOrders : [rootOrder],
+          };
+        }
+      } catch { }
+    }
+  }
+
+  return null;
+}
+
 export default function FoodOrderConfirmationPage() {
   const params = useParams();
   const router = useRouter();
@@ -34,36 +99,7 @@ export default function FoodOrderConfirmationPage() {
 
   const { activeOrder } = useFoodCart();
 
-  const [orderData, setOrderData] = useState<any>(() => {
-    let fallback = activeOrder;
-    if (!fallback && typeof window !== 'undefined') {
-      try {
-        const stored = sessionStorage.getItem('bl_last_food_order');
-        if (stored) {
-          const parsed = JSON.parse(stored);
-          fallback = parsed.order || parsed;
-        }
-      } catch { }
-    }
-    if (
-      fallback &&
-      (fallback.id === orderId ||
-        fallback.orderId === orderId ||
-        fallback.orderNumber === orderId ||
-        fallback.order_number === orderId ||
-        fallback.checkout_id === orderId ||
-        fallback.checkoutId === orderId ||
-        fallback.checkout?.id === orderId ||
-        fallback.checkout?.checkout_number === orderId)
-    ) {
-      return {
-        order: fallback,
-        checkout: fallback.checkout,
-        childOrders: fallback.childOrders || [fallback],
-      };
-    }
-    return null;
-  });
+  const [orderData, setOrderData] = useState<any>(() => resolveFallbackOrder(orderId, activeOrder));
   const [loading, setLoading] = useState(() => !orderData);
   const [error, setError] = useState<string | null>(null);
 
@@ -98,40 +134,12 @@ export default function FoodOrderConfirmationPage() {
         return fetchOrder(attempt + 1);
       }
 
-      // Check memory activeOrder first
-      let fallback = activeOrder;
-
-      // If activeOrder is not in memory (e.g. page refreshed), check sessionStorage
-      if (!fallback && typeof window !== 'undefined') {
-        try {
-          const stored = sessionStorage.getItem('bl_last_food_order');
-          if (stored) {
-            const parsed = JSON.parse(stored);
-            fallback = parsed.order || parsed;
-          }
-        } catch { }
-      }
-
-      if (
-        fallback &&
-        (fallback.id === orderId ||
-          fallback.orderId === orderId ||
-          fallback.orderNumber === orderId ||
-          fallback.order_number === orderId ||
-          fallback.checkout_id === orderId ||
-          fallback.checkoutId === orderId ||
-          fallback.checkout?.id === orderId ||
-          fallback.checkout?.checkout_number === orderId)
-      ) {
-        setOrderData({
-          order: fallback,
-          checkout: fallback.checkout,
-          childOrders: fallback.childOrders || [fallback],
-        });
-      } else {
-        if (!orderData) {
-          setError(err?.message || 'Order details could not be loaded.');
-        }
+      // Check fallback order if we don't have orderData yet
+      const fallback = resolveFallbackOrder(orderId, activeOrder);
+      if (fallback) {
+        setOrderData(fallback);
+      } else if (!orderData) {
+        setError(err?.message || 'Order details could not be loaded. Please check your connection.');
       }
     } finally {
       setLoading(false);
