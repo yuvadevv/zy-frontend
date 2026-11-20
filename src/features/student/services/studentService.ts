@@ -12,19 +12,25 @@ export const studentService = {
         }
         return null;
       }
+      
+      const isCompleted = Boolean(s.academic_profile_completed);
       if (typeof document !== 'undefined') {
-        document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
+        if (isCompleted) {
+          document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
+        } else {
+          document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
       }
-      const studentName = s.name || 'Sai';
+
       return {
         user_id: s.id || userId,
-        full_name: studentName,
-        search_name: studentName.toLowerCase(),
+        full_name: s.name || '',
+        search_name: (s.name || '').toLowerCase(),
         email: s.email || '',
-        phone_number: s.phone || '9135443525',
-        avatar_path: null,
-        profile_completed: true,
-        profile_completion_percentage: 100,
+        phone_number: s.phone || '',
+        avatar_path: s.avatar_url || null,
+        profile_completed: isCompleted,
+        profile_completion_percentage: isCompleted ? 100 : 40,
         delivery_notes: s.delivery_notes || '',
         created_at: s.created_at,
         updated_at: s.updated_at,
@@ -37,23 +43,23 @@ export const studentService = {
         return null;
       }
 
-      // Resilient fallback when backend is unreachable or blocked by campus firewall
+      // Resilient fallback: read available basic Google account identity only
       try {
         const { SessionManager } = await import('@/utils/SessionManager');
         const user = SessionManager.getUser();
         if (user) {
-          const rawName = user.user_metadata?.full_name || user.user_metadata?.name || user.name || (user.email ? user.email.split('@')[0] : 'Sai');
-          const cleanName = rawName.replace(/^sai\d+$/i, 'Sai') || 'Sai';
-          const phone = user.user_metadata?.phone || user.phone || '9135443525';
+          const rawName = user.user_metadata?.full_name || user.user_metadata?.name || user.name || (user.email ? user.email.split('@')[0] : '');
+          const phone = user.user_metadata?.phone || user.phone || '';
+          const avatar = user.user_metadata?.avatar_url || user.user_metadata?.picture || null;
           return {
             user_id: user.id || userId,
-            full_name: cleanName,
-            search_name: cleanName.toLowerCase(),
+            full_name: rawName,
+            search_name: rawName.toLowerCase(),
             email: user.email || '',
             phone_number: phone,
-            avatar_path: null,
-            profile_completed: true,
-            profile_completion_percentage: 100,
+            avatar_path: avatar,
+            profile_completed: false, // Never mark complete via client fallback
+            profile_completion_percentage: 20,
             delivery_notes: '',
             created_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
@@ -70,68 +76,57 @@ export const studentService = {
     try {
       const data = await workerClient.fetch('/api/students/me');
       const s = data?.student || data?.data?.student;
-      if (!s) {
-        if (typeof document !== 'undefined') {
-          document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        }
+      if (!s || !s.roll_number) {
         return null;
       }
       return {
         student_id: s.id || userId,
-        roll_number: s.roll_number || '2556378991',
+        roll_number: s.roll_number,
         college_id: s.college_id || 'COL-001',
         department_id: s.department_id || '',
-        branch_id: s.branch_id || 'b_cse',
-        academic_year_id: s.study_year_id || s.year || 'y_2',
-        semester_id: s.semester_id || s.semester || 's_3',
-        section_id: s.section || 'A',
+        branch_id: s.branch_id || '',
+        academic_year_id: s.study_year_id || s.year || '',
+        semester_id: s.semester_id || s.semester || 's_1',
+        section_id: s.section || '',
         block_id: s.block_id || '',
         classroom_id: s.classroom_id || '',
         colleges: s.college_name ? { id: s.college_id, name: s.college_name } : { id: 'COL-001', name: 'RAMACHANDRA COLLEGE OF ENGINEERING' },
-        branches: s.branch_name ? { id: s.branch_id, department_id: '', name: s.branch_name } : { id: 'b_cse', department_id: '', name: 'Computer Science' },
-        academic_years: s.year_label ? { id: s.year, name: s.year_label } : { id: 'y_2', name: '2nd Year' },
-        sections: s.section ? { id: s.section, semester_id: '', name: s.section_name || s.section } : { id: 'A', semester_id: 's_3', name: 'Section A' },
+        branches: s.branch_name ? { id: s.branch_id, department_id: '', name: s.branch_name } : undefined,
+        academic_years: s.year_label ? { id: s.year, name: s.year_label } : undefined,
+        sections: s.section ? { id: s.section, semester_id: '', name: s.section_name || s.section } : undefined,
         blocks: s.block_name ? { id: s.block_id, name: s.block_name } : undefined,
-        classrooms: s.classroom_name ? { id: s.classroom_id, name: s.classroom_name } : undefined,
+        classrooms: s.classroom_name ? { id: s.classroom_id, name: s.classroom_name } : (s.classroom_id ? { id: s.classroom_id, name: s.classroom_id } : undefined),
       };
-    } catch (error: any) {
-      if (error?.message?.toLowerCase().includes('not found')) {
-        if (typeof document !== 'undefined') {
-          document.cookie = 'bl_profile_completed=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        }
-        return null;
-      }
-
-      // Resilient fallback when backend is unreachable or blocked by campus firewall
-      try {
-        const { SessionManager } = await import('@/utils/SessionManager');
-        const user = SessionManager.getUser();
-        if (user) {
-          const rollNumber = user.user_metadata?.roll_number || '2556378991';
-          return {
-            student_id: user.id || userId,
-            roll_number: rollNumber,
-            college_id: user.user_metadata?.college_id || 'COL-001',
-            department_id: '',
-            branch_id: user.user_metadata?.branch_id || 'b_cse',
-            academic_year_id: user.user_metadata?.study_year_id || 'y_2',
-            semester_id: user.user_metadata?.semester_id || 's_3',
-            section_id: user.user_metadata?.section || 'A',
-            block_id: user.user_metadata?.block_id || '',
-            classroom_id: user.user_metadata?.classroom_id || '',
-            colleges: { id: 'COL-001', name: 'RAMACHANDRA COLLEGE OF ENGINEERING' },
-            branches: { id: 'b_cse', department_id: '', name: 'Computer Science' },
-            academic_years: { id: 'y_2', name: '2nd Year' },
-            sections: { id: 'A', semester_id: 's_3', name: 'Section A' }
-          };
-        }
-      } catch (fallbackErr) {
-        console.warn('Student academic record fallback error:', fallbackErr);
-      }
+    } catch {
       return null;
     }
   },
-  
+
+  saveCompleteAcademicProfile: async (payload: {
+    name?: string;
+    phone?: string;
+    email?: string;
+    avatar_url?: string | null;
+    roll_number: string;
+    college_id?: string;
+    branch_id: string;
+    study_year_id: string;
+    semester_id?: string;
+    section: string;
+    block_id: string;
+    classroom_id: string;
+  }) => {
+    const data = await workerClient.fetch('/api/students/me', {
+      method: 'PUT',
+      body: JSON.stringify({
+        ...payload,
+        college_id: payload.college_id || 'COL-001',
+        roll_number: payload.roll_number.trim().toUpperCase(),
+      })
+    });
+    return data?.student || data?.data?.student;
+  },
+
   updateProfile: async (userId: string, updates: Partial<StudentProfile>) => {
     const data = await workerClient.fetch('/api/students/me', {
       method: 'PUT',

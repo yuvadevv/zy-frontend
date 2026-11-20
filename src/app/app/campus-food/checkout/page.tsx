@@ -62,7 +62,7 @@ export default function FoodCheckoutPage() {
     clearCart
   } = useFoodCart();
 
-  const { profile, academicRecord } = useStudent();
+  const { profile, academicRecord, isProfileCompleted, openAcademicModal } = useStudent();
   const { user } = useAuthSession();
 
   const [paymentMethod, setPaymentMethod] = useState<FoodPaymentMethod>('ONLINE_UPI');
@@ -97,14 +97,16 @@ export default function FoodCheckoutPage() {
 
   // Part 5: Student Details strictly read-only from authenticated student profile / DB
   const rawName = profile?.full_name || (user as any)?.user_metadata?.full_name || (user as any)?.user_metadata?.name || '';
-  const studentName = cleanStudentName(rawName, user?.email) || 'Sai';
-  const phoneNumber = profile?.phone_number || (user as any)?.phone || (user as any)?.user_metadata?.phone || (user as any)?.user_metadata?.phone_number || '9135443525';
-  const rollNumber = academicRecord?.roll_number || (user as any)?.user_metadata?.roll_number || '2556378991';
-  const branchName = academicRecord?.branches?.name || (user as any)?.user_metadata?.branch || 'Computer Science';
-  const academicYear = academicRecord?.academic_years?.name || (academicRecord?.academic_years as any)?.label || (user as any)?.user_metadata?.academic_year || '2nd Year';
-  const sectionName = academicRecord?.sections?.name || (user as any)?.user_metadata?.section || 'Section A';
+  const studentName = cleanStudentName(rawName, user?.email) || '';
+  const phoneNumber = profile?.phone_number || (user as any)?.phone || (user as any)?.user_metadata?.phone || (user as any)?.user_metadata?.phone_number || '';
+  const rollNumber = academicRecord?.roll_number || '';
+  const branchName = academicRecord?.branches?.name || academicRecord?.branch_id || '';
+  const academicYear = academicRecord?.academic_years?.name || (academicRecord?.academic_years as any)?.label || academicRecord?.academic_year_id || '';
+  const sectionName = academicRecord?.sections?.name || (academicRecord?.section_id ? `Section ${academicRecord.section_id}` : '');
+  const blockName = academicRecord?.blocks?.name || academicRecord?.block_id || '';
+  const classroomName = academicRecord?.classrooms?.name || academicRecord?.classroom_id || '';
 
-  const hasMissingProfileFields = !studentName || !phoneNumber || !rollNumber || !branchName;
+  const hasMissingProfileFields = !isProfileCompleted;
 
   const vendorGroups = getVendorGroups();
 
@@ -148,7 +150,14 @@ export default function FoodCheckoutPage() {
   const handleConfirmOrder = async () => {
     if (items.length === 0 || isSubmitting || isRequestInFlight.current) return;
 
-    if (!isOrdersEnabled) {
+        if (!isProfileCompleted) {
+      openAcademicModal(() => {
+        handleConfirmOrder();
+      });
+      return;
+    }
+
+if (!isOrdersEnabled) {
       setErrorMessage(ordersPausedMessage);
       return;
     }
@@ -452,19 +461,30 @@ export default function FoodCheckoutPage() {
           </div>
 
           {/* Missing fields guidance notice */}
-          {hasMissingProfileFields && (
-            <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-[11px] flex items-center justify-between gap-2">
-              <div className="flex items-center gap-1.5">
-                <AlertCircle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                <span>Some academic profile fields are incomplete.</span>
+          {!isProfileCompleted ? (
+            <div className="p-3 rounded-2xl bg-orange-50 border border-orange-200 text-orange-950 text-xs flex items-center justify-between gap-2">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-[#FF6B00] shrink-0" />
+                <span className="font-bold">Academic details required before ordering</span>
               </div>
-              <Link 
-                href="/app/profile" 
-                className="font-bold text-[#FF6B00] hover:underline shrink-0 flex items-center gap-0.5"
+              <button 
+                type="button"
+                onClick={() => openAcademicModal()}
+                className="font-bold text-white bg-[#FF6B00] hover:bg-orange-600 px-3 py-1.5 rounded-xl shadow-xs shrink-0 text-xs transition-colors"
               >
-                <span>Edit Profile</span>
+                Complete Profile
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-end -mt-1 -mb-1">
+              <button 
+                type="button"
+                onClick={() => openAcademicModal()}
+                className="font-bold text-[#FF6B00] hover:underline text-xs flex items-center gap-1"
+              >
+                <span>Edit Details</span>
                 <ExternalLink className="w-3 h-3" />
-              </Link>
+              </button>
             </div>
           )}
 
@@ -651,6 +671,11 @@ export default function FoodCheckoutPage() {
             <>
               <PauseCircle className="w-4 h-4" />
               <span>Orders Paused</span>
+            </>
+          ) : !isProfileCompleted ? (
+            <>
+              <span>Complete Profile to Order</span>
+              <ArrowRight className="w-4 h-4 stroke-[2.5]" />
             </>
           ) : isSubmitting ? (
             <>

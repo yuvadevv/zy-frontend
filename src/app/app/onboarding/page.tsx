@@ -1,84 +1,24 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { AnimatePresence, motion } from 'framer-motion';
-import { useAuthSession } from '@/features/auth/hooks/useAuthSession';
-import { useOnboarding } from '@/features/student/providers/OnboardingProvider';
-import { useStudent } from '@/features/student/providers/StudentProvider';
-import { ProgressStepper } from '@/features/student/components/ProgressStepper';
-import { WelcomeCard } from '@/features/student/components/WelcomeCard';
-import { PersonalDetailsStep } from '@/features/student/components/PersonalDetailsStep';
-import { AcademicDetailsStep } from '@/features/student/components/AcademicDetailsStep';
-import { ReviewStep } from '@/features/student/components/ReviewStep';
-import { SuccessStep } from '@/features/student/components/SuccessStep';
 import { Loader2 } from 'lucide-react';
 
-export default function OnboardingWizard() {
+export default function OnboardingPage() {
   const router = useRouter();
-  const { user } = useAuthSession();
-  const { step, setStep } = useOnboarding();
-  const { profile, isLoading: isStudentLoading } = useStudent();
 
   useEffect(() => {
-    const hasName = Boolean(
-      profile?.full_name?.trim() || 
-      (profile as any)?.name?.trim() ||
-      user?.user_metadata?.full_name?.trim() ||
-      user?.user_metadata?.name?.trim()
-    );
-    if (!isStudentLoading && (profile || user) && hasName) {
-      if (typeof document !== 'undefined') {
-        document.cookie = 'bl_profile_completed=true; path=/; max-age=2592000; SameSite=Lax';
-      }
-      router.replace('/app/home');
-    }
-  }, [profile, isStudentLoading, user, router]);
-
-  const STEPS = ['Personal', 'Academic', 'Review'];
+    // BLINTZY: Old multi-step onboarding wizard removed.
+    // New Google sign-in users enter the app directly at /app/home.
+    // Academic details are collected separately via the Academic Profile Modal before ordering.
+    router.replace('/app/home');
+  }, [router]);
 
   return (
-    <div className="h-[100dvh] w-full bg-white flex flex-col pt-safe px-4 overflow-y-auto">
-      <div className="w-full max-w-md mx-auto flex flex-col h-full pt-4 relative">
-        {step > 1 && step < 5 && (
-          <div className="shrink-0 mb-6">
-            <ProgressStepper steps={STEPS} currentStep={step} />
-          </div>
-        )}
-
-        <div className="flex-1 flex flex-col relative">
-          <AnimatePresence mode="wait">
-            {isStudentLoading ? (
-              <motion.div 
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="flex-1 flex items-center justify-center"
-              >
-                <Loader2 className="w-8 h-8 animate-spin text-orange-500" />
-              </motion.div>
-            ) : (
-              <>
-                {step === 1 && (
-                  <WelcomeCard 
-                    key="step1" 
-                    userName={user?.user_metadata?.full_name || user?.email} 
-                    onContinue={() => setStep(2)} 
-                  />
-                )}
-            
-            {step === 2 && <PersonalDetailsStep key="step2" />}
-            
-            {step === 3 && <AcademicDetailsStep key="step3" />}
-            
-            {step === 4 && <ReviewStep key="step4" />}
-            
-            {step === 5 && <SuccessStep key="step5" />}
-              </>
-            )}
-          </AnimatePresence>
-        </div>
+    <div className="h-[100dvh] w-full bg-white flex flex-col items-center justify-center p-6 text-center">
+      <div className="flex flex-col items-center gap-3">
+        <Loader2 className="w-8 h-8 animate-spin text-[#FF6B00]" />
+        <p className="text-sm font-semibold text-gray-600">Taking you to BLINTZY...</p>
       </div>
     </div>
   );
