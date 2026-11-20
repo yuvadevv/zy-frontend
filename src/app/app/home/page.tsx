@@ -16,6 +16,7 @@ import { CampaignCarousel } from '@/features/home/components/CampaignCarousel';
 import { CampusFoodPromoBanner } from '@/features/home/components/CampusFoodPromoBanner';
 import { CampusFestSpecials } from '@/features/home/components/CampusFestSpecials';
 import { MultiServiceLauncher } from '@/features/home/components/MultiServiceLauncher';
+import { NotificationOptInBanner } from '@/components/notifications/NotificationOptInBanner';
 
 import { workerClient } from '@/lib/api/workerClient';
 import { mapCurrentOrder, mapQuickService, mapAnnouncement, mapSupportAction } from '@/features/home/mappers';
@@ -258,6 +259,7 @@ export default function HomeDashboard() {
   return (
     <DashboardEntry>
       <div className="flex flex-col gap-4 w-full">
+        <NotificationOptInBanner />
         {hasError && (
           <div className="mx-1 px-4 py-3 bg-red-50 text-red-600 rounded-xl flex items-center justify-between shadow-sm">
             <span className="text-sm font-semibold">Couldn't load your orders.</span>

@@ -454,6 +454,37 @@ export const workerClient = {
       method: 'POST',
       body: JSON.stringify({ credential, vendorId })
     }, false);
+  },
+
+  // Push Notifications API
+  async subscribePush(payload: {
+    fcmToken: string;
+    platform?: string;
+    deviceInfo?: string;
+    preferences?: any;
+  }) {
+    return this.fetch('/api/notifications/push/subscribe', {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    }, true);
+  },
+
+  async unsubscribePush(fcmToken?: string) {
+    return this.fetch('/api/notifications/push/unsubscribe', {
+      method: 'POST',
+      body: JSON.stringify({ fcmToken })
+    }, true);
+  },
+
+  async getPushPreferences() {
+    return this.fetch('/api/notifications/push/preferences', {}, true);
+  },
+
+  async updatePushPreferences(preferences: any) {
+    return this.fetch('/api/notifications/push/preferences', {
+      method: 'PUT',
+      body: JSON.stringify({ preferences })
+    }, true);
   }
 };
 
